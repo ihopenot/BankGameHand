@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Type, TypeVar
+from typing import Dict, Optional, Type, TypeVar
 
 from component.base_component import BaseComponent
 
@@ -21,8 +21,14 @@ class Entity:
         self._components[comp_type] = comp
         return comp
 
-    def get_component(self, comp_type: Type[T]) -> T:
-        """获取已初始化的组件。不存在则抛出 KeyError。"""
-        if comp_type not in self._components:
-            raise KeyError(f"Component {comp_type.__name__} not found")
-        return self._components[comp_type]  # type: ignore[return-value]
+    def get_component(self, comp_type: Type[T]) -> Optional[T]:
+        """获取已初始化的组件。不存在则返回 None。"""
+        return self._components.get(comp_type)  # type: ignore[return-value]
+
+    def destroy(self) -> None:
+        """注销所有组件，从各子类的 components 列表中移除，清空组件注册表。"""
+        for comp in self._components.values():
+            comp_list = type(comp).components
+            if comp in comp_list:
+                comp_list.remove(comp)
+        self._components.clear()

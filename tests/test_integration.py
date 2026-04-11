@@ -2,10 +2,16 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from component.productor_component import ProductorComponent
+from component.storage_component import StorageComponent
 from core.config import ConfigManager
+from core.entity import Entity
+from entity.factory import Factory, FactoryType, Recipe
+from entity.goods import GoodsType
 from game.game import Game
 from system.economy_service import EconomyService
 from system.economy_models.dual_cycle_model import DualCycleModel
+from system.productor_service import ProductorService
 
 
 INTEGRATION_CONFIG_DIR = str(Path(__file__).parent / "config_integration")
@@ -108,3 +114,112 @@ class TestGameLoopIntegration:
 
         assert idx1 == idx2
         assert state1 == state2
+
+
+class TestProductorServiceIntegration:
+    """ProductorService 集成测试：验证多公司场景下的生产流程端到端正确。"""
+
+    def setup_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def teardown_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def test_update_phase_reflects_highest_tech(self) -> None:
+        """多个 Entity 拥有不同 tech_values，update_phase 后 max_tech 反映最高值。"""
+        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        recipe = Recipe(input_goods_type=None, input_quantity=0,
+                        output_goods_type=gt, output_quantity=10)
+        ft = FactoryType(recipe=recipe, base_production=5,
+                         build_cost=10000, maintenance_cost=500, build_time=0)
+
+        e1 = Entity()
+        p1 = e1.init_component(ProductorComponent)
+        p1.tech_values[recipe] = 80
+        p1.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        e2 = Entity()
+        p2 = e2.init_component(ProductorComponent)
+        p2.tech_values[recipe] = 200
+        p2.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        game = Game()
+        game.economy_service = MagicMock()
+        game.company_service = MagicMock()
+        game.market_service = MagicMock()
+        game.folk_service = MagicMock()
+        service = ProductorService(game)
+        service.update_phase()
+
+        assert ProductorComponent.max_tech[recipe] == 200
+
+    def test_product_phase_end_to_end(self) -> None:
+        """多公司场景下 product_phase 执行后各公司库存有产出。"""
+        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        recipe = Recipe(input_goods_type=None, input_quantity=0,
+                        output_goods_type=gt, output_quantity=10)
+        ft = FactoryType(recipe=recipe, base_production=5,
+                         build_cost=10000, maintenance_cost=500, build_time=0)
+
+        entities: list[Entity] = []
+        for tech in (100, 150):
+            e = Entity()
+            p = e.init_component(ProductorComponent)
+            p.tech_values[recipe] = tech
+            p.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+            entities.append(e)
+
+        game = Game()
+        game.economy_service = MagicMock()
+        game.company_service = MagicMock()
+        game.market_service = MagicMock()
+        game.folk_service = MagicMock()
+        service = ProductorService(game)
+
+        # 先更新 max_tech，再生产
+        service.update_phase()
+        service.product_phase()
+
+        for e in entities:
+            storage = e.get_component(StorageComponent)
+            assert storage is not None
+            batches = storage.get_batches(gt)
+            assert len(batches) == 1
+            assert batches[0].quantity == 50  # 5 * 10
+
+    def test_destroy_entity_removes_from_service_scope(self) -> None:
+        """Entity.destroy() 后，ProductorService 不再遍历该组件。"""
+        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        recipe = Recipe(input_goods_type=None, input_quantity=0,
+                        output_goods_type=gt, output_quantity=10)
+        ft = FactoryType(recipe=recipe, base_production=5,
+                         build_cost=10000, maintenance_cost=500, build_time=0)
+
+        e1 = Entity()
+        p1 = e1.init_component(ProductorComponent)
+        p1.tech_values[recipe] = 100
+        p1.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        e2 = Entity()
+        p2 = e2.init_component(ProductorComponent)
+        p2.tech_values[recipe] = 200
+        p2.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        # destroy e2
+        e2.destroy()
+
+        game = Game()
+        game.economy_service = MagicMock()
+        game.company_service = MagicMock()
+        game.market_service = MagicMock()
+        game.folk_service = MagicMock()
+        service = ProductorService(game)
+        service.update_phase()
+
+        # max_tech 只反映 e1 的值
+        assert ProductorComponent.max_tech[recipe] == 100
+        assert len(ProductorComponent.components) == 1
