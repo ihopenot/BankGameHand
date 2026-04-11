@@ -1,0 +1,15 @@
+# 经济模型配置（集成测试用，固定种子确保可复现）
+model: "dual_cycle"
+
+dual_cycle:
+  short_cycle:
+    period: 25
+    amplitude: 0.45
+    phase: null
+  long_cycle:
+    period: 60
+    amplitude: 0.25
+    phase: null
+  noise:
+    std: 0.05
+  random_seed: 42

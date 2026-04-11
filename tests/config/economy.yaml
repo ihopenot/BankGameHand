@@ -1,0 +1,15 @@
+# 测试用经济模型配置
+model: "dual_cycle"
+
+dual_cycle:
+  short_cycle:
+    period: 25
+    amplitude: 0.45
+    phase: 0.0
+  long_cycle:
+    period: 60
+    amplitude: 0.25
+    phase: 0.0
+  noise:
+    std: 0.0
+  random_seed: 42

@@ -3,10 +3,12 @@ from system.economy_service import EconomyService
 class Game:
     economy_service: EconomyService
 
-    def __init__():
-        pass
+    def __init__(self):
+        self.round = 0
 
     def game_end(self) -> bool:
+        if self.round > 20:
+            return True
         return False
 
     def game_loop(self):
@@ -27,9 +29,9 @@ class Game:
 
             self.act_phase() # 公司根据账上现金重新决策并执行
 
-            self.check_end()
+            # self.check_end()
     
-    def round_update(self):
+    def update_phase(self):
         self.round += 1 # 更新round
         self.economy_service.update_phase() # 更新经济周期
         self.company_service.update_phase() # 更新工厂，计算利息，计算维护成本。更新应付账款，不付现金。

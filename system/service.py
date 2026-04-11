@@ -1,8 +1,18 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game.game import Game
+
 
 class Service(ABC):
+    def __init__(self, game: Game):
+        self.game = game
+
     @abstractmethod
-    def update_pahse():
+    def update_phase(self):
         pass
 
     @abstractmethod

@@ -1,0 +1,15 @@
+# 经济模型配置
+model: "dual_cycle"        # 模型名称，对应注册表中的 key
+
+dual_cycle:                 # 双周期正弦波模型参数
+  short_cycle:
+    period: 25              # T1 短周期（库存周期），单位：轮
+    amplitude: 0.45         # A1 短周期振幅
+    phase: null             # φ1 初始相位，null 时随机生成，也可指定具体值（弧度）
+  long_cycle:
+    period: 60              # T2 长周期（产能周期），单位：轮
+    amplitude: 0.25         # A2 长周期振幅
+    phase: null             # φ2 初始相位，null 时随机生成
+  noise:
+    std: 0.05               # 高斯噪声标准差
+  random_seed: null         # 随机种子，null 时不固定种子，指定数值可复现结果
