@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+from core.types import RATE_SCALE
+
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -126,8 +128,8 @@ class TestGameInit:
         # 手动设置 economy_index 为已知值
         game.economy_service.economy_index = 5000  # Rate = 5000
         # RATE_SCALE = 10000，归一化后应为 0.5
-        expected = 5000 / Game.RATE_SCALE
+        expected = 5000 / RATE_SCALE
         assert expected == 0.5
         # 边界值
-        assert -10000 / Game.RATE_SCALE == -1.0
-        assert 10000 / Game.RATE_SCALE == 1.0
+        assert -10000 / RATE_SCALE == -1.0
+        assert 10000 / RATE_SCALE == 1.0
