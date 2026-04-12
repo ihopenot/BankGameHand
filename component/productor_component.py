@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List
 
 from component.base_component import BaseComponent
 from component.storage_component import StorageComponent
-from core.types import Radio
+from core.types import Money, Radio
 from entity.factory import Factory, FactoryType, Recipe
 from entity.goods import GoodsBatch, GoodsType
 
@@ -25,12 +25,20 @@ class ProductorComponent(BaseComponent):
         self.tech_values: Dict[Recipe, int] = {}
         self.brand_values: Dict[GoodsType, int] = {}
         self.factories: Dict[FactoryType, List[Factory]] = defaultdict(list)
+        self.prices: Dict[GoodsType, Money] = {}
 
     def update_max_tech(self) -> None:
         """用自身科技值更新全局 max_tech 表。"""
         for recipe, tech in self.tech_values.items():
             if tech > ProductorComponent.max_tech.get(recipe, 0):
                 ProductorComponent.max_tech[recipe] = tech
+
+    def init_prices(self) -> None:
+        """根据已注册的工厂类型，用各产出 GoodsType.base_price 初始化定价表。"""
+        for ft in self.factories:
+            gt = ft.recipe.output_goods_type
+            if gt not in self.prices:
+                self.prices[gt] = gt.base_price
 
     def produce(self, factory_type: FactoryType) -> GoodsBatch:
         """对一个 FactoryType 下的所有工厂执行生产。

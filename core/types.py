@@ -14,6 +14,7 @@ Money = int     # unit: 1/100 yuan
 class LoanType(Enum):
     """贷款类型，value 附带结算优先级（数值越小越优先）。"""
 
+    TRADE_PAYABLE = "trade_payable"
     CORPORATE_LOAN = "corporate_loan"
     DEPOSIT = "deposit"
     INTERBANK = "interbank"
@@ -25,6 +26,7 @@ class LoanType(Enum):
 
 
 _LOAN_TYPE_PRIORITY = {
+    LoanType.TRADE_PAYABLE: -1,
     LoanType.DEPOSIT: 0,
     LoanType.INTERBANK: 1,
     LoanType.CORPORATE_LOAN: 2,
