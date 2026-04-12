@@ -80,9 +80,11 @@ class CompanyService:
             transferred = seller_storage.require_goods(trade.goods_type, trade.quantity, base=0)
             if transferred.quantity > 0:
                 buyer_storage.add_batch(transferred)
+            else:
+                continue
 
-            # 2. 支付结算
-            total_cost = trade.total
+            # 2. 支付结算（按实际交付量计费）
+            total_cost = transferred.quantity * trade.price
             buyer_ledger = buyer.get_component(LedgerComponent)
             seller_ledger = seller.get_component(LedgerComponent)
 

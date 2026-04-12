@@ -5,6 +5,10 @@ class Game:
 
     def __init__(self):
         self.round = 0
+        self.economy_service = None
+        self.company_service = None
+        self.market_service = None
+        self.folk_service = None
 
     def game_end(self) -> bool:
         if self.round > 20:
@@ -52,7 +56,7 @@ class Game:
     
 
     def plan_phase(self):
-        self.company_service.plan_pahse() # 公司决策
+        self.company_service.plan_phase() # 公司决策
     
 
     def player_act(self):

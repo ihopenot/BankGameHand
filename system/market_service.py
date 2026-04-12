@@ -165,6 +165,7 @@ class MarketService:
                 else:
                     # 供<求：等比分配
                     available = target.remaining
+                    allocated_total = 0
                     for buyer_intent, qty in buyers_for_order:
                         alloc = qty * available // total_demand
                         if alloc > 0:
@@ -176,7 +177,23 @@ class MarketService:
                                 price=target.price,
                             ))
                             buyer_intent.remaining -= alloc
+                            allocated_total += alloc
                             any_trade = True
+                    # 余量分给第一个仍有需求的买家
+                    leftover = available - allocated_total
+                    if leftover > 0:
+                        for buyer_intent, _ in buyers_for_order:
+                            if buyer_intent.remaining > 0:
+                                records.append(TradeRecord(
+                                    seller=target.seller,
+                                    buyer=buyer_intent.buyer,
+                                    goods_type=buyer_intent.goods_type,
+                                    quantity=leftover,
+                                    price=target.price,
+                                ))
+                                buyer_intent.remaining -= leftover
+                                any_trade = True
+                                break
                     target.remaining = 0
                     # 推进指针，仍有需求的买方进入下一轮
                     for buyer_intent, _ in buyers_for_order:

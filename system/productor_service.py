@@ -17,6 +17,7 @@ class ProductorService(Service):
 
     def update_phase(self) -> None:
         """遍历所有 ProductorComponent，更新全局 max_tech。"""
+        ProductorComponent.max_tech.clear()
         for prod in ProductorComponent.components:
             prod.update_max_tech()
 

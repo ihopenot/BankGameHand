@@ -96,7 +96,7 @@ class Loan:
             )
 
         if self.repayment_type == RepaymentType.INTEREST_FIRST:
-            is_final = self.elapsed == self.term - 1
+            is_final = self.elapsed >= self.term - 1
             principal_due = self.remaining if is_final else 0
             return LoanBill(
                 loan=self,
@@ -108,7 +108,7 @@ class Loan:
             )
 
         # BULLET
-        is_final = self.elapsed == self.term - 1
+        is_final = self.elapsed >= self.term - 1
         if is_final:
             total_interest = self.accrued_interest + interest
             return LoanBill(
