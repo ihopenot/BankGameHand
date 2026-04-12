@@ -75,7 +75,7 @@ class StorageComponent(BaseComponent):
         self.inventory[goods_type] = [b for b in batches if b.quantity > 0]
 
         avg_quality = weighted_quality / take
-        avg_brand = int(weighted_brand / take)
+        avg_brand = round(weighted_brand / take)
 
         return GoodsBatch(
             goods_type=goods_type,

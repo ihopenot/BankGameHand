@@ -7,7 +7,7 @@ from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.types import Loan, LoanType, RepaymentType
 from entity.company.company import Company
-from entity.goods import GoodsBatch, GoodsType
+from entity.goods import GoodsType
 from system.market_service import BuyIntent, MarketService, SellOrder, TradeRecord
 
 
@@ -74,45 +74,12 @@ class CompanyService:
             seller = trade.seller
             buyer = trade.buyer
 
-            # 1. 商品转移：卖方 batch 扣减（已在 match 中通过 remaining 追踪）
-            #    卖方原始 batch.quantity 需要扣减
-            #    买方获得新 GoodsBatch
-            # 找到对应的 SellOrder batch 来获取品质信息
-            # TradeRecord 中的 seller 和 goods_type 可以定位 batch
+            # 1. 商品转移：卖方扣减 → 买方入库
             seller_storage = seller.get_component(StorageComponent)
             buyer_storage = buyer.get_component(StorageComponent)
-
-            # 从卖方库存扣减
-            batches = seller_storage.get_batches(trade.goods_type)
-            remaining_to_deduct = trade.quantity
-            quality_sum = 0.0
-            brand_sum = 0
-            deducted = 0
-            for batch in batches:
-                if remaining_to_deduct <= 0:
-                    break
-                take = min(batch.quantity, remaining_to_deduct)
-                quality_sum += batch.quality * take
-                brand_sum += batch.brand_value * take
-                batch.quantity -= take
-                remaining_to_deduct -= take
-                deducted += take
-
-            # 清理空批次
-            seller_storage.inventory[trade.goods_type] = [
-                b for b in batches if b.quantity > 0
-            ]
-
-            # 买方入库
-            if deducted > 0:
-                avg_quality = quality_sum / deducted
-                avg_brand = int(brand_sum / deducted)
-                buyer_storage.add_batch(GoodsBatch(
-                    goods_type=trade.goods_type,
-                    quantity=deducted,
-                    quality=avg_quality,
-                    brand_value=avg_brand,
-                ))
+            transferred = seller_storage.require_goods(trade.goods_type, trade.quantity, base=0)
+            if transferred.quantity > 0:
+                buyer_storage.add_batch(transferred)
 
             # 2. 支付结算
             total_cost = trade.total

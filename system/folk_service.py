@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+import math
+from typing import Dict, List
+
+from component.ledger_component import LedgerComponent
+from component.storage_component import StorageComponent
+from entity.folk import Folk
+from entity.goods import GoodsType
+from system.market_service import MarketService, SellOrder, TradeRecord
+
+
+class FolkService:
+    """居民部门服务：管理所有居民群体的采购行为。"""
+
+    def __init__(self, folks: List[Folk]) -> None:
+        self.folks = folks
+
+    def compute_demands(self, economy_cycle_index: float) -> Dict[Folk, Dict[GoodsType, int]]:
+        """计算每个 Folk 对每种终端消费品的需求量。
+
+        公式：population * per_capita * (1 + economy_cycle_index * sensitivity)
+        """
+        result: Dict[Folk, Dict[GoodsType, int]] = {}
+        for folk in self.folks:
+            folk_demands: Dict[GoodsType, int] = {}
+            for goods_type, params in folk.base_demands.items():
+                per_capita = params["per_capita"]
+                sensitivity = params["sensitivity"]
+                if per_capita == 0:
+                    folk_demands[goods_type] = 0
+                    continue
+                raw = folk.population * per_capita * (1 + economy_cycle_index * sensitivity)
+                folk_demands[goods_type] = int(raw)
+            result[folk] = folk_demands
+        return result
+
+    @staticmethod
+    def _score_order(order: SellOrder, w_vfm: float, w_brand: float) -> float:
+        """计算卖方挂单的竞争力评分。"""
+        if order.price <= 0:
+            return 0.0
+        value_for_money = order.batch.quality / order.price
+        return w_vfm * value_for_money + w_brand * order.batch.brand_value
+
+    @staticmethod
+    def _softmax_weights(scores: List[float]) -> List[float]:
+        """对评分列表做 softmax 归一化，返回权重列表。"""
+        if not scores:
+            return []
+        max_score = max(scores)
+        exps = [math.exp(s - max_score) for s in scores]
+        total = sum(exps)
+        if total == 0:
+            n = len(scores)
+            return [1.0 / n] * n
+        return [e / total for e in exps]
+
+    def allocate_and_trade(
+        self,
+        folk: Folk,
+        goods_type: GoodsType,
+        demand: int,
+        market: MarketService,
+    ) -> List[TradeRecord]:
+        """对单个 Folk 的单种商品执行加权均分采购。
+
+        1. 获取所有该商品的 SellOrder
+        2. 计算评分 → softmax 归一化
+        3. 按权重分配需求量
+        4. 库存不足时迭代重分配
+        """
+        if demand <= 0:
+            return []
+
+        orders = [o for o in market.get_sell_orders(goods_type) if o.remaining > 0]
+        if not orders:
+            return []
+
+        trades: List[TradeRecord] = []
+        remaining_demand = demand
+
+        while remaining_demand > 0 and orders:
+            scores = [self._score_order(o, folk.w_value_for_money, folk.w_brand) for o in orders]
+            weights = self._softmax_weights(scores)
+
+            # 最大余数法分配，避免 int 截断丢失需求
+            raw_allocs = [remaining_demand * w for w in weights]
+            floor_allocs = [int(a) for a in raw_allocs]
+            remainders = [a - f for a, f in zip(raw_allocs, floor_allocs)]
+            deficit = remaining_demand - sum(floor_allocs)
+            # 按余数从大到小补 1
+            indices = sorted(range(len(remainders)), key=lambda i: remainders[i], reverse=True)
+            for i in indices[:deficit]:
+                floor_allocs[i] += 1
+
+            round_traded = 0
+            next_orders: List[SellOrder] = []
+
+            for order, alloc in zip(orders, floor_allocs):
+                if alloc <= 0:
+                    next_orders.append(order)
+                    continue
+                actual = min(alloc, order.remaining)
+                if actual > 0:
+                    trades.append(TradeRecord(
+                        seller=order.seller,
+                        buyer=folk,
+                        goods_type=goods_type,
+                        quantity=actual,
+                        price=order.price,
+                    ))
+                    order.remaining -= actual
+                    round_traded += actual
+                if order.remaining > 0:
+                    next_orders.append(order)
+
+            remaining_demand -= round_traded
+
+            if round_traded == 0 or not next_orders:
+                break
+            orders = next_orders
+
+        return trades
+
+    def settle_trades(self, trades: List[TradeRecord]) -> None:
+        """处理成交记录：商品转移 + 现金支付（居民无赊账）。"""
+        for trade in trades:
+            seller = trade.seller
+            buyer = trade.buyer
+
+            # 商品转移：卖方扣减 → 买方入库
+            seller_storage = seller.get_component(StorageComponent)
+            buyer_storage = buyer.get_component(StorageComponent)
+            transferred = seller_storage.require_goods(trade.goods_type, trade.quantity, base=0)
+            if transferred.quantity > 0:
+                buyer_storage.add_batch(transferred)
+
+            # 现金支付（居民目前无限现金，不做赊账）
+            total_cost = trade.total
+            buyer_ledger = buyer.get_component(LedgerComponent)
+            seller_ledger = seller.get_component(LedgerComponent)
+            buyer_ledger.cash -= total_cost
+            seller_ledger.cash += total_cost
+
+    def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
+        """居民采购阶段：计算需求 → 加权分配 → 结算。"""
+        demands = self.compute_demands(economy_cycle_index)
+        all_trades: List[TradeRecord] = []
+        for folk in self.folks:
+            for goods_type, demand in demands[folk].items():
+                trades = self.allocate_and_trade(folk, goods_type, demand, market)
+                all_trades.extend(trades)
+        self.settle_trades(all_trades)
+        return all_trades
