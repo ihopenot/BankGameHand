@@ -16,7 +16,11 @@ class ProductorService(Service):
         super().__init__(game)
 
     def update_phase(self) -> None:
-        """遍历所有 ProductorComponent，更新全局 max_tech。"""
+        """遍历所有 ProductorComponent，推进工厂建造并更新全局 max_tech。"""
+        for prod in ProductorComponent.components:
+            for factories in prod.factories.values():
+                for factory in factories:
+                    factory.tick_build()
         ProductorComponent.max_tech.clear()
         for prod in ProductorComponent.components:
             prod.update_max_tech()

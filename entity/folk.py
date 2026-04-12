@@ -4,7 +4,7 @@ from typing import Dict, List
 
 from component.ledger_component import LedgerComponent
 from component.storage_component import StorageComponent
-from core.config import AttrDict
+from core.config import AttrDict, ConfigManager
 from core.entity import Entity
 from entity.goods import GoodsType
 
@@ -28,16 +28,16 @@ class Folk(Entity):
         self.init_component(StorageComponent)
 
 
-def load_folks(config: AttrDict, goods_types: Dict[str, GoodsType]) -> List[Folk]:
+def load_folks() -> List[Folk]:
     """从配置段加载 Folk 列表。
 
-    Args:
-        config: ConfigManager.section("folk") 返回的 AttrDict，包含 folks 列表。
-        goods_types: 商品名称到 GoodsType 的映射。
+    使用 ConfigManager 单例获取配置，使用 GoodsType.types 获取商品类型。
 
     Returns:
         Folk 实体列表。
     """
+    config = ConfigManager().section("folk")
+    goods_types = GoodsType.types
     folks: List[Folk] = []
     for item in config.folks:
         base_demands: Dict[GoodsType, Dict[str, float]] = {}

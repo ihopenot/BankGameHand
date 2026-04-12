@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional
 
 from core.config import ConfigManager
 from core.types import Money
@@ -9,6 +9,8 @@ from entity.goods import GoodsBatch, GoodsType
 
 class Recipe:
     """配方定义：描述输入输出转化关系。"""
+
+    recipes: ClassVar[Dict[str, "Recipe"]] = {}
 
     def __init__(
         self,
@@ -25,6 +27,8 @@ class Recipe:
 
 class FactoryType:
     """工厂类型定义：产能和经济属性。"""
+
+    factory_types: ClassVar[Dict[str, "FactoryType"]] = {}
 
     def __init__(
         self,
@@ -101,8 +105,10 @@ class Factory:
         )
 
 
-def load_recipes(config: ConfigManager, goods_types: Dict[str, GoodsType]) -> Dict[str, Recipe]:
+def load_recipes() -> Dict[str, Recipe]:
     """从配置加载所有配方，返回 {name: Recipe} 字典。"""
+    config = ConfigManager()
+    goods_types = GoodsType.types
     section = config.section("goods")
     result: Dict[str, Recipe] = {}
     for item in section.recipes:
@@ -114,11 +120,14 @@ def load_recipes(config: ConfigManager, goods_types: Dict[str, GoodsType]) -> Di
             output_quantity=item.output_quantity,
         )
         result[item.name] = recipe
+    Recipe.recipes = result
     return result
 
 
-def load_factory_types(config: ConfigManager, recipes: Dict[str, Recipe]) -> Dict[str, FactoryType]:
+def load_factory_types() -> Dict[str, FactoryType]:
     """从配置加载所有工厂类型，返回 {name: FactoryType} 字典。"""
+    config = ConfigManager()
+    recipes = Recipe.recipes
     section = config.section("goods")
     result: Dict[str, FactoryType] = {}
     for item in section.factory_types:
@@ -130,4 +139,5 @@ def load_factory_types(config: ConfigManager, recipes: Dict[str, Recipe]) -> Dic
             build_time=item.build_time,
         )
         result[item.name] = ft
+    FactoryType.factory_types = result
     return result

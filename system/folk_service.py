@@ -13,8 +13,17 @@ from system.market_service import MarketService, SellOrder, TradeRecord
 class FolkService:
     """居民部门服务：管理所有居民群体的采购行为。"""
 
-    def __init__(self, folks: List[Folk]) -> None:
-        self.folks = folks
+    def __init__(self, folks: List[Folk] | None = None) -> None:
+        self.folks: List[Folk] = folks if folks is not None else []
+
+    def load_folks_from_config(self, folk_initial_cash: int) -> List[Folk]:
+        """从配置加载居民并设置初始资金。"""
+        from entity.folk import load_folks
+        self.folks = load_folks()
+        for folk in self.folks:
+            folk_ledger = folk.get_component(LedgerComponent)
+            folk_ledger.cash = folk_initial_cash
+        return self.folks
 
     def compute_demands(self, economy_cycle_index: float) -> Dict[Folk, Dict[GoodsType, int]]:
         """计算每个 Folk 对每种终端消费品的需求量。

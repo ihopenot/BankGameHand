@@ -1,6 +1,8 @@
 """Folk 实体测试。"""
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 
 from component.ledger_component import LedgerComponent
@@ -76,12 +78,18 @@ class TestFolkInit:
 class TestLoadFolks:
     """从 ConfigManager 加载 Folk 列表的测试。"""
 
+    def setup_method(self) -> None:
+        GoodsType.types.clear()
+
+    def teardown_method(self) -> None:
+        GoodsType.types.clear()
+
     def test_load_folks_returns_list(self) -> None:
         from core.config import AttrDict
         from entity.folk import load_folks
 
         gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
-        goods_types = {"食品": gt_food}
+        GoodsType.types = {"食品": gt_food}
 
         config_data = AttrDict({
             "folks": [
@@ -104,7 +112,9 @@ class TestLoadFolks:
             ],
         })
 
-        folks = load_folks(config_data, goods_types)
+        with patch("entity.folk.ConfigManager") as mock_cm:
+            mock_cm.return_value.section.return_value = config_data
+            folks = load_folks()
         assert len(folks) == 2
         assert folks[0].population == 6000
         assert folks[1].population == 1000
@@ -115,7 +125,7 @@ class TestLoadFolks:
 
         gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
         gt_phone = GoodsType(name="手机", base_price=20000, bonus_ceiling=0.1)
-        goods_types = {"食品": gt_food, "手机": gt_phone}
+        GoodsType.types = {"食品": gt_food, "手机": gt_phone}
 
         config_data = AttrDict({
             "folks": [
@@ -131,7 +141,9 @@ class TestLoadFolks:
             ],
         })
 
-        folks = load_folks(config_data, goods_types)
+        with patch("entity.folk.ConfigManager") as mock_cm:
+            mock_cm.return_value.section.return_value = config_data
+            folks = load_folks()
         folk = folks[0]
         # base_demands 的 key 应是 GoodsType 对象
         assert gt_food in folk.base_demands

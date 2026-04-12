@@ -1,0 +1,137 @@
+goods_types:
+  - name: "硅"
+    base_price: 1000
+    bonus_ceiling: 0.1
+  - name: "芯片"
+    base_price: 5000
+    bonus_ceiling: 0.1
+  - name: "手机"
+    base_price: 20000
+    bonus_ceiling: 0.1
+  - name: "棉花"
+    base_price: 800
+    bonus_ceiling: 0.1
+  - name: "布料"
+    base_price: 3000
+    bonus_ceiling: 0.1
+  - name: "服装"
+    base_price: 15000
+    bonus_ceiling: 0.1
+  - name: "小麦"
+    base_price: 500
+    bonus_ceiling: 0.1
+  - name: "面粉"
+    base_price: 2000
+    bonus_ceiling: 0.1
+  - name: "食品"
+    base_price: 8000
+    bonus_ceiling: 0.1
+
+recipes:
+  # 电子产业链
+  - name: "硅矿开采"
+    input: null
+    input_quantity: 0
+    output: "硅"
+    output_quantity: 100
+  - name: "芯片制造"
+    input: "硅"
+    input_quantity: 200
+    output: "芯片"
+    output_quantity: 100
+  - name: "手机组装"
+    input: "芯片"
+    input_quantity: 150
+    output: "手机"
+    output_quantity: 80
+  # 纺织产业链
+  - name: "棉花种植"
+    input: null
+    input_quantity: 0
+    output: "棉花"
+    output_quantity: 120
+  - name: "布料加工"
+    input: "棉花"
+    input_quantity: 180
+    output: "布料"
+    output_quantity: 100
+  - name: "服装生产"
+    input: "布料"
+    input_quantity: 120
+    output: "服装"
+    output_quantity: 90
+  # 食品产业链
+  - name: "小麦种植"
+    input: null
+    input_quantity: 0
+    output: "小麦"
+    output_quantity: 150
+  - name: "面粉加工"
+    input: "小麦"
+    input_quantity: 200
+    output: "面粉"
+    output_quantity: 120
+  - name: "食品生产"
+    input: "面粉"
+    input_quantity: 150
+    output: "食品"
+    output_quantity: 100
+
+factory_types:
+  # 电子产业链
+  - name: "硅矿场"
+    recipe: "硅矿开采"
+    base_production: 10
+    build_cost: 50000
+    maintenance_cost: 3000
+    build_time: 2
+  - name: "芯片工厂"
+    recipe: "芯片制造"
+    base_production: 10
+    build_cost: 100000
+    maintenance_cost: 5000
+    build_time: 3
+  - name: "手机工厂"
+    recipe: "手机组装"
+    base_production: 8
+    build_cost: 80000
+    maintenance_cost: 4000
+    build_time: 3
+  # 纺织产业链
+  - name: "棉花农场"
+    recipe: "棉花种植"
+    base_production: 12
+    build_cost: 30000
+    maintenance_cost: 2000
+    build_time: 1
+  - name: "纺织厂"
+    recipe: "布料加工"
+    base_production: 10
+    build_cost: 60000
+    maintenance_cost: 3500
+    build_time: 2
+  - name: "服装厂"
+    recipe: "服装生产"
+    base_production: 9
+    build_cost: 50000
+    maintenance_cost: 3000
+    build_time: 2
+  # 食品产业链
+  - name: "麦田"
+    recipe: "小麦种植"
+    base_production: 15
+    build_cost: 20000
+    maintenance_cost: 1500
+    build_time: 1
+  - name: "面粉厂"
+    recipe: "面粉加工"
+    base_production: 12
+    build_cost: 40000
+    maintenance_cost: 2500
+    build_time: 2
+  - name: "食品厂"
+    recipe: "食品生产"
+    base_production: 10
+    build_cost: 45000
+    maintenance_cost: 2800
+    build_time: 2

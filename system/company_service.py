@@ -7,12 +7,31 @@ from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.types import Loan, LoanType, RepaymentType
 from entity.company.company import Company
+from entity.factory import Factory, FactoryType
 from entity.goods import GoodsType
 from system.market_service import BuyIntent, MarketService, SellOrder, TradeRecord
 
 
 class CompanyService:
-    companies: Dict[str, Company]
+    def __init__(self) -> None:
+        self.companies: Dict[str, Company] = {}
+
+    def create_company(
+        self,
+        name: str,
+        factory_type: FactoryType,
+        initial_cash: int,
+    ) -> Company:
+        """创建一家拥有指定工厂类型和初始资金的公司。"""
+        company = Company()
+        ledger = company.get_component(LedgerComponent)
+        ledger.cash = initial_cash
+        pc = company.get_component(ProductorComponent)
+        factory = Factory(factory_type, build_remaining=0)
+        pc.factories[factory_type].append(factory)
+        pc.init_prices()
+        self.companies[name] = company
+        return company
 
     def sell_phase(self, market: MarketService) -> None:
         """遍历所有公司，将库存中的每个 GoodsBatch 作为 SellOrder 挂到市场。"""

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict
+from typing import ClassVar, Dict
 
 from core.config import ConfigManager
 from core.types import Money, Radio
@@ -8,6 +8,8 @@ from core.types import Money, Radio
 
 class GoodsType:
     """商品种类定义（静态配置数据）。"""
+
+    types: ClassVar[Dict[str, "GoodsType"]] = {}
 
     def __init__(self, name: str, base_price: Money, bonus_ceiling: Radio) -> None:
         self.name = name
@@ -25,8 +27,9 @@ class GoodsBatch:
         self.brand_value = brand_value
 
 
-def load_goods_types(config: ConfigManager) -> Dict[str, GoodsType]:
+def load_goods_types() -> Dict[str, GoodsType]:
     """从配置加载所有商品种类，返回 {name: GoodsType} 字典。"""
+    config = ConfigManager()
     section = config.section("goods")
     result: Dict[str, GoodsType] = {}
     for item in section.goods_types:
@@ -36,4 +39,5 @@ def load_goods_types(config: ConfigManager) -> Dict[str, GoodsType]:
             bonus_ceiling=item.bonus_ceiling,
         )
         result[gt.name] = gt
+    GoodsType.types = result
     return result

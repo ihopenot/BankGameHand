@@ -1,0 +1,33 @@
+# 游戏初始化配置（集成测试用）
+total_rounds: 20
+
+companies:
+  - factory_type: "硅矿场"
+    count: 1
+    initial_cash: 100000
+  - factory_type: "芯片工厂"
+    count: 1
+    initial_cash: 200000
+  - factory_type: "手机工厂"
+    count: 1
+    initial_cash: 150000
+  - factory_type: "棉花农场"
+    count: 1
+    initial_cash: 80000
+  - factory_type: "纺织厂"
+    count: 1
+    initial_cash: 120000
+  - factory_type: "服装厂"
+    count: 1
+    initial_cash: 100000
+  - factory_type: "麦田"
+    count: 1
+    initial_cash: 60000
+  - factory_type: "面粉厂"
+    count: 1
+    initial_cash: 80000
+  - factory_type: "食品厂"
+    count: 1
+    initial_cash: 90000
+
+folk_initial_cash: 500000

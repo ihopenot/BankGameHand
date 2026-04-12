@@ -1,0 +1,38 @@
+# 游戏初始化配置
+total_rounds: 20
+
+# 每种工厂类型对应的公司生成参数
+companies:
+  # 电子产业链
+  - factory_type: "硅矿场"
+    count: 2
+    initial_cash: 100000
+  - factory_type: "芯片工厂"
+    count: 2
+    initial_cash: 200000
+  - factory_type: "手机工厂"
+    count: 2
+    initial_cash: 150000
+  # 纺织产业链
+  - factory_type: "棉花农场"
+    count: 2
+    initial_cash: 80000
+  - factory_type: "纺织厂"
+    count: 2
+    initial_cash: 120000
+  - factory_type: "服装厂"
+    count: 2
+    initial_cash: 100000
+  # 食品产业链
+  - factory_type: "麦田"
+    count: 3
+    initial_cash: 60000
+  - factory_type: "面粉厂"
+    count: 2
+    initial_cash: 80000
+  - factory_type: "食品厂"
+    count: 2
+    initial_cash: 90000
+
+# 居民初始现金
+folk_initial_cash: 500000

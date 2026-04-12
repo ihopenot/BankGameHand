@@ -23,30 +23,38 @@ INTEGRATION_CONFIG_DIR = str(Path(__file__).parent / "config_integration")
 
 
 class _GameForTest(Game):
-    """可测试的 Game 子类，stub 掉未实现的 service 和 phase。"""
+    """可测试的 Game 子类，使用集成测试配置。"""
 
     def __init__(self) -> None:
-        super().__init__()
-        self.economy_service = EconomyService(self)
-        # 其他 service 尚未实现，用 MagicMock 代替
-        self.company_service = MagicMock()
-        self.market_service = MagicMock()
-        self.folk_service = MagicMock()
-
-    def player_act(self) -> None:
-        """跳过玩家交互。"""
-        pass
+        super().__init__(config_path=INTEGRATION_CONFIG_DIR)
 
 
 class TestGameLoopIntegration:
     def setup_method(self) -> None:
-        ConfigManager().load(INTEGRATION_CONFIG_DIR)
+        ConfigManager._instance = None
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        LedgerComponent.components.clear()
+        StorageComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
+
+    def teardown_method(self) -> None:
+        ConfigManager._instance = None
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        LedgerComponent.components.clear()
+        StorageComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
 
     def test_game_loop_runs_to_completion(self):
         """game_loop 正常运行到 game_end 终止"""
         game = _GameForTest()
         game.game_loop()
-        assert game.round == 21
+        assert game.round == 20
 
     def test_economy_index_updated_each_round(self):
         """每轮 update_phase 后 economy_index 被更新"""
@@ -62,7 +70,7 @@ class TestGameLoopIntegration:
         game.update_phase = tracking_update
         game.game_loop()
 
-        assert len(indices) == 21
+        assert len(indices) == 20
         for idx in indices:
             assert isinstance(idx, int)
             assert -10000 <= idx <= 10000
@@ -72,9 +80,9 @@ class TestGameLoopIntegration:
         game = _GameForTest()
         game.game_loop()
 
-        # 创建独立模型，逐轮计算到第 21 轮（模拟相同的 RNG 状态推进）
+        # 创建独立模型，逐轮计算到第 20 轮（模拟相同的 RNG 状态推进）
         verify_model = DualCycleModel()
-        for t in range(1, 22):
+        for t in range(1, 21):
             verify_value = verify_model.calculate(t)
 
         assert game.economy_service.economy_index == verify_value
@@ -85,7 +93,7 @@ class TestGameLoopIntegration:
         game.game_loop()
 
         state = game.economy_service.model.get_state()
-        assert state["last_t"] == 21
+        assert state["last_t"] == 20
 
     def test_economy_index_not_all_same(self):
         """21 轮中 economy_index 不应全部相同（正弦波 + 噪声）"""
@@ -111,7 +119,11 @@ class TestGameLoopIntegration:
         state1 = game1.economy_service.model.get_state()
 
         # 重新 load 配置，创建新 game
-        ConfigManager().load(INTEGRATION_CONFIG_DIR)
+        ConfigManager._instance = None
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        LedgerComponent.components.clear()
+        StorageComponent.components.clear()
         game2 = _GameForTest()
         game2.game_loop()
         idx2 = game2.economy_service.economy_index
@@ -128,11 +140,17 @@ class TestProductorServiceIntegration:
         ProductorComponent.components.clear()
         ProductorComponent.max_tech.clear()
         StorageComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
 
     def teardown_method(self) -> None:
         ProductorComponent.components.clear()
         ProductorComponent.max_tech.clear()
         StorageComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
 
     def test_update_phase_reflects_highest_tech(self) -> None:
         """多个 Entity 拥有不同 tech_values，update_phase 后 max_tech 反映最高值。"""
@@ -152,7 +170,7 @@ class TestProductorServiceIntegration:
         p2.tech_values[recipe] = 200
         p2.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
 
-        game = Game()
+        game = MagicMock()
         game.economy_service = MagicMock()
         game.company_service = MagicMock()
         game.market_service = MagicMock()
@@ -178,11 +196,7 @@ class TestProductorServiceIntegration:
             p.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
             entities.append(e)
 
-        game = Game()
-        game.economy_service = MagicMock()
-        game.company_service = MagicMock()
-        game.market_service = MagicMock()
-        game.folk_service = MagicMock()
+        game = MagicMock()
         service = ProductorService(game)
 
         # 先更新 max_tech，再生产
@@ -217,11 +231,7 @@ class TestProductorServiceIntegration:
         # destroy e2
         e2.destroy()
 
-        game = Game()
-        game.economy_service = MagicMock()
-        game.company_service = MagicMock()
-        game.market_service = MagicMock()
-        game.folk_service = MagicMock()
+        game = MagicMock()
         service = ProductorService(game)
         service.update_phase()
 
@@ -238,12 +248,18 @@ class TestMarketTradingIntegration:
         ProductorComponent.max_tech.clear()
         StorageComponent.components.clear()
         LedgerComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
 
     def teardown_method(self) -> None:
         ProductorComponent.components.clear()
         ProductorComponent.max_tech.clear()
         StorageComponent.components.clear()
         LedgerComponent.components.clear()
+        GoodsType.types.clear()
+        Recipe.recipes.clear()
+        FactoryType.factory_types.clear()
 
     @staticmethod
     def _make_goods() -> tuple[GoodsType, GoodsType]:
