@@ -35,3 +35,8 @@ banks:
     initial_cash: 1000000
 
 folk_initial_cash: 500000
+
+bankruptcy:
+  liquidation_factory_rate: 0.5
+  min_producers_per_goods: 2
+  new_company_initial_cash: 100000

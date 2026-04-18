@@ -139,6 +139,9 @@ class Game:
 
     def settlement_phase(self) -> None:
         self.ledger_service.settle_all()
+        self.company_service.process_bankruptcies()
+        self.company_service.replenish_market()
+        self.companies = list(self.company_service.companies.values())
 
     def act_phase(self) -> None:
         self.decision_service.act_phase(self.companies)

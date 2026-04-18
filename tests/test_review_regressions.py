@@ -22,6 +22,7 @@ from system.productor_service import ProductorService
 @pytest.fixture(autouse=True)
 def clear_component_state() -> None:
     ConfigManager._instance = None
+    ConfigManager().load()
     ProductorComponent.components.clear()
     ProductorComponent.max_tech.clear()
     StorageComponent.components.clear()

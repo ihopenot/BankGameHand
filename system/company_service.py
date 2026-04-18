@@ -5,6 +5,7 @@ from typing import Dict, List
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
+from core.config import ConfigManager
 from core.types import Loan, LoanType, RepaymentType
 from entity.company.company import Company
 from entity.factory import Factory, FactoryType
@@ -13,8 +14,24 @@ from system.market_service import BuyIntent, MarketService, SellOrder, TradeReco
 
 
 class CompanyService:
+
+    # 清算偿还优先级：数值越小越优先
+    _LIQUIDATION_PRIORITY = {
+        LoanType.TRADE_PAYABLE: 0,
+        LoanType.DEPOSIT: 1,
+        LoanType.INTERBANK: 2,
+        LoanType.CORPORATE_LOAN: 3,
+        LoanType.BOND: 4,
+    }
+
     def __init__(self) -> None:
         self.companies: Dict[str, Company] = {}
+
+        config = ConfigManager()
+        bankruptcy_cfg = config.section("game").bankruptcy
+        self._liquidation_factory_rate: float = bankruptcy_cfg.liquidation_factory_rate
+        self._min_producers: int = bankruptcy_cfg.min_producers_per_goods
+        self._new_company_cash: int = bankruptcy_cfg.new_company_initial_cash
 
     def create_company(
         self,
@@ -135,3 +152,105 @@ class CompanyService:
                 )
                 seller_ledger.receivables.append(loan)
                 buyer_ledger.payables.append(loan)
+
+    # ── 破产清算 ──
+
+    def process_bankruptcies(self) -> None:
+        """遍历所有破产标记的 LedgerComponent，依次执行清算。"""
+        bankrupt_components: List[LedgerComponent] = [
+            lc for lc in LedgerComponent.components if lc.is_bankrupt
+        ]
+
+        for ledger in bankrupt_components:
+            self._liquidate(ledger)
+
+        # 移除已销毁的公司
+        destroyed = [
+            name for name, c in self.companies.items()
+            if c.get_component(LedgerComponent) is None
+        ]
+        for name in destroyed:
+            del self.companies[name]
+
+    def _liquidate(self, ledger: LedgerComponent) -> None:
+        """对单家破产公司执行清算。"""
+        entity = ledger.outer
+
+        # 1. 计算清算所得 = 工厂造价 × 50% + 现有现金
+        proceeds = ledger.cash
+        pc: ProductorComponent | None = entity.get_component(ProductorComponent)
+        if pc is not None:
+            for ft, factories in pc.factories.items():
+                for factory in factories:
+                    proceeds += ft.build_cost // 2
+
+        # 2. 库存直接清空（不计入清算所得）
+        storage: StorageComponent | None = entity.get_component(StorageComponent)
+        if storage is not None:
+            storage.inventory.clear()
+
+        # 3. 按优先级偿还债务
+        remaining_proceeds = proceeds
+        payables_by_priority = sorted(
+            list(ledger.payables),
+            key=lambda loan: self._LIQUIDATION_PRIORITY.get(loan.loan_type, 99),
+        )
+
+        for loan in payables_by_priority:
+            if remaining_proceeds <= 0:
+                break
+            creditor_ledger: LedgerComponent = loan.creditor.get_component(LedgerComponent)
+            repay_amount = min(loan.remaining, remaining_proceeds)
+            creditor_ledger.cash += repay_amount
+            remaining_proceeds -= repay_amount
+
+        # 4. 核销破产公司的债务（payables）
+        for loan in list(ledger.payables):
+            creditor_ledger: LedgerComponent = loan.creditor.get_component(LedgerComponent)
+            creditor_ledger.write_off(loan)
+
+        # 5. 核销破产公司的应收款（receivables）— 债务人不再需要偿还
+        for loan in list(ledger.receivables):
+            debtor_ledger: LedgerComponent = loan.debtor.get_component(LedgerComponent)
+            debtor_ledger.write_off(loan)
+
+        # 6. 销毁公司实体
+        entity.destroy()
+
+    # ── 市场补充 ──
+
+    def replenish_market(self) -> None:
+        """检查每种商品的存活生产者数量，低于阈值时创建新公司。"""
+        # 统计每种 GoodsType 的存活生产者数量和对应 FactoryType
+        producer_count: Dict[GoodsType, int] = {}
+        goods_to_factory_type: Dict[GoodsType, FactoryType] = {}
+
+        for pc in ProductorComponent.components:
+            for ft, factories in pc.factories.items():
+                gt = ft.recipe.output_goods_type
+                built = sum(1 for f in factories if f.is_built)
+                if built > 0:
+                    producer_count[gt] = producer_count.get(gt, 0) + 1
+                    goods_to_factory_type[gt] = ft
+
+        # 补充所有已知的 FactoryType（可能已无存活生产者）
+        for ft in FactoryType.factory_types.values():
+            gt = ft.recipe.output_goods_type
+            if gt not in producer_count:
+                producer_count[gt] = 0
+            if gt not in goods_to_factory_type:
+                goods_to_factory_type[gt] = ft
+
+        # 为不足阈值的商品创建新公司
+        company_idx = len(self.companies)
+        for gt, count in producer_count.items():
+            while count < self._min_producers:
+                ft = goods_to_factory_type[gt]
+                name = f"gov_company_{company_idx}"
+                self.create_company(
+                    name=name,
+                    factory_type=ft,
+                    initial_cash=self._new_company_cash,
+                )
+                company_idx += 1
+                count += 1

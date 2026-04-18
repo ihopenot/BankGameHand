@@ -43,3 +43,9 @@ banks:
 
 # 居民初始现金
 folk_initial_cash: 500000
+
+# 破产清算与市场补充
+bankruptcy:
+  liquidation_factory_rate: 0.5    # 工厂变卖折价率（造价 × 此值）
+  min_producers_per_goods: 2       # 每种商品最低存活生产者数量
+  new_company_initial_cash: 100000 # 政府新建公司的启动资金

@@ -18,6 +18,7 @@ class LedgerComponent(BaseComponent):
         self.receivables: List[Loan] = []
         self.payables: List[Loan] = []
         self.bills: List[LoanBill] = []
+        self.is_bankrupt: bool = False
 
     # ── 查询 ──
 
@@ -86,6 +87,7 @@ class LedgerComponent(BaseComponent):
             if loan.remaining <= 0:
                 self._remove_loan(loan)
 
+        self.is_bankrupt = any(b.total_paid < b.total_due for b in self.bills)
         return self.bills
 
     def _remove_loan(self, loan: Loan) -> None:
