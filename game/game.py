@@ -9,6 +9,7 @@ from entity.folk import Folk
 from entity.goods import GoodsType, load_goods_types
 from core.types import RATE_SCALE, Rate
 from system.company_service import CompanyService
+from system.decision_service import DecisionService
 from system.economy_service import EconomyService
 from system.folk_service import FolkService
 from system.ledger_service import LedgerService
@@ -42,6 +43,7 @@ class Game:
         self.productor_service = ProductorService(self)
         self.ledger_service = LedgerService()
         self.player_service = PlayerService(self)
+        self.decision_service = DecisionService()
 
         # 业务逻辑初始化
         self.init_game()
@@ -97,10 +99,9 @@ class Game:
         self.company_service.sell_phase(self.market_service)
 
     def buy_phase(self) -> None:
-        # economy_index 是 Rate 类型（10000 = 100%），转为比率供 FolkService 使用
         economy_index = self.economy_service.economy_index / RATE_SCALE
         self.folk_service.buy_phase(self.market_service, economy_index)
-        buy_intents = self.company_service.buy_phase(self.market_service)
+        buy_intents = self.company_service.buy_phase(self.market_service, self.decision_service)
         trades = self.market_service.match(buy_intents)
         self.company_service.settle_trades(trades)
 
@@ -108,7 +109,7 @@ class Game:
         self.productor_service.product_phase()
 
     def plan_phase(self) -> None:
-        pass  # 跳过：当前无公司 AI 决策
+        self.decision_service.plan_phase(self.companies)
 
     def player_act(self) -> None:
         self.player_service.player_act_phase()
@@ -117,4 +118,4 @@ class Game:
         self.ledger_service.settle_all()
 
     def act_phase(self) -> None:
-        pass  # 跳过：当前无公司后决策
+        self.decision_service.act_phase(self.companies)

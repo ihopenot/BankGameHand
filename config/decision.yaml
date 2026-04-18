@@ -1,0 +1,31 @@
+# 企业决策公式系数配置
+
+# ── 决策一：产品定价 ──
+pricing:
+  base_profit_margin: 0.2       # 基础利润率
+  profit_focus_coeff: 0.5       # 利润追求系数（影响目标利润率）
+  base_raise_rate: 0.1          # 基础涨幅（库存售罄时）
+  risk_raise_coeff: 0.5         # 风险系数（影响涨幅）
+  base_cut_rate: 0.1            # 基础降幅（库存剩余时）
+  concession_coeff: 0.5         # 让利系数（影响降幅）
+  noise_coeff: 0.05             # 噪声基础幅度（实际幅度 = noise_coeff / 商业洞察力）
+
+# ── 投资决策 ──
+investment:
+  investment_threshold: 0.6     # 投资意愿阈值（超过才触发扩产）
+  perception_noise_coeff: 0.3   # 感知噪声系数（洞察力低时偏差大）
+  reserve_coeff: 2.0            # 保留金系数（保守倍数，见保留金公式）
+
+# ── 采购偏好 ──
+purchase:
+  brand_weight_coeff: 0.5       # 品牌权重系数（w_品牌 = 营销意识 * brand_weight_coeff）
+
+# ── 品牌投入 ──
+brand:
+  base_ratio: 0.05              # 品牌投入基础比例
+  marketing_coeff: 1.0          # 营销系数（影响品牌投入比例）
+
+# ── 科技投入 ──
+tech:
+  base_ratio: 0.05              # 科技投入基础比例
+  tech_coeff: 1.0               # 科技系数（影响科技投入比例）

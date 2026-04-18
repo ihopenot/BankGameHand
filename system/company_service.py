@@ -48,7 +48,7 @@ class CompanyService:
                     order = SellOrder(seller=company, batch=batch, price=price)
                     market.add_sell_order(order)
 
-    def buy_phase(self, market: MarketService) -> List[BuyIntent]:
+    def buy_phase(self, market: MarketService, decision_service=None) -> List[BuyIntent]:
         """遍历所有公司，计算原料需求并生成 BuyIntent 列表。"""
         intents: List[BuyIntent] = []
         for company in self.companies.values():
@@ -56,6 +56,12 @@ class CompanyService:
             storage = company.get_component(StorageComponent)
             if pc is None or storage is None:
                 continue
+
+            # 决策四：采购偏好排序
+            if decision_service is not None:
+                sort_fn = decision_service.make_purchase_sort_key(company)
+            else:
+                sort_fn = lambda o: o.batch.quality / o.price if o.price > 0 else float("inf")
 
             # 汇总各原料的总需求
             demand_map: Dict[GoodsType, int] = {}
@@ -81,7 +87,7 @@ class CompanyService:
                     buyer=company,
                     goods_type=gt,
                     quantity=net_demand,
-                    sort_key=lambda o: o.batch.quality / o.price if o.price > 0 else float("inf"),
+                    sort_key=sort_fn,
                 )
                 intents.append(intent)
 

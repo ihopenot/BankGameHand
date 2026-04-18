@@ -5,6 +5,7 @@ import pytest
 
 from core.types import RATE_SCALE
 
+from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -35,6 +36,7 @@ def _reset_components():
     """每个测试前清空全局组件列表。"""
     ProductorComponent.components.clear()
     ProductorComponent.max_tech.clear()
+    DecisionComponent.components.clear()
     LedgerComponent.components.clear()
     StorageComponent.components.clear()
     GoodsType.types.clear()
@@ -43,6 +45,7 @@ def _reset_components():
     yield
     ProductorComponent.components.clear()
     ProductorComponent.max_tech.clear()
+    DecisionComponent.components.clear()
     LedgerComponent.components.clear()
     StorageComponent.components.clear()
     GoodsType.types.clear()
