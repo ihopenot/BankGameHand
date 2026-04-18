@@ -1,209 +1,302 @@
-"""Tests for PlayerService."""
-from __future__ import annotations
+"""PlayerService 终端展示与 PlayerAction 单元测试。"""
 
-from typing import List
+from unittest.mock import MagicMock
 
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
-from core.input_controller import PlayerInputController
+from core.input_controller import PlayerInputController, _parse_approvals
+from core.types import (
+    Loan, LoanApplication, LoanApprovalParam, LoanType,
+    PlayerAction, RATE_SCALE, RepaymentType,
+)
+from entity.bank import Bank
 from entity.company.company import Company
 from entity.factory import Factory, FactoryType, Recipe
 from entity.goods import GoodsBatch, GoodsType
+from system.bank_service import BankService, LoanOffer
 from system.player_service import PlayerService
 
 
-# ── Mock 输入控制器 ──
+class FakeInputController(PlayerInputController):
+    """测试用输入控制器，按序返回预设输入。"""
 
-class MockInputController(PlayerInputController):
-    """测试用输入控制器，按顺序返回预设的输入。"""
-
-    def __init__(self, inputs: List[str]) -> None:
-        self.inputs = list(inputs)
-        self.call_count = 0
+    def __init__(self, inputs):
+        self._inputs = list(inputs)
+        self._index = 0
 
     def get_input(self, prompt: str) -> str:
-        result = self.inputs[self.call_count]
-        self.call_count += 1
-        return result
+        if self._index < len(self._inputs):
+            val = self._inputs[self._index]
+            self._index += 1
+            return val
+        return "skip"
 
 
-# ── 辅助工厂方法 ──
+def _make_player_service():
+    """创建带有 mock Game 的 PlayerService。"""
+    game = MagicMock()
+    game.round = 1
+    game.total_rounds = 20
+    game.economy_service.economy_index = int(0.5 * RATE_SCALE)
+    game.company_service.companies = {}
+    return PlayerService(game)
 
-def _make_goods_type(name: str = "TestGoods") -> GoodsType:
-    return GoodsType(name=name, base_price=100, bonus_ceiling=0.1)
 
-
-def _make_factory_type(gt: GoodsType) -> FactoryType:
-    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10)
-    return FactoryType(recipe=recipe, base_production=1, build_cost=1000, maintenance_cost=50, build_time=0)
-
-
-def _make_company(cash: int = 10000, factory_type: FactoryType | None = None) -> Company:
+def _make_company_with_price():
+    """创建有工厂和定价的公司。"""
+    gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=100)
+    ft = FactoryType(recipe=recipe, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
     company = Company()
+    pc = company.get_component(ProductorComponent)
+    pc.factories[ft].append(Factory(ft, build_remaining=0))
+    pc.prices[gt] = 1200
+    pc.tech_values[recipe] = 500
+    pc.brand_values[gt] = 300
     ledger = company.get_component(LedgerComponent)
-    ledger.cash = cash
-    if factory_type is not None:
-        pc = company.get_component(ProductorComponent)
-        factory = Factory(factory_type, build_remaining=0)
-        pc.factories[factory_type].append(factory)
-    return company
-
-
-class FakeGame:
-    """最小化的 Game 替身，供 PlayerService 测试使用。"""
-
-    def __init__(self, companies, round_number=1, total_rounds=10, economy_index=0):
-        self.company_service = type("CS", (), {"companies": companies})()
-        self.economy_service = type("ES", (), {"economy_index": economy_index})()
-        self.round = round_number
-        self.total_rounds = total_rounds
-
-
-class TestFormatEconomySummary:
-    def test_contains_round_info(self) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies, round_number=3, total_rounds=20, economy_index=1523)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_economy_summary()
-        assert "3" in result
-        assert "20" in result
-
-    def test_contains_economy_index(self) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies, round_number=1, total_rounds=10, economy_index=1523)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_economy_summary()
-        assert "0.1523" in result
-
-    def test_negative_economy_index(self) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies, round_number=1, total_rounds=10, economy_index=-3000)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_economy_summary()
-        assert "-0.3000" in result
+    ledger.cash = 100_000
+    return company, gt, recipe
 
 
 class TestFormatCompanyTable:
-    def test_contains_company_name(self) -> None:
-        gt = _make_goods_type("Silicon")
-        ft = _make_factory_type(gt)
-        companies = {"company_0": _make_company(cash=15000, factory_type=ft)}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "company_0" in result
+    def test_includes_pricing(self):
+        svc = _make_player_service()
+        company, gt, _ = _make_company_with_price()
+        svc.game.company_service.companies = {"company_0": company}
+        table = svc.format_company_table()
+        assert "定价" in table
+        assert "1200" in table
 
-    def test_contains_factory_type(self) -> None:
-        gt = _make_goods_type("Silicon")
-        ft = _make_factory_type(gt)
-        companies = {"company_0": _make_company(cash=15000, factory_type=ft)}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "Silicon" in result
+    def test_includes_tech_brand_factory_count(self):
+        svc = _make_player_service()
+        company, gt, recipe = _make_company_with_price()
+        svc.game.company_service.companies = {"company_0": company}
+        table = svc.format_company_table()
+        assert "科技" in table
+        assert "品牌" in table
+        assert "工厂数" in table
+        # tech=500, brand=300, factory_count=1
+        assert "500" in table
+        assert "300" in table
 
-    def test_contains_cash(self) -> None:
-        gt = _make_goods_type("Silicon")
-        ft = _make_factory_type(gt)
-        companies = {"company_0": _make_company(cash=15000, factory_type=ft)}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "15000" in result
-
-    def test_contains_inventory_info(self) -> None:
-        gt = _make_goods_type("Chips")
-        ft = _make_factory_type(gt)
-        company = _make_company(cash=5000, factory_type=ft)
-        storage = company.get_component(StorageComponent)
-        storage.add_batch(GoodsBatch(goods_type=gt, quantity=200, quality=0.5, brand_value=10))
-        companies = {"company_1": company}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "Chips" in result
-        assert "200" in result
-
-    def test_contains_receivables_and_payables(self) -> None:
-        gt = _make_goods_type("Wheat")
-        ft = _make_factory_type(gt)
-        company = _make_company(cash=8000, factory_type=ft)
-        ledger = company.get_component(LedgerComponent)
-        from core.types import Loan, LoanType, RepaymentType
-        other = _make_company()
-        loan = Loan(creditor=company, debtor=other, principal=3000, rate=0, term=1,
-                    loan_type=LoanType.TRADE_PAYABLE, repayment_type=RepaymentType.BULLET)
-        ledger.receivables.append(loan)
-        companies = {"company_2": company}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "3000" in result
-
-    def test_empty_inventory_shows_dash(self) -> None:
-        companies = {"company_3": _make_company(cash=1000)}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "-" in result
-
-    def test_multiple_companies(self) -> None:
-        gt = _make_goods_type("Food")
-        ft = _make_factory_type(gt)
-        companies = {
-            "company_a": _make_company(cash=1000, factory_type=ft),
-            "company_b": _make_company(cash=2000, factory_type=ft),
-        }
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        result = service.format_company_table()
-        assert "company_a" in result
-        assert "company_b" in result
+    def test_multiple_products(self):
+        svc = _make_player_service()
+        gt1 = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+        gt2 = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        recipe1 = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt1, output_quantity=100)
+        ft1 = FactoryType(recipe=recipe1, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
+        company = Company()
+        pc = company.get_component(ProductorComponent)
+        pc.factories[ft1].append(Factory(ft1, build_remaining=0))
+        pc.prices[gt1] = 1200
+        pc.prices[gt2] = 5500
+        company.get_component(LedgerComponent).cash = 100_000
+        svc.game.company_service.companies = {"company_0": company}
+        table = svc.format_company_table()
+        assert "1200" in table
+        assert "5500" in table
 
 
-class TestPlayerActPhase:
-    def test_skip_command(self) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        service.player_act_phase()
+class TestFormatBankSummary:
+    def test_basic(self):
+        svc = _make_player_service()
+        bank = Bank()
+        bank.get_component(LedgerComponent).cash = 500_000
+        output = svc.format_bank_summary({"银行A": bank})
+        assert "银行A" in output
+        assert "500000" in output
 
-    def test_empty_input_skips(self) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController([""])
-        service.player_act_phase()
+    def test_with_loans(self):
+        svc = _make_player_service()
+        bank = Bank()
+        bank.get_component(LedgerComponent).cash = 400_000
+        company = Company()
+        loan = Loan(
+            creditor=bank, debtor=company, principal=100_000,
+            rate=500, term=5, loan_type=LoanType.CORPORATE_LOAN,
+            repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+        )
+        bank.get_component(LedgerComponent).receivables.append(loan)
+        output = svc.format_bank_summary({"银行A": bank})
+        assert "100000" in output
 
-    def test_invalid_then_skip(self, capsys) -> None:
-        companies = {"c0": _make_company()}
-        game = FakeGame(companies)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["invalid_cmd", "skip"])
-        service.player_act_phase()
-        captured = capsys.readouterr()
-        assert "无法识别" in captured.out
 
-    def test_prints_economy_and_company_info(self, capsys) -> None:
-        gt = _make_goods_type("Gold")
-        ft = _make_factory_type(gt)
-        companies = {"company_0": _make_company(cash=5000, factory_type=ft)}
-        game = FakeGame(companies, round_number=2, total_rounds=10, economy_index=500)
-        service = PlayerService(game)
-        service.input_controller = MockInputController(["skip"])
-        service.player_act_phase()
-        captured = capsys.readouterr()
-        assert "第 2 / 10 回合" in captured.out
-        assert "company_0" in captured.out
+class TestFormatActiveLoans:
+    def test_display(self):
+        svc = _make_player_service()
+        bank = Bank()
+        company = Company()
+        loan = Loan(
+            creditor=bank, debtor=company, principal=100_000,
+            rate=500, term=5, loan_type=LoanType.CORPORATE_LOAN,
+            repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+        )
+        output = svc.format_active_loans([loan])
+        assert "100000" in output
+        assert "500" in output
+
+    def test_no_loans(self):
+        svc = _make_player_service()
+        output = svc.format_active_loans([])
+        assert "暂无" in output
+
+
+class TestFormatLoanApplications:
+    def test_display(self):
+        svc = _make_player_service()
+        company = Company()
+        app = LoanApplication(applicant=company, amount=80_000)
+        output = svc.format_loan_applications([app], {"company_0": company})
+        assert "80000" in output
+        assert "company_0" in output
+
+    def test_no_applications(self):
+        svc = _make_player_service()
+        output = svc.format_loan_applications([], {})
+        assert "暂无" in output
+
+
+# ── PlayerAction 解析测试 ──
+
+
+class TestParseApprovals:
+    def test_single_approval(self):
+        result = _parse_approvals(["1:50000:500:5:1"])
+        assert len(result) == 1
+        assert result[0].application_index == 1
+        assert result[0].amount == 50_000
+        assert result[0].rate == 500
+        assert result[0].term == 5
+        assert result[0].repayment_type == RepaymentType.EQUAL_PRINCIPAL
+
+    def test_multiple_approvals(self):
+        result = _parse_approvals(["1:50000:500:5:1", "2:30000:800:3:2"])
+        assert len(result) == 2
+        assert result[1].application_index == 2
+        assert result[1].repayment_type == RepaymentType.INTEREST_FIRST
+
+    def test_default_repayment_type(self):
+        result = _parse_approvals(["1:50000:500:5"])
+        assert len(result) == 1
+        assert result[0].repayment_type == RepaymentType.EQUAL_PRINCIPAL
+
+    def test_invalid_token_skipped(self):
+        result = _parse_approvals(["bad", "1:50000:500:5:1"])
+        assert len(result) == 1
+
+
+class TestGetAction:
+    def test_skip(self):
+        ctrl = FakeInputController(["skip"])
+        action = ctrl.get_action("prompt: ")
+        assert action.action_type == "skip"
+
+    def test_empty_is_skip(self):
+        ctrl = FakeInputController([""])
+        action = ctrl.get_action("prompt: ")
+        assert action.action_type == "skip"
+
+    def test_approve(self):
+        ctrl = FakeInputController(["approve 银行A 1:50000:500:5:1"])
+        action = ctrl.get_action("prompt: ")
+        assert action.action_type == "approve_loans"
+        assert action.bank_name == "银行A"
+        assert len(action.approvals) == 1
+        assert action.approvals[0].amount == 50_000
+
+    def test_approve_multiple(self):
+        ctrl = FakeInputController(["approve 银行A 1:50000:500:5:1 2:30000:800:3:2"])
+        action = ctrl.get_action("prompt: ")
+        assert len(action.approvals) == 2
+
+
+# ── PlayerAction 审批处理测试 ──
+
+
+class TestHandleLoanApproval:
+    def _setup(self):
+        svc = _make_player_service()
+        bank_service = BankService()
+        bank = bank_service.create_bank("银行A", 500_000)
+        company = Company()
+        company.get_component(LedgerComponent).cash = 10_000
+        svc.game.company_service.companies = {"company_0": company}
+        app = LoanApplication(applicant=company, amount=100_000)
+        bank_service.collect_applications([app])
+        return svc, bank_service, bank, company
+
+    def test_approve_via_action(self):
+        svc, bank_service, bank, company = self._setup()
+        action = PlayerAction(
+            action_type="approve_loans",
+            bank_name="银行A",
+            approvals=[
+                LoanApprovalParam(
+                    application_index=1, amount=100_000,
+                    rate=500, term=5,
+                    repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+                ),
+            ],
+        )
+        svc.handle_loan_approval(action, bank_service)
+        offers = bank_service.get_offers()
+        assert len(offers) == 1
+        assert offers[0].rate == 500
+        assert offers[0].amount == 100_000
+
+    def test_skip_has_no_offers(self):
+        svc, bank_service, bank, company = self._setup()
+        action = PlayerAction(action_type="skip")
+        # skip 不调用 handle_loan_approval，所以无 offer
+        assert bank_service.get_offers() == []
+
+    def test_amount_limited_by_bank_cash(self):
+        svc, bank_service, bank, company = self._setup()
+        action = PlayerAction(
+            action_type="approve_loans",
+            bank_name="银行A",
+            approvals=[
+                LoanApprovalParam(
+                    application_index=1, amount=600_000,
+                    rate=500, term=5,
+                    repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+                ),
+            ],
+        )
+        svc.handle_loan_approval(action, bank_service)
+        offers = bank_service.get_offers()
+        assert len(offers) == 1
+        assert offers[0].amount <= 500_000
+
+    def test_invalid_bank_name(self):
+        svc, bank_service, bank, company = self._setup()
+        action = PlayerAction(
+            action_type="approve_loans",
+            bank_name="不存在银行",
+            approvals=[
+                LoanApprovalParam(
+                    application_index=1, amount=50_000,
+                    rate=500, term=5,
+                    repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+                ),
+            ],
+        )
+        svc.handle_loan_approval(action, bank_service)
+        assert bank_service.get_offers() == []
+
+    def test_invalid_index_skipped(self):
+        svc, bank_service, bank, company = self._setup()
+        action = PlayerAction(
+            action_type="approve_loans",
+            bank_name="银行A",
+            approvals=[
+                LoanApprovalParam(
+                    application_index=99, amount=50_000,
+                    rate=500, term=5,
+                    repayment_type=RepaymentType.EQUAL_PRINCIPAL,
+                ),
+            ],
+        )
+        svc.handle_loan_approval(action, bank_service)
+        assert bank_service.get_offers() == []

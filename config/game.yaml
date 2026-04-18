@@ -34,5 +34,12 @@ companies:
     count: 2
     initial_cash: 90000
 
+# 银行（玩家控制）
+banks:
+  - name: "银行A"
+    initial_cash: 2000000
+  - name: "银行B"
+    initial_cash: 2000000
+
 # 居民初始现金
 folk_initial_cash: 500000

@@ -388,3 +388,57 @@ class TestPurchasePreference:
         from system.market_service import SellOrder
         order = SellOrder(seller=Entity(), batch=batch, price=80)
         assert isinstance(sort_fn(order), float)
+
+
+class TestLoanNeed:
+    """plan_phase 后贷款需求计算。"""
+
+    def test_loan_need_when_budget_insufficient(self) -> None:
+        """计划总额 > 可用预算时，生成贷款申请。"""
+        random.seed(42)
+        _, _, ft = _make_factory_setup()
+        company = _make_company(risk_appetite=1.0, cash=10_000)
+        pc = company.get_component(ProductorComponent)
+        pc.factories[ft].append(Factory(ft, build_remaining=0))
+        dc = company.get_component(DecisionComponent)
+        dc.last_revenue = 100_000
+
+        svc = _service()
+        svc.plan_phase([company])
+        apps = svc.calc_loan_needs([company])
+        assert len(apps) == 1
+        assert apps[0].applicant is company
+        assert apps[0].amount > 0
+
+    def test_no_loan_need_when_budget_sufficient(self) -> None:
+        """可用预算 >= 计划总额时，不生成贷款申请。"""
+        random.seed(42)
+        _, _, ft = _make_factory_setup()
+        company = _make_company(risk_appetite=1.0, cash=500_000)
+        pc = company.get_component(ProductorComponent)
+        pc.factories[ft].append(Factory(ft, build_remaining=0))
+        dc = company.get_component(DecisionComponent)
+        dc.last_revenue = 100_000
+
+        svc = _service()
+        # First run plan_phase to get investment plans
+        svc.plan_phase([company])
+        apps = svc.calc_loan_needs([company])
+        assert len(apps) == 0
+
+    def test_loan_need_equals_shortfall(self) -> None:
+        """贷款需求 = 保留金额 + 计划总额 - 现金。"""
+        _, _, ft = _make_factory_setup()
+        company = _make_company(risk_appetite=1.0, cash=20_000)
+        pc = company.get_component(ProductorComponent)
+        pc.factories[ft].append(Factory(ft, build_remaining=0))
+        dc = company.get_component(DecisionComponent)
+        # Manually set plan to test exact calculation
+        dc.investment_plan = {"expansion": 50_000, "brand": 5_000, "tech": 5_000}
+
+        svc = _service()
+        # reserved = 3000 * (1 + 0*2) = 3000
+        # loan_need = 3000 + 60000 - 20000 = 43000
+        apps = svc.calc_loan_needs([company])
+        assert len(apps) == 1
+        assert apps[0].amount == 43_000

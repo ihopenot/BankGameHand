@@ -3,6 +3,8 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Callable, List, Optional
 
+from core.types import LoanApplication
+
 from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
@@ -186,6 +188,27 @@ class DecisionService:
         if not pc.factories:
             return None
         return min(pc.factories, key=lambda ft: ft.build_cost)
+
+    # ── 贷款需求计算 ──
+
+    def calc_loan_needs(self, companies: List[Company]) -> List[LoanApplication]:
+        """根据投资计划和保留金计算每个企业的贷款需求。
+
+        目标：现金 >= 保留金额 + 投资计划总额
+        贷款需求 = max(0, 保留金额 + 投资计划总额 - 现金)
+        """
+        applications: List[LoanApplication] = []
+        for company in companies:
+            dc = company.get_component(DecisionComponent)
+            ledger = company.get_component(LedgerComponent)
+            plan_total = sum(dc.investment_plan.values())
+            if plan_total == 0:
+                continue
+            reserved = self._calc_reserved_cash(company)
+            loan_need = reserved + plan_total - ledger.cash
+            if loan_need > 0:
+                applications.append(LoanApplication(applicant=company, amount=loan_need))
+        return applications
 
     # ── 执行阶段内部方法 ──
 

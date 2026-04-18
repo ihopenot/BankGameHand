@@ -148,3 +148,48 @@ class LoanBill:
         self.total_due = total_due
         self.total_paid = total_paid
         self.accrued_delta = accrued_delta
+
+
+class LoanApplication:
+    """企业贷款申请。"""
+
+    def __init__(self, applicant: Entity, amount: int) -> None:
+        self.applicant = applicant
+        self.amount = amount
+
+
+class LoanApprovalParam:
+    """单条贷款审批参数。"""
+
+    def __init__(
+        self,
+        application_index: int,
+        amount: int,
+        rate: int,
+        term: int,
+        repayment_type: RepaymentType,
+    ) -> None:
+        self.application_index = application_index
+        self.amount = amount
+        self.rate = rate
+        self.term = term
+        self.repayment_type = repayment_type
+
+
+class PlayerAction:
+    """玩家操作指令。
+
+    action_type:
+        "skip"          — 跳过回合
+        "approve_loans" — 批量审批贷款，approvals 列表包含各条审批参数
+    """
+
+    def __init__(
+        self,
+        action_type: str = "skip",
+        bank_name: str = "",
+        approvals: list | None = None,
+    ) -> None:
+        self.action_type = action_type
+        self.bank_name = bank_name
+        self.approvals: list[LoanApprovalParam] = approvals or []

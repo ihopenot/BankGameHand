@@ -8,6 +8,7 @@ from entity.factory import FactoryType, load_factory_types, load_recipes
 from entity.folk import Folk
 from entity.goods import GoodsType, load_goods_types
 from core.types import RATE_SCALE, Rate
+from system.bank_service import BankService
 from system.company_service import CompanyService
 from system.decision_service import DecisionService
 from system.economy_service import EconomyService
@@ -44,6 +45,7 @@ class Game:
         self.ledger_service = LedgerService()
         self.player_service = PlayerService(self)
         self.decision_service = DecisionService()
+        self.bank_service = BankService()
 
         # 业务逻辑初始化
         self.init_game()
@@ -74,6 +76,13 @@ class Game:
         self.folk_service.load_folks_from_config(folk_initial_cash)
         self.folks: List[Folk] = self.folk_service.folks
 
+        # 通过 BankService 创建银行
+        for item in game_cfg.banks:
+            self.bank_service.create_bank(
+                name=item.name,
+                initial_cash=item.initial_cash,
+            )
+
     def game_end(self) -> bool:
         return self.round >= self.total_rounds
 
@@ -84,7 +93,9 @@ class Game:
             self.buy_phase()
             self.product_phase()
             self.plan_phase()
+            self.loan_application_phase()
             self.player_act()
+            self.loan_acceptance_phase()
             self.settlement_phase()
             self.act_phase()
 
@@ -111,8 +122,20 @@ class Game:
     def plan_phase(self) -> None:
         self.decision_service.plan_phase(self.companies)
 
+    def loan_application_phase(self) -> None:
+        """贷款申请阶段：收集企业贷款申请。"""
+        self.bank_service.clear_applications()
+        applications = self.decision_service.calc_loan_needs(self.companies)
+        self.bank_service.collect_applications(applications)
+
     def player_act(self) -> None:
-        self.player_service.player_act_phase()
+        """玩家操作阶段：展示信息，获取 PlayerAction 处理贷款审批。"""
+        self.player_service.player_act_phase(self.bank_service)
+
+    def loan_acceptance_phase(self) -> None:
+        """贷款接受阶段：企业按利率排序接受贷款。"""
+        self.bank_service.accept_loans()
+        self.bank_service.clear_offers()
 
     def settlement_phase(self) -> None:
         self.ledger_service.settle_all()

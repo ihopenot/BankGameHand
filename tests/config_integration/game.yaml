@@ -30,4 +30,8 @@ companies:
     count: 1
     initial_cash: 90000
 
+banks:
+  - name: "测试银行A"
+    initial_cash: 1000000
+
 folk_initial_cash: 500000
