@@ -95,6 +95,40 @@ class PlayerService(Service):
 
         return table
 
+    def render_folk_table(self) -> Table:
+        table = Table(title="居民概览", show_lines=True)
+        table.add_column("群体", style="bold")
+        table.add_column("人口", justify="right")
+        table.add_column("现金", justify="right", style="green")
+        table.add_column("品质偏好", justify="right")
+        table.add_column("品牌偏好", justify="right")
+        table.add_column("价格偏好", justify="right")
+        table.add_column("库存")
+
+        folk_labels = [f"居民组{i+1}" for i in range(len(self.game.folks))]
+        for label, folk in zip(folk_labels, self.game.folks):
+            ledger = folk.get_component(LedgerComponent)
+            storage = folk.get_component(StorageComponent)
+
+            inv_parts: List[str] = []
+            if storage:
+                for gt, batches in storage.inventory.items():
+                    total_qty = sum(b.quantity for b in batches)
+                    if total_qty > 0:
+                        inv_parts.append(f"{gt.name} x{total_qty}")
+
+            table.add_row(
+                label,
+                str(folk.population),
+                str(ledger.cash),
+                f"{folk.w_quality:.2f}",
+                f"{folk.w_brand:.2f}",
+                f"{folk.w_price:.2f}",
+                ", ".join(inv_parts) or "-",
+            )
+
+        return table
+
     def render_bank_summary(self, banks: Dict[str, Bank]) -> Table:
         table = Table(title="银行概览", show_lines=True)
         table.add_column("银行名", style="bold")
@@ -231,6 +265,7 @@ class PlayerService(Service):
         """执行玩家操作阶段：展示数据，获取一次 PlayerAction 并处理。"""
         console.print(self.render_economy_summary())
         console.print(self.render_company_table())
+        console.print(self.render_folk_table())
         console.print(self.render_bank_summary(bank_service.banks))
 
         applications = bank_service.get_applications()
