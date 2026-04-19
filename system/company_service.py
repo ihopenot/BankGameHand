@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.config import ConfigManager
@@ -56,6 +57,7 @@ class CompanyService:
         for company in self.companies.values():
             storage = company.get_component(StorageComponent)
             pc = company.get_component(ProductorComponent)
+            mc = company.get_component(MetricComponent)
             if storage is None or pc is None:
                 continue
             for goods_type, batches in storage.inventory.items():
@@ -65,6 +67,10 @@ class CompanyService:
                         continue
                     order = SellOrder(seller=company, batch=batch, price=price)
                     market.add_sell_order(order)
+                    if mc is not None:
+                        mc.last_sell_orders[goods_type] = (
+                            mc.last_sell_orders.get(goods_type, 0) + batch.quantity
+                        )
 
     def buy_phase(self, market: MarketService, decision_service=None) -> List[BuyIntent]:
         """遍历所有公司，计算原料需求并生成 BuyIntent 列表。"""
@@ -154,24 +160,32 @@ class CompanyService:
                 seller_ledger.receivables.append(loan)
                 buyer_ledger.payables.append(loan)
 
+            # 3. 更新卖方指标
+            seller_mc = seller.get_component(MetricComponent)
+            if seller_mc is not None:
+                seller_mc.last_sold_quantities[trade.goods_type] = (
+                    seller_mc.last_sold_quantities.get(trade.goods_type, 0) + transferred.quantity
+                )
+                seller_mc.last_revenue += total_cost
+
         self._update_avg_buy_prices(trades)
 
     @staticmethod
     def _update_avg_buy_prices(trades: List[TradeRecord]) -> None:
-        """按成交量加权更新每个买方的 DecisionComponent.last_avg_buy_prices。"""
+        """按成交量加权更新每个买方的 MetricComponent.last_avg_buy_prices。"""
         from collections import defaultdict
         buyer_totals: dict = defaultdict(list)
         for trade in trades:
-            dc = trade.buyer.get_component(DecisionComponent)
-            if dc is not None:
+            mc = trade.buyer.get_component(MetricComponent)
+            if mc is not None:
                 buyer_totals[(trade.buyer, trade.goods_type)].append(trade)
 
         for (buyer, goods_type), buyer_trades in buyer_totals.items():
             total_qty = sum(t.quantity for t in buyer_trades)
             if total_qty > 0:
-                dc = buyer.get_component(DecisionComponent)
+                mc = buyer.get_component(MetricComponent)
                 weighted_price = sum(t.price * t.quantity for t in buyer_trades)
-                dc.last_avg_buy_prices[goods_type] = weighted_price / total_qty
+                mc.last_avg_buy_prices[goods_type] = weighted_price / total_qty
 
     # ── 破产清算 ──
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.types import LoanType
@@ -182,3 +183,28 @@ class TestCreditPayment:
         trade_payables = buyer_ledger.filter_loans(LoanType.TRADE_PAYABLE)
         total_payable = sum(loan.remaining for loan in trade_payables)
         assert total_payable == 10000  # Full amount on credit
+
+    def test_settle_trades_updates_seller_metrics(self) -> None:
+        """企业间交易后，卖方 MetricComponent 记录成交量和收入。"""
+        gt = _gt(base_price=100)
+        gt_out = _gt("chip", 500)
+        seller = _setup_seller(gt, quantity=200)
+        buyer = _setup_buyer(gt, gt_out, cash=100000)
+        seller.get_component(LedgerComponent).cash = 0
+
+        market = MarketService()
+        sell_svc = CompanyService()
+        sell_svc.companies = {"seller": seller}
+        sell_svc.sell_phase(market)
+
+        buy_svc = CompanyService()
+        buy_svc.companies = {"buyer": buyer}
+        intents = buy_svc.buy_phase(market)
+        trades = market.match(intents)
+
+        buy_svc.settle_trades(trades)
+
+        mc = seller.get_component(MetricComponent)
+        total_sold = sum(t.quantity for t in trades if t.seller is seller)
+        assert mc.last_sold_quantities[gt] == total_sold
+        assert mc.last_revenue == total_sold * 100

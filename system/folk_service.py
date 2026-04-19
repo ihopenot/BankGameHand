@@ -4,6 +4,7 @@ import math
 from typing import Dict, List
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
 from entity.folk import Folk
 from entity.goods import GoodsType
@@ -54,6 +55,7 @@ class FolkService:
             return 0.0
         k = 5.0
         x = k * (avg_price - price) / avg_price
+        x = max(-500, min(500, x))  # 防止 math.exp 溢出
         return 2.0 / (1.0 + math.exp(-x)) - 1.0
 
     @staticmethod
@@ -110,7 +112,8 @@ class FolkService:
         remaining_demand = demand
 
         while remaining_demand > 0 and orders:
-            avg_price = folk.last_avg_buy_prices.get(goods_type, 0.0)
+            folk_mc = folk.get_component(MetricComponent)
+            avg_price = folk_mc.last_avg_buy_prices.get(goods_type, 0.0) if folk_mc else 0.0
             if avg_price <= 0:
                 avg_price = goods_type.base_price
             scores = [self._score_order(o, folk.w_quality, folk.w_brand, folk.w_price, avg_price) for o in orders]
@@ -156,7 +159,7 @@ class FolkService:
         return trades
 
     def settle_trades(self, trades: List[TradeRecord]) -> None:
-        """处理成交记录：商品转移 + 现金支付（居民无赊账）。"""
+        """处理成交记录：商品转移 + 现金支付（居民无赊账）+ 更新卖方指标。"""
         for trade in trades:
             seller = trade.seller
             buyer = trade.buyer
@@ -174,6 +177,14 @@ class FolkService:
             seller_ledger = seller.get_component(LedgerComponent)
             buyer_ledger.cash -= total_cost
             seller_ledger.cash += total_cost
+
+            # 更新卖方指标
+            seller_mc = seller.get_component(MetricComponent)
+            if seller_mc is not None:
+                seller_mc.last_sold_quantities[trade.goods_type] = (
+                    seller_mc.last_sold_quantities.get(trade.goods_type, 0) + trade.quantity
+                )
+                seller_mc.last_revenue += trade.total
 
     def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
         """居民采购阶段：计算需求 → 加权分配 → 结算 → 更新购买均价。"""
@@ -201,4 +212,6 @@ class FolkService:
             total_qty = sum(t.quantity for t in folk_trades)
             if total_qty > 0:
                 weighted_price = sum(t.price * t.quantity for t in folk_trades)
-                folk.last_avg_buy_prices[goods_type] = weighted_price / total_qty
+                folk_mc = folk.get_component(MetricComponent)
+                if folk_mc is not None:
+                    folk_mc.last_avg_buy_prices[goods_type] = weighted_price / total_qty

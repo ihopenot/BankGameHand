@@ -8,6 +8,7 @@ from core.types import LoanApplication
 
 from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from core.config import ConfigManager
 from entity.factory import Factory, FactoryType
@@ -43,6 +44,7 @@ class DecisionService:
             dc = company.get_component(DecisionComponent)
             pc = company.get_component(ProductorComponent)
             ledger = company.get_component(LedgerComponent)
+            mc = company.get_component(MetricComponent)
             plan = dc.investment_plan
             plan_total = sum(plan.values())
             if plan_total == 0:
@@ -65,18 +67,24 @@ class DecisionService:
                 factory = Factory(ft, build_remaining=ft.build_time)
                 pc.factories[ft].append(factory)
                 actual_spent += ft.build_cost
+                if mc is not None:
+                    mc.cumulative_expansion_spend += ft.build_cost
 
             # 品牌投入
             brand_budget = alloc.get("brand", 0)
             if brand_budget > 0:
                 self._apply_brand(company, brand_budget)
                 actual_spent += brand_budget
+                if mc is not None:
+                    mc.cumulative_brand_spend += brand_budget
 
             # 科技投入
             tech_budget = alloc.get("tech", 0)
             if tech_budget > 0:
                 self._apply_tech(company, tech_budget)
                 actual_spent += tech_budget
+                if mc is not None:
+                    mc.cumulative_tech_spend += tech_budget
 
             ledger.cash -= actual_spent
             pc.update_max_tech()
@@ -87,11 +95,12 @@ class DecisionService:
         """根据上轮销售情况调整标价。"""
         dc = company.get_component(DecisionComponent)
         pc = company.get_component(ProductorComponent)
+        mc = company.get_component(MetricComponent)
         cfg = self.config.pricing
 
         for gt, old_price in list(pc.prices.items()):
-            listed = dc.last_sell_orders.get(gt, 0)
-            sold = dc.last_sold_quantities.get(gt, 0)
+            listed = mc.last_sell_orders.get(gt, 0)
+            sold = mc.last_sold_quantities.get(gt, 0)
 
             if listed == 0:
                 continue
@@ -119,6 +128,7 @@ class DecisionService:
             return 0.0
         k = 5.0
         x = k * (avg_price - price) / avg_price
+        x = max(-500, min(500, x))  # 防止 math.exp 溢出
         return 2.0 / (1.0 + math.exp(-x)) - 1.0
 
     def calculate_supplier_score(
@@ -141,9 +151,10 @@ class DecisionService:
     def make_purchase_sort_key(self, company: Company) -> Callable[[SellOrder], float]:
         """生成带 CEO 特质的采购排序函数。"""
         dc = company.get_component(DecisionComponent)
+        mc = company.get_component(MetricComponent)
         awareness = dc.marketing_awareness
         price_sens = dc.price_sensitivity
-        avg_prices = dc.last_avg_buy_prices
+        avg_prices = mc.last_avg_buy_prices
 
         def sort_key(order: SellOrder) -> float:
             gt = order.batch.goods_type
@@ -194,14 +205,16 @@ class DecisionService:
     def _plan_brand(self, company: Company) -> int:
         """计划品牌支出金额。"""
         dc = company.get_component(DecisionComponent)
+        mc = company.get_component(MetricComponent)
         cfg = self.config.brand
-        return int(dc.last_revenue * cfg.base_ratio * (1 + dc.marketing_awareness * cfg.marketing_coeff))
+        return int(mc.last_revenue * cfg.base_ratio * (1 + dc.marketing_awareness * cfg.marketing_coeff))
 
     def _plan_tech(self, company: Company) -> int:
         """计划科技支出金额。"""
         dc = company.get_component(DecisionComponent)
+        mc = company.get_component(MetricComponent)
         cfg = self.config.tech
-        return int(dc.last_revenue * cfg.base_ratio * (1 + dc.tech_focus * cfg.tech_coeff))
+        return int(mc.last_revenue * cfg.base_ratio * (1 + dc.tech_focus * cfg.tech_coeff))
 
     def _pick_factory_type(self, company: Company) -> Optional[FactoryType]:
         """选择最便宜的现有工厂类型用于扩产。"""

@@ -2,7 +2,9 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.config import ConfigManager
@@ -36,6 +38,8 @@ class TestGameLoopIntegration:
         ProductorComponent.max_tech.clear()
         LedgerComponent.components.clear()
         StorageComponent.components.clear()
+        DecisionComponent.components.clear()
+        MetricComponent.components.clear()
         GoodsType.types.clear()
         Recipe.recipes.clear()
         FactoryType.factory_types.clear()
@@ -46,6 +50,8 @@ class TestGameLoopIntegration:
         ProductorComponent.max_tech.clear()
         LedgerComponent.components.clear()
         StorageComponent.components.clear()
+        DecisionComponent.components.clear()
+        MetricComponent.components.clear()
         GoodsType.types.clear()
         Recipe.recipes.clear()
         FactoryType.factory_types.clear()
@@ -132,8 +138,33 @@ class TestGameLoopIntegration:
         assert idx1 == idx2
         assert state1 == state2
 
+    def test_price_and_investment_work(self):
+        """运行 2 轮后，价格应发生变化，且至少有一个公司有非零品牌或科技投资。"""
+        from component.metric_component import MetricComponent as MC
 
-class TestProductorServiceIntegration:
+        game = _GameForTest()
+        # 只运行 2 轮
+        game.total_rounds = 2
+        game.game_loop()
+
+        # 价格变化检测：至少有一个公司的价格不等于 base_price
+        any_price_changed = False
+        for company in game.companies:
+            pc = company.get_component(ProductorComponent)
+            for gt, price in pc.prices.items():
+                if price != gt.base_price:
+                    any_price_changed = True
+                    break
+        assert any_price_changed, "价格更新未生效：所有公司价格仍等于 base_price"
+
+        # 投资检测：至少有一个公司有非零品牌或科技累计投资
+        any_investment = False
+        for company in game.companies:
+            mc = company.get_component(MC)
+            if mc.cumulative_brand_spend > 0 or mc.cumulative_tech_spend > 0:
+                any_investment = True
+                break
+        assert any_investment, "投资未生效：所有公司品牌和科技累计投资为零"
     """ProductorService 集成测试：验证多公司场景下的生产流程端到端正确。"""
 
     def setup_method(self) -> None:

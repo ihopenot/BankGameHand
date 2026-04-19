@@ -62,21 +62,18 @@ class TestDecisionComponentInit:
             val = getattr(dc, attr)
             assert 0.0 <= val <= 1.0, f"{attr}={val} 超出 [0,1] 范围"
 
-    def test_has_sales_tracking(self) -> None:
-        """DecisionComponent 应追踪上轮销售情况。"""
+    def test_sales_tracking_moved_to_metric(self) -> None:
+        """销售追踪字段已迁移到 MetricComponent。"""
         entity = Entity()
         dc = entity.init_component(DecisionComponent)
-        assert hasattr(dc, "last_sell_orders")
-        assert hasattr(dc, "last_sold_quantities")
-        assert isinstance(dc.last_sell_orders, dict)
-        assert isinstance(dc.last_sold_quantities, dict)
+        assert not hasattr(dc, "last_sell_orders")
+        assert not hasattr(dc, "last_sold_quantities")
 
-    def test_has_revenue_tracking(self) -> None:
-        """DecisionComponent 应追踪营收。"""
+    def test_revenue_tracking_moved_to_metric(self) -> None:
+        """营收追踪字段已迁移到 MetricComponent。"""
         entity = Entity()
         dc = entity.init_component(DecisionComponent)
-        assert hasattr(dc, "last_revenue")
-        assert dc.last_revenue == 0
+        assert not hasattr(dc, "last_revenue")
 
     def test_has_investment_plan(self) -> None:
         """DecisionComponent 应有投资计划表。"""

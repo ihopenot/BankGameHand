@@ -20,3 +20,12 @@ def _ensure_config_loaded() -> None:
     config = ConfigManager()
     if not config._sections:
         config.load()
+
+
+@pytest.fixture(autouse=True)
+def _clear_component_registries() -> None:
+    """清理 BaseComponent 子类的 class-level components 列表，防止跨测试污染。"""
+    from component.base_component import BaseComponent
+    yield
+    for cls in BaseComponent.__subclasses__():
+        cls.components.clear()

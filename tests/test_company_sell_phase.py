@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.entity import Entity
@@ -147,3 +148,26 @@ class TestSellPhase:
 
         orders = market.get_sell_orders(gt)
         assert len(orders) == 2
+
+    def test_sell_phase_updates_sell_orders(self) -> None:
+        """sell_phase 后，MetricComponent.last_sell_orders 记录挂单总量。"""
+        gt = _make_goods_type()
+        ft = _make_factory_type(gt)
+
+        company = Company()
+        pc = company.get_component(ProductorComponent)
+        pc.factories[ft] = [Factory(ft, build_remaining=0)]
+        pc.init_prices()
+        storage = company.get_component(StorageComponent)
+        b1 = GoodsBatch(goods_type=gt, quantity=50, quality=0.7, brand_value=5)
+        b2 = GoodsBatch(goods_type=gt, quantity=30, quality=0.9, brand_value=8)
+        storage.add_batch(b1)
+        storage.add_batch(b2)
+
+        market = MarketService()
+        service = CompanyService()
+        service.companies = {"c1": company}
+        service.sell_phase(market)
+
+        mc = company.get_component(MetricComponent)
+        assert mc.last_sell_orders[gt] == 80  # 50 + 30

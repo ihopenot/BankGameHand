@@ -7,6 +7,7 @@ import pytest
 
 from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from core.config import ConfigManager
 from core.entity import Entity
@@ -68,9 +69,9 @@ class TestPricingDecision:
         company = _make_company(business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 5000
-        dc = company.get_component(DecisionComponent)
-        dc.last_sell_orders[gt] = 100
-        dc.last_sold_quantities[gt] = 100
+        mc = company.get_component(MetricComponent)
+        mc.last_sell_orders[gt] = 100
+        mc.last_sold_quantities[gt] = 100
         _service().decide_pricing(company)
         assert pc.prices[gt] > 5000
 
@@ -80,9 +81,9 @@ class TestPricingDecision:
         company = _make_company(business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 5000
-        dc = company.get_component(DecisionComponent)
-        dc.last_sell_orders[gt] = 100
-        dc.last_sold_quantities[gt] = 30
+        mc = company.get_component(MetricComponent)
+        mc.last_sell_orders[gt] = 100
+        mc.last_sold_quantities[gt] = 30
         _service().decide_pricing(company)
         assert pc.prices[gt] < 5000
 
@@ -92,17 +93,17 @@ class TestPricingDecision:
         c_high = _make_company(profit_focus=0.9, business_acumen=1.0)
         pc_high = c_high.get_component(ProductorComponent)
         pc_high.prices[gt] = 5000
-        dc_high = c_high.get_component(DecisionComponent)
-        dc_high.last_sell_orders[gt] = 100
-        dc_high.last_sold_quantities[gt] = 30
+        mc_high = c_high.get_component(MetricComponent)
+        mc_high.last_sell_orders[gt] = 100
+        mc_high.last_sold_quantities[gt] = 30
 
         random.seed(42)
         c_low = _make_company(profit_focus=0.1, business_acumen=1.0)
         pc_low = c_low.get_component(ProductorComponent)
         pc_low.prices[gt] = 5000
-        dc_low = c_low.get_component(DecisionComponent)
-        dc_low.last_sell_orders[gt] = 100
-        dc_low.last_sold_quantities[gt] = 30
+        mc_low = c_low.get_component(MetricComponent)
+        mc_low.last_sell_orders[gt] = 100
+        mc_low.last_sold_quantities[gt] = 30
 
         svc = _service()
         svc.decide_pricing(c_high)
@@ -123,9 +124,9 @@ class TestPricingDecision:
         company = _make_company(profit_focus=0.0, business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 10
-        dc = company.get_component(DecisionComponent)
-        dc.last_sell_orders[gt] = 100
-        dc.last_sold_quantities[gt] = 10
+        mc = company.get_component(MetricComponent)
+        mc.last_sell_orders[gt] = 100
+        mc.last_sold_quantities[gt] = 10
         _service().decide_pricing(company)
         assert pc.prices[gt] > 0
 
@@ -138,8 +139,8 @@ class TestPlanBrand:
         company = _make_company(marketing_awareness=0.8)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 200_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 200_000
 
         amount = _service()._plan_brand(company)
         expected = int(200_000 * 0.05 * (1 + 0.8 * 1.0))
@@ -150,8 +151,8 @@ class TestPlanBrand:
         company = _make_company(marketing_awareness=0.8)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 200_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 200_000
         old_brand = dict(pc.brand_values)
 
         _service()._plan_brand(company)
@@ -159,7 +160,7 @@ class TestPlanBrand:
 
     def test_zero_revenue(self) -> None:
         company = _make_company(marketing_awareness=1.0)
-        company.get_component(DecisionComponent).last_revenue = 0
+        company.get_component(MetricComponent).last_revenue = 0
         assert _service()._plan_brand(company) == 0
 
 
@@ -171,8 +172,8 @@ class TestPlanTech:
         company = _make_company(tech_focus=0.6)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 300_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 300_000
 
         amount = _service()._plan_tech(company)
         expected = int(300_000 * 0.05 * (1 + 0.6 * 1.0))
@@ -183,8 +184,8 @@ class TestPlanTech:
         company = _make_company(tech_focus=0.6)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 300_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 300_000
         old_tech = dict(pc.tech_values)
 
         _service()._plan_tech(company)
@@ -192,7 +193,7 @@ class TestPlanTech:
 
     def test_zero_revenue(self) -> None:
         company = _make_company(tech_focus=1.0)
-        company.get_component(DecisionComponent).last_revenue = 0
+        company.get_component(MetricComponent).last_revenue = 0
         assert _service()._plan_tech(company) == 0
 
 
@@ -240,11 +241,12 @@ class TestInvestmentPlan:
         company = _make_company(risk_appetite=0.9, business_acumen=0.9, marketing_awareness=0.5, tech_focus=0.5, cash=200_000)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 100_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 100_000
 
         _service().plan_phase([company])
 
+        dc = company.get_component(DecisionComponent)
         plan = dc.investment_plan
         assert "expansion" in plan
         assert "brand" in plan
@@ -402,8 +404,8 @@ class TestLoanNeed:
         company = _make_company(risk_appetite=1.0, cash=10_000)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 100_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 100_000
 
         svc = _service()
         svc.plan_phase([company])
@@ -419,8 +421,8 @@ class TestLoanNeed:
         company = _make_company(risk_appetite=1.0, cash=500_000)
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
-        dc = company.get_component(DecisionComponent)
-        dc.last_revenue = 100_000
+        mc = company.get_component(MetricComponent)
+        mc.last_revenue = 100_000
 
         svc = _service()
         # First run plan_phase to get investment plans
@@ -449,7 +451,7 @@ class TestLoanNeed:
 class TestLastAvgBuyPrices:
     """DecisionComponent 购买均价追踪。"""
 
-    def test_decision_component_has_last_avg_buy_prices(self) -> None:
+    def test_metric_component_has_last_avg_buy_prices(self) -> None:
         company = _make_company()
-        dc = company.get_component(DecisionComponent)
-        assert dc.last_avg_buy_prices == {}
+        mc = company.get_component(MetricComponent)
+        assert mc.last_avg_buy_prices == {}

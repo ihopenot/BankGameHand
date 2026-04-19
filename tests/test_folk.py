@@ -31,7 +31,6 @@ class TestFolkInit:
         assert folk.w_quality == 0.95
         assert folk.w_brand == 0.05
         assert folk.base_demands is base_demands
-        assert folk.last_avg_buy_prices == {}
 
     def test_folk_has_ledger_component(self) -> None:
         from entity.folk import Folk

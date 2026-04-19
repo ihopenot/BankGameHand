@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
 from core.entity import Entity
 from entity.folk import Folk
@@ -435,7 +436,43 @@ class TestBuyPhase:
         trades = service.buy_phase(market=market, economy_cycle_index=0.0)
 
         # 应该有 last_avg_buy_prices 被更新
-        assert gt_food in folk.last_avg_buy_prices
+        mc = folk.get_component(MetricComponent)
+        assert gt_food in mc.last_avg_buy_prices
         # 加权均价应介于 100 和 200 之间
-        avg = folk.last_avg_buy_prices[gt_food]
+        avg = mc.last_avg_buy_prices[gt_food]
         assert 100 <= avg <= 200
+
+    def test_folk_buy_updates_seller_metrics(self) -> None:
+        """居民购买后，卖方 Company 的 MetricComponent 记录成交量和收入。"""
+        from component.metric_component import MetricComponent
+        from entity.company.company import Company
+        from component.productor_component import ProductorComponent
+        from entity.factory import Factory, FactoryType, Recipe
+
+        gt_food = GoodsType(name="食品", base_price=8000)
+        recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_food, output_quantity=10, tech_quality_weight=1.0)
+        ft = FactoryType(recipe=recipe, base_production=100, build_cost=1000, maintenance_cost=50, build_time=1)
+
+        seller = Company()
+        pc = seller.get_component(ProductorComponent)
+        pc.factories[ft] = [Factory(ft, build_remaining=0)]
+        pc.init_prices()
+        batch = GoodsBatch(goods_type=gt_food, quantity=5000, quality=0.5, brand_value=5)
+        seller.get_component(StorageComponent).add_batch(batch)
+        seller.get_component(LedgerComponent).cash = 0
+
+        order = SellOrder(seller=seller, batch=batch, price=100)
+        market = MarketService()
+        market.add_sell_order(order)
+
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
+                    base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}})
+        folk.get_component(LedgerComponent).cash = 10_000_000
+
+        service = FolkService(folks=[folk])
+        trades = service.buy_phase(market=market, economy_cycle_index=0.0)
+
+        mc = seller.get_component(MetricComponent)
+        total_sold = sum(t.quantity for t in trades if t.seller is seller)
+        assert mc.last_sold_quantities[gt_food] == total_sold
+        assert mc.last_revenue == total_sold * 100

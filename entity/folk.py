@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
 from core.config import AttrDict, ConfigManager
 from core.entity import Entity
@@ -26,9 +27,9 @@ class Folk(Entity):
         self.w_brand = w_brand
         self.w_price = w_price
         self.base_demands = base_demands
-        self.last_avg_buy_prices: Dict[GoodsType, float] = {}
         self.init_component(LedgerComponent)
         self.init_component(StorageComponent)
+        self.init_component(MetricComponent)
 
 
 def load_folks() -> List[Folk]:

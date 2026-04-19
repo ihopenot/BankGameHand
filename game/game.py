@@ -15,6 +15,7 @@ from system.economy_service import EconomyService
 from system.folk_service import FolkService
 from system.ledger_service import LedgerService
 from system.market_service import MarketService
+from system.metric_service import MetricService
 from system.player_service import PlayerService
 from system.productor_service import ProductorService
 
@@ -46,6 +47,7 @@ class Game:
         self.player_service = PlayerService(self)
         self.decision_service = DecisionService()
         self.bank_service = BankService()
+        self.metric_service = MetricService()
 
         # 业务逻辑初始化
         self.init_game()
@@ -98,9 +100,11 @@ class Game:
             self.loan_acceptance_phase()
             self.settlement_phase()
             self.act_phase()
+            self.snapshot_phase()
 
     def update_phase(self) -> None:
         self.round += 1
+        self.metric_service.reset_all()
         self.economy_service.update_phase()
         self.productor_service.update_phase()
         self.market_service.update_phase()
@@ -145,3 +149,6 @@ class Game:
 
     def act_phase(self) -> None:
         self.decision_service.act_phase(self.companies)
+
+    def snapshot_phase(self) -> None:
+        self.metric_service.snapshot_phase(self.round)
