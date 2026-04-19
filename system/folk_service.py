@@ -187,13 +187,56 @@ class FolkService:
                 seller_mc.last_revenue += trade.total
 
     def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
-        """居民采购阶段：计算需求 → 加权分配 → 结算 → 更新购买均价。"""
+        """居民采购阶段：计算需求 → 按商品类型公平分配 → 结算 → 更新购买均价。
+
+        按商品类型遍历，对每种商品将所有居民组的需求汇总后按比例公平分配供给，
+        避免因迭代顺序导致后面的居民组买不到商品。
+        """
         demands = self.compute_demands(economy_cycle_index)
+
+        # 收集所有商品类型
+        all_goods_types: set[GoodsType] = set()
+        for folk_demands in demands.values():
+            all_goods_types.update(folk_demands.keys())
+
         all_trades: List[TradeRecord] = []
-        for folk in self.folks:
-            for goods_type, demand in demands[folk].items():
-                trades = self.allocate_and_trade(folk, goods_type, demand, market)
-                all_trades.extend(trades)
+        for goods_type in all_goods_types:
+            # 收集对该商品有正需求的居民组
+            folk_demands_for_good: List[tuple[Folk, int]] = []
+            for folk in self.folks:
+                d = demands[folk].get(goods_type, 0)
+                if d > 0:
+                    folk_demands_for_good.append((folk, d))
+            if not folk_demands_for_good:
+                continue
+
+            total_demand = sum(d for _, d in folk_demands_for_good)
+            total_supply = sum(
+                o.remaining for o in market.get_sell_orders(goods_type) if o.remaining > 0
+            )
+            if total_supply <= 0:
+                continue
+
+            if total_supply >= total_demand:
+                # 供给充足：每个居民组按原始需求购买
+                for folk, demand in folk_demands_for_good:
+                    trades = self.allocate_and_trade(folk, goods_type, demand, market)
+                    all_trades.extend(trades)
+            else:
+                # 供不应求：按需求比例公平分配供给（最大余数法）
+                raw_allocs = [total_supply * d / total_demand for _, d in folk_demands_for_good]
+                floor_allocs = [int(a) for a in raw_allocs]
+                remainders = [a - f for a, f in zip(raw_allocs, floor_allocs)]
+                deficit = total_supply - sum(floor_allocs)
+                indices = sorted(range(len(remainders)), key=lambda i: remainders[i], reverse=True)
+                for i in indices[:deficit]:
+                    floor_allocs[i] += 1
+
+                for (folk, _demand), alloc in zip(folk_demands_for_good, floor_allocs):
+                    if alloc > 0:
+                        trades = self.allocate_and_trade(folk, goods_type, alloc, market)
+                        all_trades.extend(trades)
+
         self.settle_trades(all_trades)
         self._update_avg_buy_prices(all_trades)
         return all_trades
