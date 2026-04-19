@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from component.decision_component import DecisionComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.entity import Entity
@@ -13,7 +14,7 @@ from system.market_service import BuyIntent, MarketService, SellOrder
 
 
 def _gt(name: str = "silicon", base_price: int = 100) -> GoodsType:
-    return GoodsType(name=name, base_price=base_price, bonus_ceiling=0.2)
+    return GoodsType(name=name, base_price=base_price)
 
 
 class TestBuyPhaseDemand:
@@ -23,7 +24,7 @@ class TestBuyPhaseDemand:
         """Demand = input_qty * base_production when no existing stock."""
         gt_input = _gt("silicon", 100)
         gt_output = _gt("chip", 500)
-        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1)
+        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
         company = Company()
@@ -35,7 +36,7 @@ class TestBuyPhaseDemand:
         seller = Company()
         seller_pc = seller.get_component(ProductorComponent)
         seller_ft = FactoryType(
-            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10),
+            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
             base_production=100, build_cost=500, maintenance_cost=20, build_time=1,
         )
         seller_pc.factories[seller_ft] = [Factory(seller_ft, build_remaining=0)]
@@ -63,7 +64,7 @@ class TestBuyPhaseDemand:
         """Existing stock reduces demand."""
         gt_input = _gt("silicon", 100)
         gt_output = _gt("chip", 500)
-        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1)
+        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
         company = Company()
@@ -76,7 +77,7 @@ class TestBuyPhaseDemand:
         seller = Company()
         seller_pc = seller.get_component(ProductorComponent)
         seller_ft = FactoryType(
-            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10),
+            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
             base_production=100, build_cost=500, maintenance_cost=20, build_time=1,
         )
         seller_pc.factories[seller_ft] = [Factory(seller_ft, build_remaining=0)]
@@ -101,7 +102,7 @@ class TestBuyPhaseDemand:
         """No BuyIntent when stock >= demand."""
         gt_input = _gt("silicon", 100)
         gt_output = _gt("chip", 500)
-        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1)
+        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
         company = Company()
@@ -121,7 +122,7 @@ class TestBuyPhaseDemand:
     def test_raw_material_factory_no_demand(self) -> None:
         """Factories with no input (raw material) don't generate BuyIntents."""
         gt_raw = _gt("silicon", 100)
-        recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_raw, output_quantity=10)
+        recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_raw, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=100, build_cost=500, maintenance_cost=20, build_time=1)
 
         company = Company()
@@ -138,25 +139,29 @@ class TestBuyPhaseDemand:
 
 
 class TestBuyPhasePreference:
-    """buy_phase sort_key should order SellOrders by quality/price ratio descending."""
+    """buy_phase sort_key should order SellOrders by score (quality + brand + price attractiveness)."""
 
     def test_sort_key_prefers_better_cost_performance(self) -> None:
-        """Verify sort_key produces correct ordering: higher q/p ratio is preferred."""
+        """Verify sort_key produces correct ordering: cheaper seller with decent quality is preferred."""
         gt_input = _gt("silicon", 100)
         gt_output = _gt("chip", 500)
-        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1)
+        recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
         buyer = Company()
         pc = buyer.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
+        # Set traits so price sensitivity is high → cheaper seller wins
+        dc = buyer.get_component(DecisionComponent)
+        dc.marketing_awareness = 0.1
+        dc.price_sensitivity = 0.8
 
-        # seller_a: quality 0.8, price 100 -> ratio 0.008 (better)
+        # seller_a: quality 0.8, price 100 (cheaper)
         seller_a = Company()
         seller_a_pc = seller_a.get_component(ProductorComponent)
         seller_a_ft = FactoryType(
-            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10),
+            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
             base_production=100, build_cost=500, maintenance_cost=20, build_time=1,
         )
         seller_a_pc.factories[seller_a_ft] = [Factory(seller_a_ft, build_remaining=0)]
@@ -164,11 +169,11 @@ class TestBuyPhasePreference:
         batch_a = GoodsBatch(goods_type=gt_input, quantity=200, quality=0.8, brand_value=5)
         seller_a.get_component(StorageComponent).add_batch(batch_a)
 
-        # seller_b: quality 0.9, price 200 -> ratio 0.0045 (worse)
+        # seller_b: quality 0.9, price 200 (expensive)
         seller_b = Company()
         seller_b_pc = seller_b.get_component(ProductorComponent)
         seller_b_ft = FactoryType(
-            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10),
+            recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
             base_production=100, build_cost=500, maintenance_cost=20, build_time=1,
         )
         seller_b_pc.factories[seller_b_ft] = [Factory(seller_b_ft, build_remaining=0)]
@@ -181,13 +186,16 @@ class TestBuyPhasePreference:
         sell_service.companies = {"a": seller_a, "b": seller_b}
         sell_service.sell_phase(market)
 
+        from system.decision_service import DecisionService
+        ds = DecisionService()
+
         buy_service = CompanyService()
         buy_service.companies = {"buyer": buyer}
-        intents = buy_service.buy_phase(market)
+        intents = buy_service.buy_phase(market, decision_service=ds)
 
         # Verify sort_key orders correctly
         assert len(intents) == 1
         orders = market.get_sell_orders(gt_input)
         sorted_orders = sorted(orders, key=intents[0].sort_key, reverse=True)
-        assert sorted_orders[0].seller is seller_a  # better ratio first
+        assert sorted_orders[0].seller is seller_a  # cheaper price wins with high price_sensitivity
         assert sorted_orders[1].seller is seller_b

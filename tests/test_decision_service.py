@@ -54,8 +54,8 @@ def _service() -> DecisionService:
 # ── 固定测试用的商品/工厂 ──
 
 def _make_factory_setup():
-    gt = GoodsType(name="硅", base_price=100, bonus_ceiling=0.1)
-    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=1)
+    gt = GoodsType(name="硅", base_price=100)
+    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=1, tech_quality_weight=1.0)
     ft = FactoryType(recipe=recipe, base_production=100, build_cost=50000, maintenance_cost=3000, build_time=2)
     return gt, recipe, ft
 
@@ -64,7 +64,7 @@ class TestPricingDecision:
 
     def test_sold_out_raises_price(self) -> None:
         random.seed(42)
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         company = _make_company(business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 5000
@@ -76,7 +76,7 @@ class TestPricingDecision:
 
     def test_surplus_cuts_price(self) -> None:
         random.seed(42)
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         company = _make_company(business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 5000
@@ -87,7 +87,7 @@ class TestPricingDecision:
         assert pc.prices[gt] < 5000
 
     def test_high_profit_focus_less_cut_on_surplus(self) -> None:
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         random.seed(42)
         c_high = _make_company(profit_focus=0.9, business_acumen=1.0)
         pc_high = c_high.get_component(ProductorComponent)
@@ -110,7 +110,7 @@ class TestPricingDecision:
         assert pc_high.prices[gt] > pc_low.prices[gt]
 
     def test_no_previous_sales_no_change(self) -> None:
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         company = _make_company(business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 5000
@@ -119,7 +119,7 @@ class TestPricingDecision:
 
     def test_price_stays_positive(self) -> None:
         random.seed(42)
-        gt = GoodsType(name="芯片", base_price=100, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=100)
         company = _make_company(profit_focus=0.0, business_acumen=1.0)
         pc = company.get_component(ProductorComponent)
         pc.prices[gt] = 10
@@ -363,27 +363,29 @@ class TestPurchasePreference:
 
     def test_score_formula(self) -> None:
         svc = _service()
-        score = svc.calculate_supplier_score(marketing_awareness=0.5, quality=0.8, price=100, brand_value=10)
-        expected = 0.75 * (0.8 / 100) + 0.25 * 10
+        score = svc.calculate_supplier_score(marketing_awareness=0.5, price_sensitivity=0.0, quality=0.8, price=100, brand_value=10, avg_price=100)
+        # w_brand=0.5*0.5=0.25, w_price=0.0*0.5=0.0, w_quality=0.75
+        # price_attractiveness(100,100) = 0.0
+        expected = 0.75 * 0.8 + 0.25 * 10 + 0.0 * 0.0
         assert abs(score - expected) < 1e-9
 
     def test_high_marketing_prefers_brand(self) -> None:
         svc = _service()
-        score_cheap = svc.calculate_supplier_score(marketing_awareness=0.9, quality=0.5, price=50, brand_value=2)
-        score_brand = svc.calculate_supplier_score(marketing_awareness=0.9, quality=0.5, price=100, brand_value=20)
+        score_cheap = svc.calculate_supplier_score(marketing_awareness=0.9, price_sensitivity=0.0, quality=0.5, price=50, brand_value=2, avg_price=100)
+        score_brand = svc.calculate_supplier_score(marketing_awareness=0.9, price_sensitivity=0.0, quality=0.5, price=100, brand_value=20, avg_price=100)
         assert score_brand > score_cheap
 
     def test_low_marketing_prefers_value(self) -> None:
         svc = _service()
-        score_cheap = svc.calculate_supplier_score(marketing_awareness=0.1, quality=0.9, price=50, brand_value=1)
-        score_brand = svc.calculate_supplier_score(marketing_awareness=0.1, quality=0.3, price=200, brand_value=1)
+        score_cheap = svc.calculate_supplier_score(marketing_awareness=0.1, price_sensitivity=0.0, quality=0.9, price=50, brand_value=1, avg_price=100)
+        score_brand = svc.calculate_supplier_score(marketing_awareness=0.1, price_sensitivity=0.0, quality=0.3, price=200, brand_value=1, avg_price=100)
         assert score_cheap > score_brand
 
     def test_make_sort_key_returns_callable(self) -> None:
         svc = _service()
         company = _make_company(marketing_awareness=0.6)
         sort_fn = svc.make_purchase_sort_key(company)
-        gt = GoodsType(name="硅", base_price=100, bonus_ceiling=0.1)
+        gt = GoodsType(name="硅", base_price=100)
         batch = GoodsBatch(goods_type=gt, quantity=100, quality=0.7, brand_value=5)
         from system.market_service import SellOrder
         order = SellOrder(seller=Entity(), batch=batch, price=80)
@@ -442,3 +444,12 @@ class TestLoanNeed:
         apps = svc.calc_loan_needs([company])
         assert len(apps) == 1
         assert apps[0].amount == 43_000
+
+
+class TestLastAvgBuyPrices:
+    """DecisionComponent 购买均价追踪。"""
+
+    def test_decision_component_has_last_avg_buy_prices(self) -> None:
+        company = _make_company()
+        dc = company.get_component(DecisionComponent)
+        assert dc.last_avg_buy_prices == {}

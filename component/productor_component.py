@@ -44,6 +44,7 @@ class ProductorComponent(BaseComponent):
         """对一个 FactoryType 下的所有工厂执行生产。
 
         每个工厂各自从库存取料生产，产出合并后贴品质和品牌。
+        品质 = tech_rank_ratio * tech_quality_weight + avg_material_quality * (1 - tech_quality_weight)
 
         Args:
             factory_type: 工厂类型。
@@ -54,17 +55,17 @@ class ProductorComponent(BaseComponent):
         recipe = factory_type.recipe
         output_goods_type = recipe.output_goods_type
 
-        # 1. 计算品质：tech_rank_ratio = self.tech / max_tech
+        # 1. 计算科技品质比
         my_tech = self.tech_values.get(recipe, 0)
         global_max = ProductorComponent.max_tech.get(recipe, 0)
         tech_rank_ratio: Radio = my_tech / global_max if global_max > 0 else 0.0
-        output_quality = tech_rank_ratio
 
         # 2. 计算品牌
         brand = self.brand_values.get(output_goods_type, 0)
 
-        # 3. 遍历工厂逐个生产
+        # 3. 遍历工厂逐个生产，收集产出和原材料品质
         total_quantity = 0
+        weighted_material_quality = 0.0
         for factory in self.factories.get(factory_type, []):
             if not factory.is_built:
                 continue
@@ -82,6 +83,15 @@ class ProductorComponent(BaseComponent):
 
             output_batch = factory.produce(supply_batch)
             total_quantity += output_batch.quantity
+            weighted_material_quality += output_batch.quality * output_batch.quantity
+
+        # 4. 计算最终品质
+        if recipe.input_goods_type is not None and total_quantity > 0:
+            avg_material_quality = weighted_material_quality / total_quantity
+            w = recipe.tech_quality_weight
+            output_quality = tech_rank_ratio * w + avg_material_quality * (1 - w)
+        else:
+            output_quality = tech_rank_ratio
 
         return GoodsBatch(
             goods_type=output_goods_type,

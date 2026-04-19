@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+from component.decision_component import DecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -78,7 +79,7 @@ class CompanyService:
             if decision_service is not None:
                 sort_fn = decision_service.make_purchase_sort_key(company)
             else:
-                sort_fn = lambda o: o.batch.quality / o.price if o.price > 0 else float("inf")
+                sort_fn = lambda o: o.batch.quality
 
             # 汇总各原料的总需求
             demand_map: Dict[GoodsType, int] = {}
@@ -111,7 +112,7 @@ class CompanyService:
         return intents
 
     def settle_trades(self, trades: List[TradeRecord]) -> None:
-        """处理成交记录：商品转移 + 现金支付/赊账。"""
+        """处理成交记录：商品转移 + 现金支付/赊账 + 更新购买均价。"""
         for trade in trades:
             seller = trade.seller
             buyer = trade.buyer
@@ -152,6 +153,25 @@ class CompanyService:
                 )
                 seller_ledger.receivables.append(loan)
                 buyer_ledger.payables.append(loan)
+
+        self._update_avg_buy_prices(trades)
+
+    @staticmethod
+    def _update_avg_buy_prices(trades: List[TradeRecord]) -> None:
+        """按成交量加权更新每个买方的 DecisionComponent.last_avg_buy_prices。"""
+        from collections import defaultdict
+        buyer_totals: dict = defaultdict(list)
+        for trade in trades:
+            dc = trade.buyer.get_component(DecisionComponent)
+            if dc is not None:
+                buyer_totals[(trade.buyer, trade.goods_type)].append(trade)
+
+        for (buyer, goods_type), buyer_trades in buyer_totals.items():
+            total_qty = sum(t.quantity for t in buyer_trades)
+            if total_qty > 0:
+                dc = buyer.get_component(DecisionComponent)
+                weighted_price = sum(t.price * t.quantity for t in buyer_trades)
+                dc.last_avg_buy_prices[goods_type] = weighted_price / total_qty
 
     # ── 破产清算 ──
 

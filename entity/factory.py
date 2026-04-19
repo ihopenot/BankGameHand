@@ -18,11 +18,13 @@ class Recipe:
         input_quantity: int,
         output_goods_type: GoodsType,
         output_quantity: int,
+        tech_quality_weight: float,
     ) -> None:
         self.input_goods_type = input_goods_type
         self.input_quantity = input_quantity
         self.output_goods_type = output_goods_type
         self.output_quantity = output_quantity
+        self.tech_quality_weight = tech_quality_weight
 
 
 class FactoryType:
@@ -68,7 +70,7 @@ class Factory:
             supply: 输入原料批次（原料层传 quantity=0 的空批次）。
 
         Returns:
-            产出 GoodsBatch，品质和品牌留空（0.0, 0）。
+            产出 GoodsBatch，品质为原材料品质（原料层为 0.0），品牌留空。
         """
         if not self.is_built:
             raise RuntimeError("Factory is not built yet")
@@ -95,13 +97,10 @@ class Factory:
         full_demand = recipe.input_quantity * base
         sufficiency = min(supply.quantity / full_demand, 1.0)
 
-        # 良品率加成：1.0 + 原料品质 × 原料商品的加成上限
-        quality_bonus = 1.0 + supply.quality * recipe.input_goods_type.bonus_ceiling
-
-        output_qty = int(base * recipe.output_quantity * sufficiency * quality_bonus)
+        output_qty = int(base * recipe.output_quantity * sufficiency)
 
         return GoodsBatch(
-            goods_type=output_type, quantity=output_qty, quality=0.0, brand_value=0
+            goods_type=output_type, quantity=output_qty, quality=supply.quality, brand_value=0
         )
 
 
@@ -118,6 +117,7 @@ def load_recipes() -> Dict[str, Recipe]:
             input_quantity=item.input_quantity,
             output_goods_type=goods_types[item.output],
             output_quantity=item.output_quantity,
+            tech_quality_weight=item.tech_quality_weight,
         )
         result[item.name] = recipe
     Recipe.recipes = result

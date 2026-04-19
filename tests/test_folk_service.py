@@ -16,13 +16,13 @@ class TestFolkServiceInit:
     """FolkService 基础结构测试。"""
 
     def test_folk_service_holds_folks_list(self) -> None:
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         folk_a = Folk(
-            population=100, w_value_for_money=0.5, w_brand=0.5,
+            population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.1}},
         )
         folk_b = Folk(
-            population=200, w_value_for_money=0.8, w_brand=0.2,
+            population=200, w_quality=0.8, w_brand=0.2, w_price=0.0,
             base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.2}},
         )
         service = FolkService(folks=[folk_a, folk_b])
@@ -36,9 +36,9 @@ class TestComputeDemands:
 
     def test_basic_demand_calculation(self) -> None:
         """验证公式：population * per_capita * (1 + economy_cycle_index * sensitivity)"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         folk = Folk(
-            population=1000, w_value_for_money=0.5, w_brand=0.5,
+            population=1000, w_quality=0.5, w_brand=0.5, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.2}},
         )
         service = FolkService(folks=[folk])
@@ -48,9 +48,9 @@ class TestComputeDemands:
 
     def test_zero_per_capita_returns_zero(self) -> None:
         """per_capita=0 的商品需求为 0。"""
-        gt_phone = GoodsType(name="手机", base_price=20000, bonus_ceiling=0.1)
+        gt_phone = GoodsType(name="手机", base_price=20000)
         folk = Folk(
-            population=6000, w_value_for_money=0.95, w_brand=0.05,
+            population=6000, w_quality=0.95, w_brand=0.05, w_price=0.0,
             base_demands={gt_phone: {"per_capita": 0, "sensitivity": 0.8}},
         )
         service = FolkService(folks=[folk])
@@ -59,13 +59,13 @@ class TestComputeDemands:
 
     def test_different_folk_different_demands(self) -> None:
         """不同 Folk 对同一商品的需求量不同。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         folk_a = Folk(
-            population=6000, w_value_for_money=0.95, w_brand=0.05,
+            population=6000, w_quality=0.95, w_brand=0.05, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.1}},
         )
         folk_b = Folk(
-            population=1000, w_value_for_money=0.2, w_brand=0.8,
+            population=1000, w_quality=0.2, w_brand=0.8, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.05}},
         )
         service = FolkService(folks=[folk_a, folk_b])
@@ -77,9 +77,9 @@ class TestComputeDemands:
 
     def test_negative_cycle_reduces_demand(self) -> None:
         """经济衰退（负周期指数）减少需求。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         folk = Folk(
-            population=1000, w_value_for_money=0.5, w_brand=0.5,
+            population=1000, w_quality=0.5, w_brand=0.5, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.5}},
         )
         service = FolkService(folks=[folk])
@@ -89,10 +89,10 @@ class TestComputeDemands:
 
     def test_unconfigured_goods_not_in_demands(self) -> None:
         """Folk 未配置的商品不出现在 demands 中。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
-        gt_phone = GoodsType(name="手机", base_price=20000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
+        gt_phone = GoodsType(name="手机", base_price=20000)
         folk = Folk(
-            population=1000, w_value_for_money=0.5, w_brand=0.5,
+            population=1000, w_quality=0.5, w_brand=0.5, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.1}},
         )
         service = FolkService(folks=[folk])
@@ -117,12 +117,12 @@ class TestWeightedAllocation:
 
     def test_single_seller_gets_all_demand(self) -> None:
         """只有一个卖方时，该卖方获得全部需求。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         seller, order = _make_seller(gt_food, quantity=1000, quality=0.5, brand=10, price=100)
         market.add_sell_order(order)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
@@ -132,7 +132,7 @@ class TestWeightedAllocation:
 
     def test_two_sellers_higher_score_gets_more(self) -> None:
         """评分高的卖方分配到更多需求。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         # 卖方A：高品质低价 → 高性价比
         _, order_a = _make_seller(gt_food, quantity=1000, quality=0.8, brand=5, price=100)
@@ -142,7 +142,7 @@ class TestWeightedAllocation:
         market.add_sell_order(order_b)
 
         # 价格敏感的 Folk
-        folk = Folk(population=100, w_value_for_money=0.9, w_brand=0.1,
+        folk = Folk(population=100, w_quality=0.9, w_brand=0.1, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
@@ -155,14 +155,14 @@ class TestWeightedAllocation:
 
     def test_all_sellers_get_some_demand(self) -> None:
         """softmax 保证所有卖方（包括低评分）都分到需求。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         _, order_a = _make_seller(gt_food, quantity=1000, quality=0.9, brand=10, price=100)
         _, order_b = _make_seller(gt_food, quantity=1000, quality=0.1, brand=1, price=200)
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=1000, market=market)
@@ -175,14 +175,14 @@ class TestWeightedAllocation:
 
     def test_sufficient_stock_one_pass(self) -> None:
         """所有卖方库存充足时一次分配完成。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         _, order_a = _make_seller(gt_food, quantity=500, quality=0.5, brand=5, price=100)
         _, order_b = _make_seller(gt_food, quantity=500, quality=0.5, brand=5, price=100)
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=400, market=market)
@@ -196,7 +196,7 @@ class TestIterativeReallocation:
 
     def test_seller_stock_insufficient_reallocates(self) -> None:
         """卖方A库存不足 → 只成交库存量 → 剩余重分配给卖方B。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         # 卖方A：库存只有 30，评分相同
         _, order_a = _make_seller(gt_food, quantity=30, quality=0.5, brand=5, price=100)
@@ -205,7 +205,7 @@ class TestIterativeReallocation:
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
@@ -220,14 +220,14 @@ class TestIterativeReallocation:
 
     def test_all_sellers_exhausted(self) -> None:
         """所有卖方售罄，剩余需求为缺货。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         _, order_a = _make_seller(gt_food, quantity=100, quality=0.5, brand=5, price=100)
         _, order_b = _make_seller(gt_food, quantity=50, quality=0.5, brand=5, price=100)
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
@@ -240,7 +240,7 @@ class TestIterativeReallocation:
 
     def test_multi_round_iteration_converges(self) -> None:
         """多轮迭代场景：三个卖方，库存递减。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         market = MarketService()
         _, order_a = _make_seller(gt_food, quantity=50, quality=0.5, brand=5, price=100)
         _, order_b = _make_seller(gt_food, quantity=100, quality=0.5, brand=5, price=100)
@@ -249,7 +249,7 @@ class TestIterativeReallocation:
         market.add_sell_order(order_b)
         market.add_sell_order(order_c)
 
-        folk = Folk(population=300, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=300, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 3, "sensitivity": 0.0}})
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=900, market=market)
@@ -263,7 +263,7 @@ class TestSettleTrades:
 
     def test_goods_transfer_to_folk(self) -> None:
         """商品从卖方扣减并入库到 Folk。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
 
         seller = Entity()
         seller.init_component(StorageComponent)
@@ -271,7 +271,7 @@ class TestSettleTrades:
         batch = GoodsBatch(goods_type=gt_food, quantity=100, quality=0.5, brand_value=10)
         seller.get_component(StorageComponent).add_batch(batch)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 1, "sensitivity": 0.0}})
         folk.get_component(LedgerComponent).cash = 1_000_000  # 充足现金
 
@@ -292,7 +292,7 @@ class TestSettleTrades:
 
     def test_cash_payment(self) -> None:
         """现金从 Folk 支付到卖方。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
 
         seller = Entity()
         seller.init_component(StorageComponent)
@@ -301,7 +301,7 @@ class TestSettleTrades:
         seller.get_component(StorageComponent).add_batch(batch)
         seller.get_component(LedgerComponent).cash = 0
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 1, "sensitivity": 0.0}})
         folk.get_component(LedgerComponent).cash = 100_000
 
@@ -320,7 +320,7 @@ class TestBuyPhase:
 
     def test_buy_phase_two_folks_two_sellers(self) -> None:
         """两个 Folk + 两个卖方，验证完整采购流程。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
 
         # 卖方A：高品质低价
         seller_a, order_a = _make_seller(gt_food, quantity=5000, quality=0.9, brand=8, price=50)
@@ -333,13 +333,13 @@ class TestBuyPhase:
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        # Folk 1: 价格敏感（高 w_vfm），100人，per_capita=10
-        folk_1 = Folk(population=100, w_value_for_money=0.95, w_brand=0.05,
+        # Folk 1: 品质敏感（高 w_quality），100人，per_capita=10
+        folk_1 = Folk(population=100, w_quality=0.95, w_brand=0.05, w_price=0.0,
                       base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}})
         folk_1.get_component(LedgerComponent).cash = 10_000_000
 
         # Folk 2: 品牌敏感（高 w_brand），50人，per_capita=10
-        folk_2 = Folk(population=50, w_value_for_money=0.1, w_brand=0.9,
+        folk_2 = Folk(population=50, w_quality=0.1, w_brand=0.9, w_price=0.0,
                       base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}})
         folk_2.get_component(LedgerComponent).cash = 10_000_000
 
@@ -373,13 +373,13 @@ class TestBuyPhase:
 
     def test_buy_phase_sell_order_remaining_decremented(self) -> None:
         """buy_phase 后 SellOrder.remaining 正确扣减。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         seller, order = _make_seller(gt_food, quantity=1000, quality=0.5, brand=5, price=100)
 
         market = MarketService()
         market.add_sell_order(order)
 
-        folk = Folk(population=200, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=200, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={gt_food: {"per_capita": 2, "sensitivity": 0.0}})
         folk.get_component(LedgerComponent).cash = 10_000_000
 
@@ -391,8 +391,8 @@ class TestBuyPhase:
 
     def test_buy_phase_multiple_goods_types(self) -> None:
         """多种商品类型的 buy_phase。"""
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
-        gt_cloth = GoodsType(name="服装", base_price=15000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
+        gt_cloth = GoodsType(name="服装", base_price=15000)
 
         seller_food, order_food = _make_seller(gt_food, quantity=5000, quality=0.5, brand=5, price=80)
         seller_cloth, order_cloth = _make_seller(gt_cloth, quantity=5000, quality=0.5, brand=5, price=200)
@@ -401,7 +401,7 @@ class TestBuyPhase:
         market.add_sell_order(order_food)
         market.add_sell_order(order_cloth)
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5,
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     base_demands={
                         gt_food: {"per_capita": 10, "sensitivity": 0.0},
                         gt_cloth: {"per_capita": 5, "sensitivity": 0.0},
@@ -416,3 +416,26 @@ class TestBuyPhase:
         # food demand: 100 * 10 = 1000, cloth demand: 100 * 5 = 500
         assert food_traded == 1000
         assert cloth_traded == 500
+
+    def test_buy_phase_updates_last_avg_buy_prices(self) -> None:
+        """buy_phase 后 Folk 的 last_avg_buy_prices 按成交量加权均价更新。"""
+        gt_food = GoodsType(name="食品", base_price=8000)
+        seller_a, order_a = _make_seller(gt_food, quantity=5000, quality=0.5, brand=5, price=100)
+        seller_b, order_b = _make_seller(gt_food, quantity=5000, quality=0.5, brand=5, price=200)
+
+        market = MarketService()
+        market.add_sell_order(order_a)
+        market.add_sell_order(order_b)
+
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
+                    base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}})
+        folk.get_component(LedgerComponent).cash = 10_000_000
+
+        service = FolkService(folks=[folk])
+        trades = service.buy_phase(market=market, economy_cycle_index=0.0)
+
+        # 应该有 last_avg_buy_prices 被更新
+        assert gt_food in folk.last_avg_buy_prices
+        # 加权均价应介于 100 和 200 之间
+        avg = folk.last_avg_buy_prices[gt_food]
+        assert 100 <= avg <= 200

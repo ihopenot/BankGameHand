@@ -21,6 +21,7 @@ class DecisionComponent(BaseComponent):
         self.profit_focus: float = random.random()
         self.marketing_awareness: float = random.random()
         self.tech_focus: float = random.random()
+        self.price_sensitivity: float = random.random()
 
         # 上轮销售状态追踪
         self.last_sell_orders: Dict[GoodsType, int] = {}  # 上轮挂单量
@@ -32,3 +33,6 @@ class DecisionComponent(BaseComponent):
         # 投资计划表（plan_phase 生成，act_phase 执行）
         # 键: "expansion" / "brand" / "tech"，值: 计划金额
         self.investment_plan: Dict[str, int] = {}
+
+        # 上轮采购均价追踪
+        self.last_avg_buy_prices: Dict[GoodsType, float] = {}

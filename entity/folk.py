@@ -15,15 +15,18 @@ class Folk(Entity):
     def __init__(
         self,
         population: int,
-        w_value_for_money: float,
+        w_quality: float,
         w_brand: float,
+        w_price: float,
         base_demands: Dict[GoodsType, Dict[str, float]],
     ) -> None:
         super().__init__()
         self.population = population
-        self.w_value_for_money = w_value_for_money
+        self.w_quality = w_quality
         self.w_brand = w_brand
+        self.w_price = w_price
         self.base_demands = base_demands
+        self.last_avg_buy_prices: Dict[GoodsType, float] = {}
         self.init_component(LedgerComponent)
         self.init_component(StorageComponent)
 
@@ -54,8 +57,9 @@ def load_folks() -> List[Folk]:
             }
         folks.append(Folk(
             population=item.population,
-            w_value_for_money=item.w_value_for_money,
+            w_quality=item.w_quality,
             w_brand=item.w_brand,
+            w_price=item.w_price,
             base_demands=base_demands,
         ))
     return folks

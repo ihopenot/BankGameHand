@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from typing import TYPE_CHECKING, Callable, List, Optional
 
@@ -111,31 +112,51 @@ class DecisionService:
 
     # ── 采购偏好 ──
 
+    @staticmethod
+    def _price_attractiveness(price: int, avg_price: float) -> float:
+        """用 sigmoid 计算价格吸引力，范围 [-1, 1]。"""
+        if avg_price <= 0:
+            return 0.0
+        k = 5.0
+        x = k * (avg_price - price) / avg_price
+        return 2.0 / (1.0 + math.exp(-x)) - 1.0
+
     def calculate_supplier_score(
         self,
         marketing_awareness: float,
+        price_sensitivity: float,
         quality: float,
         price: int,
         brand_value: int,
+        avg_price: float,
     ) -> float:
-        """计算供应商评分。"""
+        """计算供应商评分（三维加权：品质+品牌+价格吸引力）。"""
         cfg = self.config.purchase
         w_brand = marketing_awareness * cfg.brand_weight_coeff
-        w_ratio = 1.0 - w_brand
-        ratio = quality / price if price > 0 else float("inf")
-        return w_ratio * ratio + w_brand * brand_value
+        w_price = price_sensitivity * cfg.brand_weight_coeff
+        w_quality = max(0.0, 1.0 - w_brand - w_price)
+        price_score = self._price_attractiveness(price, avg_price)
+        return w_quality * quality + w_brand * brand_value + w_price * price_score
 
     def make_purchase_sort_key(self, company: Company) -> Callable[[SellOrder], float]:
         """生成带 CEO 特质的采购排序函数。"""
         dc = company.get_component(DecisionComponent)
         awareness = dc.marketing_awareness
+        price_sens = dc.price_sensitivity
+        avg_prices = dc.last_avg_buy_prices
 
         def sort_key(order: SellOrder) -> float:
+            gt = order.batch.goods_type
+            avg_price = avg_prices.get(gt, 0.0)
+            if avg_price <= 0:
+                avg_price = gt.base_price
             return self.calculate_supplier_score(
                 marketing_awareness=awareness,
+                price_sensitivity=price_sens,
                 quality=order.batch.quality,
                 price=order.price,
                 brand_value=order.batch.brand_value,
+                avg_price=avg_price,
             )
 
         return sort_key

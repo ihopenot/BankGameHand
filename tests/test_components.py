@@ -21,13 +21,13 @@ class TestStorageComponent:
     def test_empty_inventory(self):
         entity = Entity()
         storage = entity.init_component(StorageComponent)
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         assert storage.get_batches(gt) == []
 
     def test_add_batch(self):
         entity = Entity()
         storage = entity.init_component(StorageComponent)
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         batch = GoodsBatch(goods_type=gt, quantity=100, quality=0.7, brand_value=10)
         storage.add_batch(batch)
         batches = storage.get_batches(gt)
@@ -37,7 +37,7 @@ class TestStorageComponent:
     def test_add_multiple_batches(self):
         entity = Entity()
         storage = entity.init_component(StorageComponent)
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         b1 = GoodsBatch(goods_type=gt, quantity=50, quality=0.6, brand_value=0)
         b2 = GoodsBatch(goods_type=gt, quantity=80, quality=0.9, brand_value=5)
         storage.add_batch(b1)
@@ -47,8 +47,8 @@ class TestStorageComponent:
     def test_different_goods_types(self):
         entity = Entity()
         storage = entity.init_component(StorageComponent)
-        gt1 = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
-        gt2 = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+        gt1 = GoodsType(name="芯片", base_price=5000)
+        gt2 = GoodsType(name="硅", base_price=1000)
         b1 = GoodsBatch(goods_type=gt1, quantity=50, quality=0.6, brand_value=0)
         b2 = GoodsBatch(goods_type=gt2, quantity=100, quality=0.8, brand_value=0)
         storage.add_batch(b1)
@@ -61,7 +61,7 @@ class TestRequireGoods:
     def _make_storage(self) -> tuple[Entity, StorageComponent, GoodsType]:
         entity = Entity()
         storage = entity.init_component(StorageComponent)
-        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+        gt = GoodsType(name="硅", base_price=1000)
         return entity, storage, gt
 
     def test_exact_quantity(self):
@@ -176,10 +176,10 @@ class TestProductorComponent:
         assert prod.storage is storage
 
     def test_tech_values(self):
-        silicon = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
-        chip = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        silicon = GoodsType(name="硅", base_price=1000)
+        chip = GoodsType(name="芯片", base_price=5000)
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                        output_goods_type=chip, output_quantity=100)
+                        output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         entity = Entity()
         prod = entity.init_component(ProductorComponent)
         assert prod.tech_values == {}
@@ -187,7 +187,7 @@ class TestProductorComponent:
         assert prod.tech_values[recipe] == 500
 
     def test_brand_values(self):
-        gt = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        gt = GoodsType(name="芯片", base_price=5000)
         entity = Entity()
         prod = entity.init_component(ProductorComponent)
         assert prod.brand_values == {}
@@ -204,22 +204,22 @@ class TestProductorComponent:
 # --- Helpers ---
 
 def _make_goods() -> tuple[GoodsType, GoodsType]:
-    silicon = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
-    chip = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+    silicon = GoodsType(name="硅", base_price=1000)
+    chip = GoodsType(name="芯片", base_price=5000)
     return silicon, chip
 
 
 def _make_factory_type(silicon: GoodsType, chip: GoodsType) -> FactoryType:
     recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                    output_goods_type=chip, output_quantity=100)
+                    output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
     return FactoryType(recipe=recipe, base_production=10,
                        build_cost=100000, maintenance_cost=5000, build_time=3)
 
 
 def _make_raw_factory_type() -> tuple[GoodsType, FactoryType]:
-    silicon = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+    silicon = GoodsType(name="硅", base_price=1000)
     recipe = Recipe(input_goods_type=None, input_quantity=0,
-                    output_goods_type=silicon, output_quantity=100)
+                    output_goods_type=silicon, output_quantity=100, tech_quality_weight=1.0)
     ft = FactoryType(recipe=recipe, base_production=10,
                      build_cost=50000, maintenance_cost=3000, build_time=2)
     return silicon, ft
@@ -233,7 +233,7 @@ class TestUpdateMaxTech:
         """从空 max_tech 更新。"""
         silicon, chip = _make_goods()
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                        output_goods_type=chip, output_quantity=100)
+                        output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         entity = Entity()
         prod = entity.init_component(ProductorComponent)
         prod.tech_values[recipe] = 500
@@ -244,7 +244,7 @@ class TestUpdateMaxTech:
         """更高的科技值覆盖旧值。"""
         silicon, chip = _make_goods()
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                        output_goods_type=chip, output_quantity=100)
+                        output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         ProductorComponent.max_tech[recipe] = 300
 
         entity = Entity()
@@ -257,7 +257,7 @@ class TestUpdateMaxTech:
         """更低的科技值不覆盖。"""
         silicon, chip = _make_goods()
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                        output_goods_type=chip, output_quantity=100)
+                        output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         ProductorComponent.max_tech[recipe] = 800
 
         entity = Entity()
@@ -270,9 +270,9 @@ class TestUpdateMaxTech:
         """多个 Recipe 各自更新。"""
         silicon, chip = _make_goods()
         r1 = Recipe(input_goods_type=silicon, input_quantity=200,
-                    output_goods_type=chip, output_quantity=100)
+                    output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         r2 = Recipe(input_goods_type=None, input_quantity=0,
-                    output_goods_type=silicon, output_quantity=100)
+                    output_goods_type=silicon, output_quantity=100, tech_quality_weight=1.0)
 
         entity = Entity()
         prod = entity.init_component(ProductorComponent)
@@ -304,10 +304,12 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 2000, quality=0.8, brand_value=0))
 
         result = prod.produce(ft)
-        # Factory: sufficiency=1.0, quality_bonus=1.0+0.8*0.1=1.08, output=int(10*100*1.0*1.08)=1080
+        # Factory: sufficiency=1.0, output=int(10*100*1.0)=1000
         assert result.goods_type is chip
-        assert result.quantity == 1080
-        assert result.quality == pytest.approx(0.6)
+        assert result.quantity == 1000
+        # quality = tech_ratio * tech_quality_weight + material_quality * (1 - tech_quality_weight)
+        # = 0.6 * 0.6 + 0.8 * 0.4 = 0.68
+        assert result.quality == pytest.approx(0.68)
         assert result.brand_value == 0
 
     def test_single_factory_insufficient_round_down(self):
@@ -323,8 +325,8 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 500, quality=0.5, brand_value=0))
 
         result = prod.produce(ft)
-        # supply=400, sufficiency=0.2, quality_bonus=1.05, output=int(10*100*0.2*1.05)=210
-        assert result.quantity == 210
+        # supply=400, sufficiency=0.2, output=int(10*100*0.2)=200
+        assert result.quantity == 200
 
     def test_multi_factory_sequential_consume(self):
         """多工厂依次从库存取料。"""
@@ -340,10 +342,10 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 3000, quality=0.5, brand_value=0))
 
         result = prod.produce(ft)
-        # 工厂1: supply=2000, suff=1.0, bonus=1.05, output=1050
-        # 工厂2: supply=1000, suff=0.5, bonus=1.05, output=525
-        # total=1575
-        assert result.quantity == 1575
+        # 工厂1: supply=2000, suff=1.0, output=1000
+        # 工厂2: supply=1000, suff=0.5, output=500
+        # total=1500
+        assert result.quantity == 1500
 
     def test_raw_factory_no_input_needed(self):
         """原料层工厂无需取料。"""
@@ -385,7 +387,7 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 4000, quality=0.5, brand_value=0))
 
         result = prod.produce(ft)
-        assert result.quantity == 1050
+        assert result.quantity == 1000
 
     def test_no_inventory_returns_zero(self):
         """无库存时非原料层返回0。"""
@@ -420,9 +422,9 @@ class TestProduceAll:
     def test_multi_factory_types(self):
         """多 FactoryType 全部生产并入库。"""
         silicon, raw_ft = _make_raw_factory_type()
-        chip = GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+        chip = GoodsType(name="芯片", base_price=5000)
         chip_recipe = Recipe(input_goods_type=silicon, input_quantity=200,
-                             output_goods_type=chip, output_quantity=100)
+                             output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         chip_ft = FactoryType(recipe=chip_recipe, base_production=10,
                               build_cost=100000, maintenance_cost=5000, build_time=3)
 
@@ -440,14 +442,13 @@ class TestProduceAll:
 
         # 原料工厂先生产硅: 10*100=1000, quality=0.8
         # 芯片工厂从库存取硅: demand=2000, 库存只有1000, base=200 → 1000
-        # suff=0.5, quality of supply=0.8, bonus=1.0+0.8*0.1=1.08
-        # chip_output=int(10*100*0.5*1.08)=540
+        # suff=0.5, output=int(10*100*0.5)=500
         silicon_batches = prod.storage.get_batches(silicon)
         chip_batches = prod.storage.get_batches(chip)
 
         total_silicon = sum(b.quantity for b in silicon_batches)
         total_chip = sum(b.quantity for b in chip_batches)
-        assert total_chip == 540
+        assert total_chip == 500
         assert total_silicon == 0
 
     def test_zero_production_not_stored(self):

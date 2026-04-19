@@ -1,6 +1,7 @@
 """ProductorService 单元测试。"""
 from __future__ import annotations
 
+import pytest
 from unittest.mock import MagicMock
 
 from component.productor_component import ProductorComponent
@@ -16,7 +17,7 @@ from system.productor_service import ProductorService
 
 
 def _make_goods_type(name: str = "硅") -> GoodsType:
-    return GoodsType(name=name, base_price=1000, bonus_ceiling=0.0)
+    return GoodsType(name=name, base_price=1000)
 
 
 def _make_raw_recipe(output_gt: GoodsType) -> Recipe:
@@ -25,6 +26,18 @@ def _make_raw_recipe(output_gt: GoodsType) -> Recipe:
         input_quantity=0,
         output_goods_type=output_gt,
         output_quantity=10,
+        tech_quality_weight=1.0,
+    )
+
+
+def _make_intermediate_recipe(input_gt: GoodsType, output_gt: GoodsType,
+                               tech_quality_weight: float = 0.6) -> Recipe:
+    return Recipe(
+        input_goods_type=input_gt,
+        input_quantity=100,
+        output_goods_type=output_gt,
+        output_quantity=50,
+        tech_quality_weight=tech_quality_weight,
     )
 
 
@@ -139,3 +152,64 @@ class TestProductorService:
 
         assert ProductorComponent.max_tech[r1] == 150
         assert ProductorComponent.max_tech[r2] == 300
+
+    def test_quality_raw_layer_uses_tech_only(self) -> None:
+        """原料层品质 = tech_rank_ratio（无原料品质混合）。"""
+        gt = _make_goods_type()
+        recipe = _make_raw_recipe(gt)
+        ft = _make_factory_type(recipe)
+
+        entity = _make_entity_with_productor(recipe, ft, tech=100)
+        ProductorComponent.max_tech[recipe] = 200  # tech_rank_ratio = 0.5
+
+        pc = entity.get_component(ProductorComponent)
+        batch = pc.produce(ft)
+        assert batch.quality == pytest.approx(0.5)
+
+    def test_quality_blended_with_material(self) -> None:
+        """有原料输入时品质 = tech * weight + material * (1 - weight)。"""
+        gt_in = _make_goods_type("硅")
+        gt_out = _make_goods_type("芯片")
+        recipe = _make_intermediate_recipe(gt_in, gt_out, tech_quality_weight=0.6)
+        ft = _make_factory_type(recipe)
+
+        entity = _make_entity_with_productor(recipe, ft, tech=100)
+        ProductorComponent.max_tech[recipe] = 100  # tech_rank_ratio = 1.0
+
+        # 给库存放入原料，品质 0.8
+        storage = entity.get_component(StorageComponent)
+        from entity.goods import GoodsBatch
+        storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=10000, quality=0.8, brand_value=0))
+
+        pc = entity.get_component(ProductorComponent)
+        batch = pc.produce(ft)
+        # quality = 1.0 * 0.6 + 0.8 * 0.4 = 0.92
+        assert batch.quality == pytest.approx(0.92)
+
+    def test_quality_blended_multiple_factories(self) -> None:
+        """多工厂时原材料品质按产出加权平均后混合。"""
+        gt_in = _make_goods_type("硅")
+        gt_out = _make_goods_type("芯片")
+        recipe = _make_intermediate_recipe(gt_in, gt_out, tech_quality_weight=0.5)
+        ft = _make_factory_type(recipe)
+
+        entity = Entity()
+        pc = entity.init_component(ProductorComponent)
+        pc.tech_values[recipe] = 100
+        ProductorComponent.max_tech[recipe] = 100  # tech_rank_ratio = 1.0
+
+        # 两个已建成工厂
+        pc.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+        pc.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        # 放入不同品质的原料批次
+        storage = entity.get_component(StorageComponent)
+        from entity.goods import GoodsBatch
+        # 高品质批次（先被消耗）和低品质批次
+        storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=500, quality=0.9, brand_value=0))
+        storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=10000, quality=0.3, brand_value=0))
+
+        batch = pc.produce(ft)
+        assert batch.quantity > 0
+        # 品质应介于纯tech(1.0)和纯原料之间
+        assert 0.0 < batch.quality < 1.0

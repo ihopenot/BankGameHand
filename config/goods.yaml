@@ -1,31 +1,22 @@
 goods_types:
   - name: "硅"
     base_price: 1000
-    bonus_ceiling: 0.1
   - name: "芯片"
     base_price: 5000
-    bonus_ceiling: 0.1
   - name: "手机"
     base_price: 20000
-    bonus_ceiling: 0.1
   - name: "棉花"
     base_price: 800
-    bonus_ceiling: 0.1
   - name: "布料"
     base_price: 3000
-    bonus_ceiling: 0.1
   - name: "服装"
     base_price: 15000
-    bonus_ceiling: 0.1
   - name: "小麦"
     base_price: 500
-    bonus_ceiling: 0.1
   - name: "面粉"
     base_price: 2000
-    bonus_ceiling: 0.1
   - name: "食品"
     base_price: 8000
-    bonus_ceiling: 0.1
 
 recipes:
   # 电子产业链
@@ -34,48 +25,57 @@ recipes:
     input_quantity: 0
     output: "硅"
     output_quantity: 100
+    tech_quality_weight: 1.0
   - name: "芯片制造"
     input: "硅"
     input_quantity: 200
     output: "芯片"
     output_quantity: 100
+    tech_quality_weight: 0.6
   - name: "手机组装"
     input: "芯片"
     input_quantity: 150
     output: "手机"
     output_quantity: 80
+    tech_quality_weight: 0.5
   # 纺织产业链
   - name: "棉花种植"
     input: null
     input_quantity: 0
     output: "棉花"
     output_quantity: 120
+    tech_quality_weight: 1.0
   - name: "布料加工"
     input: "棉花"
     input_quantity: 180
     output: "布料"
     output_quantity: 100
+    tech_quality_weight: 0.6
   - name: "服装生产"
     input: "布料"
     input_quantity: 120
     output: "服装"
     output_quantity: 90
+    tech_quality_weight: 0.5
   # 食品产业链
   - name: "小麦种植"
     input: null
     input_quantity: 0
     output: "小麦"
     output_quantity: 150
+    tech_quality_weight: 1.0
   - name: "面粉加工"
     input: "小麦"
     input_quantity: 200
     output: "面粉"
     output_quantity: 120
+    tech_quality_weight: 0.6
   - name: "食品生产"
     input: "面粉"
     input_quantity: 150
     output: "食品"
     output_quantity: 100
+    tech_quality_weight: 0.5
 
 factory_types:
   # 电子产业链

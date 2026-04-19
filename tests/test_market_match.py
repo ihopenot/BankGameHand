@@ -41,7 +41,7 @@ def _quality_key(o: SellOrder) -> float:
 
 @pytest.fixture()
 def gt() -> GoodsType:
-    return GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+    return GoodsType(name="硅", base_price=1000)
 
 
 @pytest.fixture()

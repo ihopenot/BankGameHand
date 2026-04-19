@@ -11,10 +11,9 @@ class GoodsType:
 
     types: ClassVar[Dict[str, "GoodsType"]] = {}
 
-    def __init__(self, name: str, base_price: Money, bonus_ceiling: Radio) -> None:
+    def __init__(self, name: str, base_price: Money) -> None:
         self.name = name
         self.base_price = base_price
-        self.bonus_ceiling = bonus_ceiling
 
 
 class GoodsBatch:
@@ -36,7 +35,6 @@ def load_goods_types() -> Dict[str, GoodsType]:
         gt = GoodsType(
             name=item.name,
             base_price=item.base_price,
-            bonus_ceiling=item.bonus_ceiling,
         )
         result[gt.name] = gt
     GoodsType.types = result

@@ -31,9 +31,9 @@ class TestProductorServiceUpdatePhase:
 
     @staticmethod
     def _make_entity_with_factory(build_remaining: int) -> tuple[Entity, Factory]:
-        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+        gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
-                        output_goods_type=gt, output_quantity=10)
+                        output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=5,
                          build_cost=10000, maintenance_cost=500, build_time=2)
         entity = Entity()

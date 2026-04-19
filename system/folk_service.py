@@ -45,12 +45,32 @@ class FolkService:
         return result
 
     @staticmethod
-    def _score_order(order: SellOrder, w_vfm: float, w_brand: float) -> float:
-        """计算卖方挂单的竞争力评分。"""
+    def _price_attractiveness(price: int, avg_price: float) -> float:
+        """用 sigmoid 计算价格吸引力，范围 [-1, 1]。
+
+        价格低于均价 → 正值（有吸引力），高于均价 → 负值。
+        """
+        if avg_price <= 0:
+            return 0.0
+        k = 5.0
+        x = k * (avg_price - price) / avg_price
+        return 2.0 / (1.0 + math.exp(-x)) - 1.0
+
+    @staticmethod
+    def _score_order(
+        order: SellOrder,
+        w_quality: float,
+        w_brand: float,
+        w_price: float,
+        avg_price: float,
+    ) -> float:
+        """计算卖方挂单的竞争力评分（三维加权：品质+品牌+价格吸引力）。"""
         if order.price <= 0:
             return 0.0
-        value_for_money = order.batch.quality / order.price
-        return w_vfm * value_for_money + w_brand * order.batch.brand_value
+        quality_score = order.batch.quality
+        brand_score = order.batch.brand_value
+        price_score = FolkService._price_attractiveness(order.price, avg_price)
+        return w_quality * quality_score + w_brand * brand_score + w_price * price_score
 
     @staticmethod
     def _softmax_weights(scores: List[float]) -> List[float]:
@@ -90,7 +110,10 @@ class FolkService:
         remaining_demand = demand
 
         while remaining_demand > 0 and orders:
-            scores = [self._score_order(o, folk.w_value_for_money, folk.w_brand) for o in orders]
+            avg_price = folk.last_avg_buy_prices.get(goods_type, 0.0)
+            if avg_price <= 0:
+                avg_price = goods_type.base_price
+            scores = [self._score_order(o, folk.w_quality, folk.w_brand, folk.w_price, avg_price) for o in orders]
             weights = self._softmax_weights(scores)
 
             # 最大余数法分配，避免 int 截断丢失需求
@@ -153,7 +176,7 @@ class FolkService:
             seller_ledger.cash += total_cost
 
     def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
-        """居民采购阶段：计算需求 → 加权分配 → 结算。"""
+        """居民采购阶段：计算需求 → 加权分配 → 结算 → 更新购买均价。"""
         demands = self.compute_demands(economy_cycle_index)
         all_trades: List[TradeRecord] = []
         for folk in self.folks:
@@ -161,4 +184,21 @@ class FolkService:
                 trades = self.allocate_and_trade(folk, goods_type, demand, market)
                 all_trades.extend(trades)
         self.settle_trades(all_trades)
+        self._update_avg_buy_prices(all_trades)
         return all_trades
+
+    @staticmethod
+    def _update_avg_buy_prices(trades: List[TradeRecord]) -> None:
+        """按成交量加权更新每个 Folk 买方的 last_avg_buy_prices。"""
+        from collections import defaultdict
+        # 按 (buyer, goods_type) 聚合
+        buyer_totals: Dict[tuple, list] = defaultdict(list)
+        for trade in trades:
+            if isinstance(trade.buyer, Folk):
+                buyer_totals[(trade.buyer, trade.goods_type)].append(trade)
+
+        for (folk, goods_type), folk_trades in buyer_totals.items():
+            total_qty = sum(t.quantity for t in folk_trades)
+            if total_qty > 0:
+                weighted_price = sum(t.price * t.quantity for t in folk_trades)
+                folk.last_avg_buy_prices[goods_type] = weighted_price / total_qty

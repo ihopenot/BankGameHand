@@ -1,17 +1,19 @@
 folks:
   # 低收入群体：价格敏感，主要消费刚需品
   - population: 6000
-    w_value_for_money: 0.95
+    w_quality: 0.4
     w_brand: 0.05
+    w_price: 0.55
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.1 }
       服装: { per_capita: 1, sensitivity: 0.5 }
       手机: { per_capita: 0, sensitivity: 0.8 }
 
-  # 中等收入群体：性价比与品牌兼顾
+  # 中等收入群体：品质与品牌兼顾
   - population: 3000
-    w_value_for_money: 0.5
-    w_brand: 0.5
+    w_quality: 0.35
+    w_brand: 0.35
+    w_price: 0.3
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.2 }
       服装: { per_capita: 5, sensitivity: 0.5 }
@@ -19,8 +21,9 @@ folks:
 
   # 高收入群体：品牌偏好强，全品类消费
   - population: 1000
-    w_value_for_money: 0.2
-    w_brand: 0.8
+    w_quality: 0.15
+    w_brand: 0.75
+    w_price: 0.1
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.05 }
       服装: { per_capita: 8, sensitivity: 0.3 }

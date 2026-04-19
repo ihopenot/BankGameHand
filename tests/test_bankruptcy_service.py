@@ -21,7 +21,6 @@ def _setup_goods_and_factory() -> FactoryType:
         gt = GoodsType.__new__(GoodsType)
         gt.name = "test_ore"
         gt.base_price = 100
-        gt.bonus_ceiling = 0.0
         GoodsType.types["test_ore"] = gt
     else:
         gt = GoodsType.types["test_ore"]
@@ -33,6 +32,7 @@ def _setup_goods_and_factory() -> FactoryType:
             input_quantity=0,
             output_goods_type=gt,
             output_quantity=10,
+            tech_quality_weight=1.0,
         )
         Recipe.recipes[recipe_key] = recipe
     else:
@@ -318,7 +318,6 @@ class TestReplenishMarket:
             gt2 = GoodsType.__new__(GoodsType)
             gt2.name = gt2_key
             gt2.base_price = 200
-            gt2.bonus_ceiling = 0.0
             GoodsType.types[gt2_key] = gt2
         else:
             gt2 = GoodsType.types[gt2_key]
@@ -330,6 +329,7 @@ class TestReplenishMarket:
                 input_quantity=0,
                 output_goods_type=gt2,
                 output_quantity=5,
+                tech_quality_weight=1.0,
             )
             Recipe.recipes[recipe2_key] = recipe2
         else:

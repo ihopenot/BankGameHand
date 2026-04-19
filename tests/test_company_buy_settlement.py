@@ -14,7 +14,7 @@ from system.market_service import MarketService, TradeRecord
 
 
 def _gt(name: str = "silicon", base_price: int = 100) -> GoodsType:
-    return GoodsType(name=name, base_price=base_price, bonus_ceiling=0.2)
+    return GoodsType(name=name, base_price=base_price)
 
 
 def _setup_seller(gt: GoodsType, quantity: int = 200, quality: float = 0.5) -> Company:
@@ -22,7 +22,7 @@ def _setup_seller(gt: GoodsType, quantity: int = 200, quality: float = 0.5) -> C
     seller = Company()
     pc = seller.get_component(ProductorComponent)
     ft = FactoryType(
-        recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10),
+        recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0),
         base_production=100, build_cost=500, maintenance_cost=20, build_time=1,
     )
     pc.factories[ft] = [Factory(ft, build_remaining=0)]
@@ -36,7 +36,7 @@ def _setup_buyer(gt_input: GoodsType, gt_output: GoodsType, cash: int = 100000) 
     """Create a buyer company needing gt_input."""
     buyer = Company()
     pc = buyer.get_component(ProductorComponent)
-    recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1)
+    recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
     ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
     pc.factories[ft] = [Factory(ft, build_remaining=0)]
     pc.init_prices()

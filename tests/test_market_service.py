@@ -15,12 +15,12 @@ from system.market_service import BuyIntent, MarketService, SellOrder, TradeReco
 
 @pytest.fixture()
 def goods_type_silicon() -> GoodsType:
-    return GoodsType(name="硅", base_price=1000, bonus_ceiling=0.1)
+    return GoodsType(name="硅", base_price=1000)
 
 
 @pytest.fixture()
 def goods_type_chip() -> GoodsType:
-    return GoodsType(name="芯片", base_price=5000, bonus_ceiling=0.1)
+    return GoodsType(name="芯片", base_price=5000)
 
 
 @pytest.fixture()

@@ -35,7 +35,6 @@ class TestGoodsConfig:
         goods_types = load_goods_types()
         chip = goods_types["芯片"]
         assert chip.base_price == 5000
-        assert chip.bonus_ceiling == 0.1
 
     def test_load_recipes(self):
         load_goods_types()

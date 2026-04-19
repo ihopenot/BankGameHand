@@ -16,45 +16,48 @@ class TestFolkInit:
     def test_folk_has_required_attributes(self) -> None:
         from entity.folk import Folk
 
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         base_demands = {
             gt_food: {"per_capita": 10, "sensitivity": 0.1},
         }
         folk = Folk(
             population=6000,
-            w_value_for_money=0.95,
+            w_quality=0.95,
             w_brand=0.05,
+            w_price=0.0,
             base_demands=base_demands,
         )
         assert folk.population == 6000
-        assert folk.w_value_for_money == 0.95
+        assert folk.w_quality == 0.95
         assert folk.w_brand == 0.05
         assert folk.base_demands is base_demands
+        assert folk.last_avg_buy_prices == {}
 
     def test_folk_has_ledger_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5, base_demands={})
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={})
         ledger = folk.get_component(LedgerComponent)
         assert ledger is not None
 
     def test_folk_has_storage_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_value_for_money=0.5, w_brand=0.5, base_demands={})
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={})
         storage = folk.get_component(StorageComponent)
         assert storage is not None
 
     def test_different_folk_have_different_demands(self) -> None:
         from entity.folk import Folk
 
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
-        gt_phone = GoodsType(name="手机", base_price=20000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
+        gt_phone = GoodsType(name="手机", base_price=20000)
 
         folk_a = Folk(
             population=6000,
-            w_value_for_money=0.95,
+            w_quality=0.95,
             w_brand=0.05,
+            w_price=0.0,
             base_demands={
                 gt_food: {"per_capita": 10, "sensitivity": 0.1},
                 gt_phone: {"per_capita": 0, "sensitivity": 0.8},
@@ -62,8 +65,9 @@ class TestFolkInit:
         )
         folk_b = Folk(
             population=1000,
-            w_value_for_money=0.2,
+            w_quality=0.2,
             w_brand=0.8,
+            w_price=0.0,
             base_demands={
                 gt_food: {"per_capita": 10, "sensitivity": 0.05},
                 gt_phone: {"per_capita": 8, "sensitivity": 0.4},
@@ -88,23 +92,25 @@ class TestLoadFolks:
         from core.config import AttrDict
         from entity.folk import load_folks
 
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
         GoodsType.types = {"食品": gt_food}
 
         config_data = AttrDict({
             "folks": [
                 AttrDict({
                     "population": 6000,
-                    "w_value_for_money": 0.95,
+                    "w_quality": 0.95,
                     "w_brand": 0.05,
+                    "w_price": 0.0,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.1}),
                     }),
                 }),
                 AttrDict({
                     "population": 1000,
-                    "w_value_for_money": 0.2,
+                    "w_quality": 0.2,
                     "w_brand": 0.8,
+                    "w_price": 0.0,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 5, "sensitivity": 0.05}),
                     }),
@@ -123,16 +129,17 @@ class TestLoadFolks:
         from core.config import AttrDict
         from entity.folk import load_folks
 
-        gt_food = GoodsType(name="食品", base_price=8000, bonus_ceiling=0.1)
-        gt_phone = GoodsType(name="手机", base_price=20000, bonus_ceiling=0.1)
+        gt_food = GoodsType(name="食品", base_price=8000)
+        gt_phone = GoodsType(name="手机", base_price=20000)
         GoodsType.types = {"食品": gt_food, "手机": gt_phone}
 
         config_data = AttrDict({
             "folks": [
                 AttrDict({
                     "population": 3000,
-                    "w_value_for_money": 0.5,
+                    "w_quality": 0.5,
                     "w_brand": 0.5,
+                    "w_price": 0.0,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.2}),
                         "手机": AttrDict({"per_capita": 3, "sensitivity": 0.7}),

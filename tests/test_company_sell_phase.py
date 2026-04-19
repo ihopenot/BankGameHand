@@ -14,11 +14,11 @@ from system.market_service import MarketService, SellOrder
 
 
 def _make_goods_type(name: str = "chip", base_price: int = 500) -> GoodsType:
-    return GoodsType(name=name, base_price=base_price, bonus_ceiling=0.3)
+    return GoodsType(name=name, base_price=base_price)
 
 
 def _make_factory_type(gt: GoodsType) -> FactoryType:
-    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10)
+    recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
     return FactoryType(recipe=recipe, base_production=100, build_cost=1000, maintenance_cost=50, build_time=1)
 
 

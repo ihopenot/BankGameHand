@@ -55,7 +55,7 @@ class _CompanyPlanStub:
 
 class TestMarketRegressionCoverage:
     def test_proportional_match_does_not_drop_remainder_supply(self) -> None:
-        goods_type = GoodsType(name='silicon', base_price=100, bonus_ceiling=0.2)
+        goods_type = GoodsType(name='silicon', base_price=100)
         seller = Entity()
         seller.init_component(StorageComponent)
         batch = GoodsBatch(goods_type=goods_type, quantity=1, quality=0.5, brand_value=0)
@@ -82,7 +82,7 @@ class TestMarketRegressionCoverage:
 
 class TestTradeSettlementRegressionCoverage:
     def test_settlement_uses_the_matched_batch_metadata(self) -> None:
-        goods_type = GoodsType(name='silicon', base_price=100, bonus_ceiling=0.2)
+        goods_type = GoodsType(name='silicon', base_price=100)
         seller = Company()
         buyer = Company()
 
@@ -115,7 +115,7 @@ class TestTradeSettlementRegressionCoverage:
         assert bought_batches[0].brand_value == 9
 
     def test_settlement_charges_only_for_delivered_quantity(self) -> None:
-        goods_type = GoodsType(name='silicon', base_price=100, bonus_ceiling=0.2)
+        goods_type = GoodsType(name='silicon', base_price=100)
         seller = Company()
         buyer = Company()
 
@@ -210,12 +210,13 @@ class TestLedgerRegressionCoverage:
 
 class TestProductorRegressionCoverage:
     def test_update_phase_recomputes_max_tech_after_highest_component_is_removed(self) -> None:
-        goods_type = GoodsType(name='silicon', base_price=100, bonus_ceiling=0.1)
+        goods_type = GoodsType(name='silicon', base_price=100)
         recipe = Recipe(
             input_goods_type=None,
             input_quantity=0,
             output_goods_type=goods_type,
             output_quantity=1,
+            tech_quality_weight=1.0,
         )
         factory_type = FactoryType(
             recipe=recipe,

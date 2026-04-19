@@ -154,9 +154,9 @@ class TestProductorServiceIntegration:
 
     def test_update_phase_reflects_highest_tech(self) -> None:
         """多个 Entity 拥有不同 tech_values，update_phase 后 max_tech 反映最高值。"""
-        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
-                        output_goods_type=gt, output_quantity=10)
+                        output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=5,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
@@ -182,9 +182,9 @@ class TestProductorServiceIntegration:
 
     def test_product_phase_end_to_end(self) -> None:
         """多公司场景下 product_phase 执行后各公司库存有产出。"""
-        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
-                        output_goods_type=gt, output_quantity=10)
+                        output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=5,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
@@ -212,9 +212,9 @@ class TestProductorServiceIntegration:
 
     def test_destroy_entity_removes_from_service_scope(self) -> None:
         """Entity.destroy() 后，ProductorService 不再遍历该组件。"""
-        gt = GoodsType(name="硅", base_price=1000, bonus_ceiling=0.0)
+        gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
-                        output_goods_type=gt, output_quantity=10)
+                        output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=5,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
@@ -264,8 +264,8 @@ class TestMarketTradingIntegration:
     @staticmethod
     def _make_goods() -> tuple[GoodsType, GoodsType]:
         """返回 (silicon, chip)。"""
-        silicon = GoodsType(name="硅", base_price=100, bonus_ceiling=0.2)
-        chip = GoodsType(name="芯片", base_price=500, bonus_ceiling=0.1)
+        silicon = GoodsType(name="硅", base_price=100)
+        chip = GoodsType(name="芯片", base_price=500)
         return silicon, chip
 
     @staticmethod
@@ -274,6 +274,7 @@ class TestMarketTradingIntegration:
         recipe = Recipe(
             input_goods_type=None, input_quantity=0,
             output_goods_type=silicon, output_quantity=10,
+            tech_quality_weight=1.0,
         )
         ft = FactoryType(
             recipe=recipe, base_production=20,
@@ -292,6 +293,7 @@ class TestMarketTradingIntegration:
         recipe = Recipe(
             input_goods_type=silicon, input_quantity=2,
             output_goods_type=chip, output_quantity=1,
+            tech_quality_weight=0.6,
         )
         ft = FactoryType(
             recipe=recipe, base_production=50,
@@ -490,8 +492,7 @@ class TestMarketTradingIntegration:
         down_chips = sum(b.quantity for b in downstream.get_component(StorageComponent).get_batches(chip))
         # base_production=50, output_quantity=1, input_quantity=2
         # full demand = 2 * 50 = 100 硅, supply = 100 → sufficiency = 1.0
-        # quality_bonus = 1.0 + quality * bonus_ceiling(silicon=0.2)
-        # output = 50 * 1 * 1.0 * quality_bonus
+        # output = 50 * 1 * 1.0
         assert down_chips > 0  # 芯片已生产出来
 
     def test_no_demand_no_trade(self) -> None:
