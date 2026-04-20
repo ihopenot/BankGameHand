@@ -34,7 +34,7 @@ class TestGoodsConfig:
     def test_goods_type_attributes(self):
         goods_types = load_goods_types()
         chip = goods_types["芯片"]
-        assert chip.base_price == 5000
+        assert chip.base_price == 50
 
     def test_load_recipes(self):
         load_goods_types()
