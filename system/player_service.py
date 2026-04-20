@@ -7,9 +7,10 @@ from rich.panel import Panel
 from rich.table import Table
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
-from core.input_controller import StdinInputController
+from core.input_controller import PlayerInputController, StdinInputController
 from core.types import RATE_SCALE, Loan, LoanApplication, PlayerAction
 from entity.bank import Bank
 from system.bank_service import BankService, LoanOffer
@@ -25,9 +26,9 @@ console = Console(width=200)
 class PlayerService(Service):
     """玩家操作服务：展示经济数据，处理玩家输入。"""
 
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: Game, input_controller: PlayerInputController | None = None) -> None:
         super().__init__(game)
-        self.input_controller = StdinInputController()
+        self.input_controller = input_controller or StdinInputController()
 
     # ── 展示方法（返回 rich 对象） ──
 
@@ -186,6 +187,188 @@ class PlayerService(Service):
             table.add_row(str(i), name, str(app.amount))
 
         return table
+
+    # ── JSON 序列化方法（返回 dict，供 WebController 使用） ──
+
+    def economy_summary_dict(self) -> dict:
+        """返回经济概要的 dict 表示。"""
+        return {
+            "round": self.game.round,
+            "total_rounds": self.game.total_rounds,
+            "economy_index": round(self.game.economy_service.economy_index / RATE_SCALE, 4),
+        }
+
+    def company_table_dict(self) -> List[dict]:
+        """返回企业概览的 dict 列表。"""
+        result: List[dict] = []
+        for name, company in self.game.company_service.companies.items():
+            ledger = company.get_component(LedgerComponent)
+            storage = company.get_component(StorageComponent)
+            pc = company.get_component(ProductorComponent)
+
+            ft_parts: List[str] = []
+            factory_count = 0
+            for ft, factories in pc.factories.items():
+                ft_parts.append(ft.recipe.output_goods_type.name)
+                factory_count += len(factories)
+
+            inv_parts: List[str] = []
+            if storage:
+                for gt, batches in storage.inventory.items():
+                    total_qty = sum(b.quantity for b in batches)
+                    if total_qty > 0:
+                        inv_parts.append(f"{gt.name} x{total_qty}")
+
+            price_parts: List[str] = []
+            for gt, price in pc.prices.items():
+                price_parts.append(f"{gt.name}:{price}")
+
+            result.append({
+                "name": name,
+                "factory_types": ", ".join(ft_parts) or "-",
+                "factory_count": factory_count,
+                "cash": ledger.cash,
+                "tech": sum(pc.tech_values.values()),
+                "brand": sum(pc.brand_values.values()),
+                "prices": ", ".join(price_parts) or "-",
+                "inventory": ", ".join(inv_parts) or "-",
+                "receivables": ledger.total_receivables(),
+                "payables": ledger.total_payables(),
+            })
+        return result
+
+    def folk_table_dict(self) -> List[dict]:
+        """返回居民概览的 dict 列表。"""
+        result: List[dict] = []
+        for i, folk in enumerate(self.game.folks):
+            ledger = folk.get_component(LedgerComponent)
+            storage = folk.get_component(StorageComponent)
+
+            inv_parts: List[str] = []
+            if storage:
+                for gt, batches in storage.inventory.items():
+                    total_qty = sum(b.quantity for b in batches)
+                    if total_qty > 0:
+                        inv_parts.append(f"{gt.name} x{total_qty}")
+
+            result.append({
+                "name": f"居民组{i+1}",
+                "population": folk.population,
+                "cash": ledger.cash,
+                "w_quality": round(folk.w_quality, 2),
+                "w_brand": round(folk.w_brand, 2),
+                "w_price": round(folk.w_price, 2),
+                "inventory": ", ".join(inv_parts) or "-",
+            })
+        return result
+
+    def bank_summary_dict(self, banks: Dict[str, Bank]) -> List[dict]:
+        """返回银行概览的 dict 列表。"""
+        result: List[dict] = []
+        for name, bank in banks.items():
+            ledger = bank.get_component(LedgerComponent)
+            interest_income = sum(
+                bill.total_paid - min(bill.total_paid, bill.principal_due)
+                for bill in ledger.bills
+            )
+            result.append({
+                "name": name,
+                "cash": ledger.cash,
+                "total_loans": ledger.total_receivables(),
+                "interest_income": interest_income,
+            })
+        return result
+
+    def loan_applications_dict(
+        self,
+        applications: List[LoanApplication],
+        company_names: Dict[str, Entity],
+    ) -> List[dict]:
+        """返回贷款申请的 dict 列表。"""
+        entity_to_name: Dict[Entity, str] = {v: k for k, v in company_names.items()}
+        result: List[dict] = []
+        for i, app in enumerate(applications, 1):
+            name = entity_to_name.get(app.applicant, "未知")
+            result.append({
+                "index": i,
+                "company_name": name,
+                "amount": app.amount,
+            })
+        return result
+
+    def metrics_entities_dict(self) -> dict:
+        """返回所有可查看 metrics 的实体列表及其历史快照数据。
+
+        返回结构:
+        {
+            "entities": [
+                {"id": "company_0", "type": "company"},
+                {"id": "银行A", "type": "bank"},
+                {"id": "居民组1", "type": "folk"},
+                ...
+            ],
+            "snapshots": {
+                "company_0": [
+                    {"round": 1, "cash": 100000, "revenue": 0, ...},
+                    ...
+                ],
+                ...
+            }
+        }
+        """
+        entities: List[dict] = []
+        snapshots: dict = {}
+
+        # Companies
+        for name, company in self.game.company_service.companies.items():
+            entities.append({"id": name, "type": "company"})
+            mc = company.get_component(MetricComponent)
+            if mc:
+                snapshots[name] = [
+                    {
+                        "round": s.round_number,
+                        "cash": s.cash,
+                        "revenue": s.revenue,
+                        "sell_orders": {gt.name: qty for gt, qty in s.sell_orders.items()},
+                        "sold_quantities": {gt.name: qty for gt, qty in s.sold_quantities.items()},
+                        "prices": {gt.name: p for gt, p in s.prices.items()},
+                        "brand_values": {gt.name: v for gt, v in s.brand_values.items()},
+                        "tech_values": {str(r): v for r, v in s.tech_values.items()},
+                        "investment_plan": dict(s.investment_plan),
+                    }
+                    for s in mc.round_history
+                ]
+
+        # Banks
+        for name, bank in self.game.bank_service.banks.items():
+            entities.append({"id": name, "type": "bank"})
+            mc = bank.get_component(MetricComponent)
+            if mc:
+                snapshots[name] = [
+                    {
+                        "round": s.round_number,
+                        "cash": s.cash,
+                        "revenue": s.revenue,
+                    }
+                    for s in mc.round_history
+                ]
+
+        # Folks
+        for i, folk in enumerate(self.game.folks):
+            folk_id = f"居民组{i+1}"
+            entities.append({"id": folk_id, "type": "folk"})
+            mc = folk.get_component(MetricComponent)
+            if mc:
+                snapshots[folk_id] = [
+                    {
+                        "round": s.round_number,
+                        "cash": s.cash,
+                        "revenue": s.revenue,
+                    }
+                    for s in mc.round_history
+                ]
+
+        return {"entities": entities, "snapshots": snapshots}
 
     # ── 兼容旧测试的字符串方法 ──
 

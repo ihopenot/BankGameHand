@@ -22,7 +22,7 @@ from system.productor_service import ProductorService
 
 class Game:
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
+    def __init__(self, config_path: Optional[str] = None, input_controller=None) -> None:
         self.round = 0
 
         # 加载配置
@@ -44,7 +44,7 @@ class Game:
         self.folk_service = FolkService()
         self.productor_service = ProductorService(self)
         self.ledger_service = LedgerService()
-        self.player_service = PlayerService(self)
+        self.player_service = PlayerService(self, input_controller=input_controller)
         self.decision_service = DecisionService()
         self.bank_service = BankService()
         self.metric_service = MetricService()
@@ -89,6 +89,7 @@ class Game:
         return self.round >= self.total_rounds
 
     def game_loop(self) -> None:
+        self.player_service.input_controller.on_game_start(self)
         while not self.game_end():
             self.update_phase()
             self.sell_phase()
@@ -101,6 +102,7 @@ class Game:
             self.settlement_phase()
             self.act_phase()
             self.snapshot_phase()
+        self.player_service.input_controller.on_game_end(self)
 
     def update_phase(self) -> None:
         self.round += 1

@@ -6,11 +6,17 @@ from typing import TYPE_CHECKING, List
 from core.types import LoanApprovalParam, PlayerAction, RepaymentType
 
 if TYPE_CHECKING:
-    pass
+    from game.game import Game
 
 
 class PlayerInputController(ABC):
     """玩家输入控制器抽象基类。"""
+
+    def on_game_start(self, game: Game) -> None:
+        """游戏循环开始前调用。子类可重写以执行初始化（如启动网络服务）。"""
+
+    def on_game_end(self, game: Game) -> None:
+        """游戏循环结束后调用。子类可重写以执行清理（如通知客户端）。"""
 
     @abstractmethod
     def get_input(self, prompt: str) -> str:
