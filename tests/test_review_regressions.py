@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from component.ai_company_decision import AICompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -17,6 +18,14 @@ from game.game import Game
 from system.company_service import CompanyService
 from system.market_service import BuyIntent, MarketService, SellOrder
 from system.productor_service import ProductorService
+
+
+@pytest.fixture(autouse=True)
+def _mock_ai():
+    with patch.object(AICompanyDecisionComponent, "_call_ai", return_value={
+        "pricing": {}, "investment_plan": {"expansion": 0, "brand": 0, "tech": 0}, "loan_needs": {"amount": 0, "max_rate": 0}
+    }):
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -83,8 +92,8 @@ class TestMarketRegressionCoverage:
 class TestTradeSettlementRegressionCoverage:
     def test_settlement_uses_the_matched_batch_metadata(self) -> None:
         goods_type = GoodsType(name='silicon', base_price=100)
-        seller = Company()
-        buyer = Company()
+        seller = Company(name="seller")
+        buyer = Company(name="buyer")
 
         seller_storage = seller.get_component(StorageComponent)
         seller_productor = seller.get_component(ProductorComponent)
@@ -116,8 +125,8 @@ class TestTradeSettlementRegressionCoverage:
 
     def test_settlement_charges_only_for_delivered_quantity(self) -> None:
         goods_type = GoodsType(name='silicon', base_price=100)
-        seller = Company()
-        buyer = Company()
+        seller = Company(name="seller")
+        buyer = Company(name="buyer")
 
         seller_storage = seller.get_component(StorageComponent)
         seller_productor = seller.get_component(ProductorComponent)

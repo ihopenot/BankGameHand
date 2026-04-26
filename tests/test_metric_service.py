@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from component.decision_component import DecisionComponent
+from component.classic_company_decision import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
@@ -19,7 +19,7 @@ def _make_company(gt: GoodsType, cash: int = 10000) -> Company:
                     output_quantity=10, tech_quality_weight=1.0)
     ft = FactoryType(recipe=recipe, base_production=100, build_cost=1000,
                      maintenance_cost=50, build_time=1)
-    company = Company()
+    company = Company(name="test_company")
     pc = company.get_component(ProductorComponent)
     pc.factories[ft] = [Factory(ft, build_remaining=0)]
     pc.init_prices()

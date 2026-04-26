@@ -65,6 +65,11 @@ class MarketService:
 
     def __init__(self) -> None:
         self._orders: Dict[GoodsType, List[SellOrder]] = defaultdict(list)
+        self._last_trades: List[TradeRecord] = []
+
+    @property
+    def last_trades(self) -> List[TradeRecord]:
+        return self._last_trades
 
     def add_sell_order(self, order: SellOrder) -> None:
         self._orders[order.batch.goods_type].append(order)
@@ -77,6 +82,7 @@ class MarketService:
 
     def update_phase(self) -> None:
         self.clear()
+        self._last_trades = []
 
     def match(self, buy_intents: List[BuyIntent]) -> List[TradeRecord]:
         """逐轮匹配算法。
@@ -207,4 +213,5 @@ class MarketService:
 
             active_buyers = [bi for bi in next_active if bi.remaining > 0]
 
+        self._last_trades = records
         return records

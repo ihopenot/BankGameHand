@@ -9,17 +9,17 @@ class TestCompany:
         assert issubclass(Company, Entity)
 
     def test_has_productor_component(self):
-        company = Company()
+        company = Company(name="test_company")
         prod = company.get_component(ProductorComponent)
         assert isinstance(prod, ProductorComponent)
 
     def test_has_storage_component(self):
-        company = Company()
+        company = Company(name="test_company")
         storage = company.get_component(StorageComponent)
         assert isinstance(storage, StorageComponent)
 
     def test_productor_storage_linked(self):
-        company = Company()
+        company = Company(name="test_company")
         prod = company.get_component(ProductorComponent)
         storage = company.get_component(StorageComponent)
         assert prod.storage is storage

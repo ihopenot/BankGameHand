@@ -20,7 +20,7 @@ def _gt(name: str = "silicon", base_price: int = 100) -> GoodsType:
 
 def _setup_seller(gt: GoodsType, quantity: int = 200, quality: float = 0.5) -> Company:
     """Create a seller company with stock of gt."""
-    seller = Company()
+    seller = Company(name="seller")
     pc = seller.get_component(ProductorComponent)
     ft = FactoryType(
         recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0),
@@ -35,7 +35,7 @@ def _setup_seller(gt: GoodsType, quantity: int = 200, quality: float = 0.5) -> C
 
 def _setup_buyer(gt_input: GoodsType, gt_output: GoodsType, cash: int = 100000) -> Company:
     """Create a buyer company needing gt_input."""
-    buyer = Company()
+    buyer = Company(name="buyer")
     pc = buyer.get_component(ProductorComponent)
     recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
     ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)

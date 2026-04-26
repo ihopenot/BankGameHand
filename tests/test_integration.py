@@ -2,7 +2,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from component.decision_component import DecisionComponent
+from component.classic_company_decision import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
@@ -38,7 +38,7 @@ class TestGameLoopIntegration:
         ProductorComponent.max_tech.clear()
         LedgerComponent.components.clear()
         StorageComponent.components.clear()
-        DecisionComponent.components.clear()
+        ClassicCompanyDecisionComponent.components.clear()
         MetricComponent.components.clear()
         GoodsType.types.clear()
         Recipe.recipes.clear()
@@ -50,7 +50,7 @@ class TestGameLoopIntegration:
         ProductorComponent.max_tech.clear()
         LedgerComponent.components.clear()
         StorageComponent.components.clear()
-        DecisionComponent.components.clear()
+        ClassicCompanyDecisionComponent.components.clear()
         MetricComponent.components.clear()
         GoodsType.types.clear()
         Recipe.recipes.clear()
@@ -311,7 +311,7 @@ class TestMarketTradingIntegration:
             recipe=recipe, base_production=20,
             build_cost=5000, maintenance_cost=100, build_time=0,
         )
-        company = Company()
+        company = Company(name="upstream")
         pc = company.get_component(ProductorComponent)
         pc.tech_values[recipe] = 100
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
@@ -330,7 +330,7 @@ class TestMarketTradingIntegration:
             recipe=recipe, base_production=50,
             build_cost=10000, maintenance_cost=200, build_time=0,
         )
-        company = Company()
+        company = Company(name="downstream")
         pc = company.get_component(ProductorComponent)
         pc.tech_values[recipe] = 100
         pc.factories[ft] = [Factory(ft, build_remaining=0)]

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from component.decision_component import DecisionComponent
+from component.classic_company_decision import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -25,7 +25,7 @@ def _reset_config():
 def _reset_components():
     ProductorComponent.components.clear()
     ProductorComponent.max_tech.clear()
-    DecisionComponent.components.clear()
+    ClassicCompanyDecisionComponent.components.clear()
     LedgerComponent.components.clear()
     StorageComponent.components.clear()
     GoodsType.types.clear()
@@ -34,7 +34,7 @@ def _reset_components():
     yield
     ProductorComponent.components.clear()
     ProductorComponent.max_tech.clear()
-    DecisionComponent.components.clear()
+    ClassicCompanyDecisionComponent.components.clear()
     LedgerComponent.components.clear()
     StorageComponent.components.clear()
     GoodsType.types.clear()

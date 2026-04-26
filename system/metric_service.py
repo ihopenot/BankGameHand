@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from component.decision_component import DecisionComponent
+from component.base_company_decision import BaseCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent, RoundSnapshot
 from component.productor_component import ProductorComponent
@@ -26,7 +26,10 @@ class MetricService:
 
             # Company 特有数据
             pc = entity.get_component(ProductorComponent)
-            dc = entity.get_component(DecisionComponent)
+            dc = next(
+                (c for c in entity._components.values() if isinstance(c, BaseCompanyDecisionComponent)),
+                None,
+            )
 
             snapshot = RoundSnapshot(
                 round_number=round_number,

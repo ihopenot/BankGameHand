@@ -5,30 +5,39 @@ companies:
   - factory_type: "硅矿场"
     count: 1
     initial_cash: 100000
+    decision_component: "classic"
   - factory_type: "芯片工厂"
     count: 1
     initial_cash: 200000
+    decision_component: "classic"
   - factory_type: "手机工厂"
     count: 1
     initial_cash: 150000
+    decision_component: "classic"
   - factory_type: "棉花农场"
     count: 1
     initial_cash: 80000
+    decision_component: "classic"
   - factory_type: "纺织厂"
     count: 1
     initial_cash: 120000
+    decision_component: "classic"
   - factory_type: "服装厂"
     count: 1
     initial_cash: 100000
+    decision_component: "classic"
   - factory_type: "麦田"
     count: 1
     initial_cash: 60000
+    decision_component: "classic"
   - factory_type: "面粉厂"
     count: 1
     initial_cash: 80000
+    decision_component: "classic"
   - factory_type: "食品厂"
     count: 1
     initial_cash: 90000
+    decision_component: "classic"
 
 banks:
   - name: "测试银行A"
@@ -40,3 +49,4 @@ bankruptcy:
   liquidation_factory_rate: 0.5
   min_producers_per_goods: 2
   new_company_initial_cash: 100000
+  replenish_decision_component: "classic"

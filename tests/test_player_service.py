@@ -48,7 +48,7 @@ def _make_company_with_price():
     gt = GoodsType(name="硅", base_price=1000)
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=100, tech_quality_weight=1.0)
     ft = FactoryType(recipe=recipe, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
-    company = Company()
+    company = Company(name="test_company")
     pc = company.get_component(ProductorComponent)
     pc.factories[ft].append(Factory(ft, build_remaining=0))
     pc.prices[gt] = 1200
@@ -86,7 +86,7 @@ class TestFormatCompanyTable:
         gt2 = GoodsType(name="芯片", base_price=5000)
         recipe1 = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt1, output_quantity=100, tech_quality_weight=1.0)
         ft1 = FactoryType(recipe=recipe1, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
-        company = Company()
+        company = Company(name="multi_product_company")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft1].append(Factory(ft1, build_remaining=0))
         pc.prices[gt1] = 1200
@@ -111,7 +111,7 @@ class TestFormatBankSummary:
         svc = _make_player_service()
         bank = Bank()
         bank.get_component(LedgerComponent).cash = 400_000
-        company = Company()
+        company = Company(name="debtor")
         loan = Loan(
             creditor=bank, debtor=company, principal=100_000,
             rate=500, term=5, loan_type=LoanType.CORPORATE_LOAN,
@@ -126,7 +126,7 @@ class TestFormatActiveLoans:
     def test_display(self):
         svc = _make_player_service()
         bank = Bank()
-        company = Company()
+        company = Company(name="debtor")
         loan = Loan(
             creditor=bank, debtor=company, principal=100_000,
             rate=500, term=5, loan_type=LoanType.CORPORATE_LOAN,
@@ -145,7 +145,7 @@ class TestFormatActiveLoans:
 class TestFormatLoanApplications:
     def test_display(self):
         svc = _make_player_service()
-        company = Company()
+        company = Company(name="applicant")
         app = LoanApplication(applicant=company, amount=80_000)
         output = svc.format_loan_applications([app], {"company_0": company})
         assert "80000" in output
@@ -219,8 +219,7 @@ class TestHandleLoanApproval:
         svc = _make_player_service()
         bank_service = BankService()
         bank = bank_service.create_bank("银行A", 500_000)
-        company = Company()
-        company.get_component(LedgerComponent).cash = 10_000
+        company = Company(name="applicant")
         svc.game.company_service.companies = {"company_0": company}
         app = LoanApplication(applicant=company, amount=100_000)
         bank_service.collect_applications([app])
