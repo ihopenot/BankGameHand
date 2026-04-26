@@ -2,6 +2,7 @@
 
 import math
 import random
+from pathlib import Path
 from typing import Callable
 from unittest.mock import MagicMock
 
@@ -29,13 +30,12 @@ def _clear_components():
 @pytest.fixture(autouse=True)
 def _load_config():
     """确保配置和 GoodsType 已加载。"""
-    cm = ConfigManager()
-    try:
-        cm.section("decision")
-    except KeyError:
-        cm.load()
-    if not GoodsType.types:
-        load_goods_types()
+    ConfigManager._instance = None
+    ConfigManager().load(str(Path(__file__).parent / "config_integration"))
+    GoodsType.types.clear()
+    load_goods_types()
+    yield
+    ConfigManager._instance = None
 
 
 @pytest.fixture()
@@ -46,10 +46,10 @@ def comp() -> ClassicCompanyDecisionComponent:
 
 
 def _get_goods_type(name: str) -> GoodsType:
-    """获取已注册的 GoodsType，不存在则 skip。"""
+    """获取已注册的 GoodsType，不存在则报错。"""
     gt = GoodsType.types.get(name)
     if gt is None:
-        pytest.skip(f"GoodsType '{name}' not registered")
+        raise ValueError(f"GoodsType '{name}' not registered — test data out of sync with config")
     return gt
 
 
@@ -277,26 +277,47 @@ class TestClassicBudgetAllocation:
 
     def test_full_allocation_when_cash_sufficient(self, comp) -> None:
         """现金充足时，全额分配。"""
-        ctx = _make_context(cash=100000, last_revenue=10000)
+        from entity.factory import FactoryType as FT
+        mock_ft = MagicMock(spec=FT)
+        mock_ft.build_cost = 5000
+        mock_ft.maintenance_cost = 500
+        built_factory = MagicMock()
+        built_factory.is_built = True
+
+        ctx = _make_context(
+            cash=100000,
+            last_revenue=10000,
+            factories={mock_ft: [built_factory]},
+        )
+        comp.risk_appetite = 1.0
+        comp.business_acumen = 1.0
         comp.set_context(ctx)
         plan = comp.decide_investment_plan()
         plan_total = sum(plan.values())
-        if plan_total == 0:
-            pytest.skip("No investment plan to allocate")
+        assert plan_total > 0, "investment plan should be non-zero with factories and revenue"
 
-        ctx["ledger"]["cash"] = 100000
-        comp.set_context(ctx)
         allocation = comp.decide_budget_allocation()
         assert sum(allocation.values()) == plan_total
 
     def test_partial_allocation_when_cash_insufficient(self, comp) -> None:
         """现金不足时，按比例分配。"""
-        ctx = _make_context(cash=100, last_revenue=10000)
+        from entity.factory import FactoryType as FT
+        mock_ft = MagicMock(spec=FT)
+        mock_ft.build_cost = 5000
+        mock_ft.maintenance_cost = 500
+        built_factory = MagicMock()
+        built_factory.is_built = True
+
+        ctx = _make_context(
+            cash=100,
+            last_revenue=10000,
+            factories={mock_ft: [built_factory]},
+        )
+        comp.risk_appetite = 1.0
+        comp.business_acumen = 1.0
         comp.set_context(ctx)
         plan = comp.decide_investment_plan()
-        plan_total = sum(plan.values())
-        if plan_total == 0:
-            pytest.skip("No investment plan to allocate")
+        assert sum(plan.values()) > 0, "investment plan should be non-zero with factories and revenue"
 
         allocation = comp.decide_budget_allocation()
         assert sum(allocation.values()) <= 100
@@ -366,11 +387,23 @@ class TestClassicLoanNeeds:
 
     def test_loan_needed_when_cash_insufficient(self, comp) -> None:
         """现金不足时有贷款需求。"""
-        ctx = _make_context(cash=0, last_revenue=10000)
+        from entity.factory import FactoryType as FT
+        mock_ft = MagicMock(spec=FT)
+        mock_ft.build_cost = 5000
+        mock_ft.maintenance_cost = 500
+        built_factory = MagicMock()
+        built_factory.is_built = True
+
+        ctx = _make_context(
+            cash=0,
+            last_revenue=10000,
+            factories={mock_ft: [built_factory]},
+        )
+        comp.risk_appetite = 1.0
+        comp.business_acumen = 1.0
         comp.set_context(ctx)
         plan = comp.decide_investment_plan()
-        if sum(plan.values()) == 0:
-            pytest.skip("No investment plan → no loan need")
+        assert sum(plan.values()) > 0, "investment plan should be non-zero with factories and revenue"
 
         amount, _ = comp.decide_loan_needs()
         assert amount > 0
