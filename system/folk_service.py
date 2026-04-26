@@ -172,7 +172,7 @@ class FolkService:
                 buyer_storage.add_batch(transferred)
 
             # 现金支付（居民目前无限现金，不做赊账）
-            total_cost = trade.total
+            total_cost = transferred.quantity * trade.price
             buyer_ledger = buyer.get_component(LedgerComponent)
             seller_ledger = seller.get_component(LedgerComponent)
             buyer_ledger.cash -= total_cost
@@ -182,9 +182,9 @@ class FolkService:
             seller_mc = seller.get_component(MetricComponent)
             if seller_mc is not None:
                 seller_mc.last_sold_quantities[trade.goods_type] = (
-                    seller_mc.last_sold_quantities.get(trade.goods_type, 0) + trade.quantity
+                    seller_mc.last_sold_quantities.get(trade.goods_type, 0) + transferred.quantity
                 )
-                seller_mc.last_revenue += trade.total
+                seller_mc.last_revenue += total_cost
 
     def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
         """居民采购阶段：计算需求 → 按商品类型公平分配 → 结算 → 更新购买均价。

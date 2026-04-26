@@ -17,14 +17,6 @@ from system.market_service import BuyIntent, MarketService, SellOrder, TradeReco
 
 class CompanyService:
 
-    # 清算偿还优先级：数值越小越优先
-    _LIQUIDATION_PRIORITY = {
-        LoanType.TRADE_PAYABLE: 0,
-        LoanType.DEPOSIT: 1,
-        LoanType.INTERBANK: 2,
-        LoanType.CORPORATE_LOAN: 3,
-        LoanType.BOND: 4,
-    }
 
     def __init__(self) -> None:
         self.companies: Dict[str, Company] = {}
@@ -231,7 +223,7 @@ class CompanyService:
         remaining_proceeds = proceeds
         payables_by_priority = sorted(
             list(ledger.payables),
-            key=lambda loan: self._LIQUIDATION_PRIORITY.get(loan.loan_type, 99),
+            key=lambda loan: loan.loan_type.priority,
         )
 
         for loan in payables_by_priority:

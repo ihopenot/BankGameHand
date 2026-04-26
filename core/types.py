@@ -86,7 +86,11 @@ class Loan:
             )
 
         if self.repayment_type == RepaymentType.EQUAL_PRINCIPAL:
-            principal_due = self.principal // self.term
+            is_final = self.elapsed >= self.term - 1
+            if is_final:
+                principal_due = self.remaining
+            else:
+                principal_due = self.principal // self.term
             return LoanBill(
                 loan=self,
                 principal_due=principal_due,

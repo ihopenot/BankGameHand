@@ -142,7 +142,7 @@ class PlayerService(Service):
             cash = ledger.cash
             total_loans = ledger.total_receivables()
             interest_income = sum(
-                bill.total_paid - min(bill.total_paid, bill.principal_due)
+                min(bill.interest_due, bill.total_paid)
                 for bill in ledger.bills
             )
             table.add_row(name, str(cash), str(total_loans), str(interest_income))
@@ -268,7 +268,7 @@ class PlayerService(Service):
         for name, bank in banks.items():
             ledger = bank.get_component(LedgerComponent)
             interest_income = sum(
-                bill.total_paid - min(bill.total_paid, bill.principal_due)
+                min(bill.interest_due, bill.total_paid)
                 for bill in ledger.bills
             )
             result.append({
