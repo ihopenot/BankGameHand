@@ -1,22 +1,22 @@
 goods_types:
   - name: "硅"
-    base_price: 1000
+    base_price: 10
   - name: "芯片"
-    base_price: 5000
+    base_price: 50
   - name: "手机"
-    base_price: 20000
+    base_price: 200
   - name: "棉花"
-    base_price: 800
+    base_price: 8
   - name: "布料"
-    base_price: 3000
+    base_price: 30
   - name: "服装"
-    base_price: 15000
+    base_price: 150
   - name: "小麦"
-    base_price: 500
+    base_price: 5
   - name: "面粉"
-    base_price: 2000
+    base_price: 20
   - name: "食品"
-    base_price: 8000
+    base_price: 80
 
 recipes:
   # 电子产业链
