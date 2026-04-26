@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from component.decision_component import DecisionComponent
+from component.classic_company_decision import ClassicCompanyDecisionComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.entity import Entity
@@ -27,13 +27,13 @@ class TestBuyPhaseDemand:
         recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
-        company = Company()
+        company = Company(name="buyer")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
 
         # Seller with silicon in stock
-        seller = Company()
+        seller = Company(name="seller")
         seller_pc = seller.get_component(ProductorComponent)
         seller_ft = FactoryType(
             recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
@@ -67,14 +67,14 @@ class TestBuyPhaseDemand:
         recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
-        company = Company()
+        company = Company(name="buyer")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
         storage = company.get_component(StorageComponent)
         storage.add_batch(GoodsBatch(goods_type=gt_input, quantity=30, quality=0.5, brand_value=0))
 
-        seller = Company()
+        seller = Company(name="seller")
         seller_pc = seller.get_component(ProductorComponent)
         seller_ft = FactoryType(
             recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
@@ -105,7 +105,7 @@ class TestBuyPhaseDemand:
         recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
-        company = Company()
+        company = Company(name="buyer")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -125,7 +125,7 @@ class TestBuyPhaseDemand:
         recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_raw, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=100, build_cost=500, maintenance_cost=20, build_time=1)
 
-        company = Company()
+        company = Company(name="raw_producer")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -148,17 +148,18 @@ class TestBuyPhasePreference:
         recipe = Recipe(input_goods_type=gt_input, input_quantity=2, output_goods_type=gt_output, output_quantity=1, tech_quality_weight=0.6)
         ft = FactoryType(recipe=recipe, base_production=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
-        buyer = Company()
+        buyer = Company(name="buyer")
         pc = buyer.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
+        buyer.init_component(ClassicCompanyDecisionComponent)
         # Set traits so price sensitivity is high → cheaper seller wins
-        dc = buyer.get_component(DecisionComponent)
+        dc = buyer.get_component(ClassicCompanyDecisionComponent)
         dc.marketing_awareness = 0.1
         dc.price_sensitivity = 0.8
 
         # seller_a: quality 0.8, price 100 (cheaper)
-        seller_a = Company()
+        seller_a = Company(name="seller_a")
         seller_a_pc = seller_a.get_component(ProductorComponent)
         seller_a_ft = FactoryType(
             recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),
@@ -170,7 +171,7 @@ class TestBuyPhasePreference:
         seller_a.get_component(StorageComponent).add_batch(batch_a)
 
         # seller_b: quality 0.9, price 200 (expensive)
-        seller_b = Company()
+        seller_b = Company(name="seller_b")
         seller_b_pc = seller_b.get_component(ProductorComponent)
         seller_b_ft = FactoryType(
             recipe=Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_input, output_quantity=10, tech_quality_weight=1.0),

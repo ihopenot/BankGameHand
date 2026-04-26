@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from component.decision_component import DecisionComponent
+from component.base_company_decision import get_decision_component_class
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
@@ -34,21 +34,25 @@ class CompanyService:
         self._liquidation_factory_rate: float = bankruptcy_cfg.liquidation_factory_rate
         self._min_producers: int = bankruptcy_cfg.min_producers_per_goods
         self._new_company_cash: int = bankruptcy_cfg.new_company_initial_cash
+        self._replenish_decision_component: str = bankruptcy_cfg.replenish_decision_component
 
     def create_company(
         self,
         name: str,
         factory_type: FactoryType,
         initial_cash: int,
+        decision_component: str,
     ) -> Company:
         """创建一家拥有指定工厂类型和初始资金的公司。"""
-        company = Company()
+        company = Company(name=name)
         ledger = company.get_component(LedgerComponent)
         ledger.cash = initial_cash
         pc = company.get_component(ProductorComponent)
         factory = Factory(factory_type, build_remaining=0)
         pc.factories[factory_type].append(factory)
         pc.init_prices()
+        decision_cls = get_decision_component_class(decision_component)
+        company.init_component(decision_cls)
         self.companies[name] = company
         return company
 
@@ -285,6 +289,7 @@ class CompanyService:
                     name=name,
                     factory_type=ft,
                     initial_cash=self._new_company_cash,
+                    decision_component=self._replenish_decision_component,
                 )
                 company_idx += 1
                 count += 1

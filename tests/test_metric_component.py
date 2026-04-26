@@ -130,7 +130,7 @@ class TestEntityMounting:
 
     def test_company_has_metric_component(self) -> None:
         from entity.company.company import Company
-        company = Company()
+        company = Company(name="test_company")
         mc = company.get_component(MetricComponent)
         assert mc is not None
         assert isinstance(mc, MetricComponent)

@@ -62,12 +62,14 @@ class Game:
         company_idx = 0
         for item in game_cfg.companies:
             ft = factory_types[item.factory_type]
+            decision = item.decision_component
             for _ in range(item.count):
                 name = f"company_{company_idx}"
                 self.company_service.create_company(
                     name=name,
                     factory_type=ft,
                     initial_cash=item.initial_cash,
+                    decision_component=decision,
                 )
                 company_idx += 1
 
@@ -126,6 +128,16 @@ class Game:
         self.productor_service.product_phase()
 
     def plan_phase(self) -> None:
+        # 传递市场数据给 DecisionService
+        economy_index = self.economy_service.economy_index / RATE_SCALE
+        all_sell_orders = [
+            order for orders in self.market_service._orders.values() for order in orders
+        ]
+        self.decision_service.set_market_data(
+            sell_orders=all_sell_orders,
+            trades=self.market_service.last_trades,
+            economy_index=economy_index,
+        )
         self.decision_service.plan_phase(self.companies)
 
     def loan_application_phase(self) -> None:

@@ -3,14 +3,29 @@ from __future__ import annotations
 
 import math
 
+from pathlib import Path
+
+import pytest
+
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
+from core.config import ConfigManager
 from core.entity import Entity
 from entity.folk import Folk
 from entity.goods import GoodsBatch, GoodsType
 from system.folk_service import FolkService
 from system.market_service import MarketService, SellOrder, TradeRecord
+
+_TEST_CONFIG_DIR = str(Path(__file__).parent / "config_integration")
+
+
+@pytest.fixture(autouse=True)
+def _reset_config():
+    ConfigManager._instance = None
+    ConfigManager().load(_TEST_CONFIG_DIR)
+    yield
+    ConfigManager._instance = None
 
 
 class TestFolkServiceInit:
@@ -449,11 +464,14 @@ class TestBuyPhase:
         from component.productor_component import ProductorComponent
         from entity.factory import Factory, FactoryType, Recipe
 
+        ConfigManager._instance = None
+        ConfigManager().load(_TEST_CONFIG_DIR)
+
         gt_food = GoodsType(name="食品", base_price=8000)
         recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_food, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, base_production=100, build_cost=1000, maintenance_cost=50, build_time=1)
 
-        seller = Company()
+        seller = Company(name="seller")
         pc = seller.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()

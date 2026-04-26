@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
+from component.ai_company_decision import AICompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
@@ -12,6 +13,15 @@ from core.config import ConfigManager
 from entity.factory import Recipe, FactoryType
 from entity.goods import GoodsType
 from game.game import Game
+
+
+@pytest.fixture(autouse=True)
+def _mock_ai():
+    """AI 组件的 _call_ai 返回空决策，避免调用真实 SDK。"""
+    with patch.object(AICompanyDecisionComponent, "_call_ai", return_value={
+        "pricing": {}, "investment_plan": {"expansion": 0, "brand": 0, "tech": 0}, "loan_needs": {"amount": 0, "max_rate": 0}
+    }):
+        yield
 
 
 @pytest.fixture(autouse=True)

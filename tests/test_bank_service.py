@@ -71,7 +71,7 @@ class TestBankServiceOffers:
     def _setup(self):
         service = BankService()
         bank = service.create_bank("bank_0", 500_000)
-        company = Company()
+        company = Company(name="applicant")
         company.get_component(LedgerComponent).cash = 10_000
         app = LoanApplication(applicant=company, amount=100_000)
         service.collect_applications([app])
@@ -102,7 +102,7 @@ class TestAcceptLoans:
         service = BankService()
         bank_a = service.create_bank("bank_a", 500_000)
         bank_b = service.create_bank("bank_b", 500_000)
-        company = Company()
+        company = Company(name="applicant")
         company.get_component(LedgerComponent).cash = 10_000
         return service, bank_a, bank_b, company
 

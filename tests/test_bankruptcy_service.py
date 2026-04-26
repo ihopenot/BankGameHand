@@ -58,7 +58,7 @@ def _make_bankrupt_company(
     cash: int, factory_type: FactoryType, num_factories: int = 1
 ) -> Company:
     """创建一家已标记破产的公司。"""
-    company = Company()
+    company = Company(name="bankrupt_company")
     ledger = company.get_component(LedgerComponent)
     ledger.cash = cash
     ledger.is_bankrupt = True
@@ -214,7 +214,7 @@ class TestProcessBankruptcies:
 
         # 公司 A 破产，欠公司 B 钱
         company_a = _make_bankrupt_company(cash=0, factory_type=ft)
-        company_b = Company()
+        company_b = Company(name="company_b")
         company_b.get_component(LedgerComponent).cash = 100
 
         trade_debt = Loan(
@@ -240,7 +240,7 @@ class TestProcessBankruptcies:
     def test_non_bankrupt_company_not_affected(self) -> None:
         """未标记破产的公司不应被清算。"""
         ft = _setup_goods_and_factory()
-        healthy_company = Company()
+        healthy_company = Company(name="healthy_company")
         healthy_ledger = healthy_company.get_component(LedgerComponent)
         healthy_ledger.cash = 10000
         pc = healthy_company.get_component(ProductorComponent)
@@ -269,7 +269,7 @@ class TestReplenishMarket:
         gt = GoodsType.types["test_ore"]
 
         # 只有 1 家存活公司生产 test_ore，阈值为 2
-        company = Company()
+        company = Company(name="producer")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft].append(Factory(ft, build_remaining=0))
 
@@ -298,7 +298,7 @@ class TestReplenishMarket:
 
         service = CompanyService()
         for i in range(3):
-            c = Company()
+            c = Company(name=f"company_{i}")
             pc = c.get_component(ProductorComponent)
             pc.factories[ft].append(Factory(ft, build_remaining=0))
             service.companies[f"company_{i}"] = c
@@ -350,11 +350,11 @@ class TestReplenishMarket:
 
         service = CompanyService()
         # 两种商品都只有 1 家生产者
-        c1 = Company()
+        c1 = Company(name="ore_company")
         c1.get_component(ProductorComponent).factories[ft1].append(Factory(ft1, build_remaining=0))
         service.companies["ore_company"] = c1
 
-        c2 = Company()
+        c2 = Company(name="gem_company")
         c2.get_component(ProductorComponent).factories[ft2].append(Factory(ft2, build_remaining=0))
         service.companies["gem_company"] = c2
 

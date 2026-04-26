@@ -30,7 +30,7 @@ class TestSellPhase:
         gt = _make_goods_type()
         ft = _make_factory_type(gt)
 
-        company = Company()
+        company = Company(name="seller")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -53,7 +53,7 @@ class TestSellPhase:
         gt = _make_goods_type()
         ft = _make_factory_type(gt)
 
-        company = Company()
+        company = Company(name="seller")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -75,7 +75,7 @@ class TestSellPhase:
         gt = _make_goods_type()
         ft = _make_factory_type(gt)
 
-        company = Company()
+        company = Company(name="seller")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -92,7 +92,7 @@ class TestSellPhase:
         assert len(orders) == 0
 
     def test_no_inventory_no_orders(self) -> None:
-        company = Company()
+        company = Company(name="empty_company")
         market = MarketService()
         service = CompanyService()
         service.companies = {"c1": company}
@@ -105,7 +105,7 @@ class TestSellPhase:
         gt = _make_goods_type(base_price=1200)
         ft = _make_factory_type(gt)
 
-        company = Company()
+        company = Company(name="seller")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
@@ -125,7 +125,7 @@ class TestSellPhase:
         gt = _make_goods_type()
         ft = _make_factory_type(gt)
 
-        c1 = Company()
+        c1 = Company(name="seller_1")
         pc1 = c1.get_component(ProductorComponent)
         pc1.factories[ft] = [Factory(ft, build_remaining=0)]
         pc1.init_prices()
@@ -133,7 +133,7 @@ class TestSellPhase:
             GoodsBatch(goods_type=gt, quantity=50, quality=0.6, brand_value=3)
         )
 
-        c2 = Company()
+        c2 = Company(name="seller_2")
         pc2 = c2.get_component(ProductorComponent)
         pc2.factories[ft] = [Factory(ft, build_remaining=0)]
         pc2.init_prices()
@@ -154,7 +154,7 @@ class TestSellPhase:
         gt = _make_goods_type()
         ft = _make_factory_type(gt)
 
-        company = Company()
+        company = Company(name="seller")
         pc = company.get_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         pc.init_prices()
