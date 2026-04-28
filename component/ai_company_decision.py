@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import logging
+import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple
 
 from component.base_company_decision import BaseCompanyDecisionComponent, register_decision_component
@@ -60,6 +62,45 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
     覆写 decide_pricing、decide_investment_plan、decide_loan_needs 读取 AI 缓存。
     """
 
+    _sdk: MCPAgentSDK | None = None
+    _sdk_initialized: bool = False
+    _loop: asyncio.AbstractEventLoop | None = None
+    _loop_thread: threading.Thread | None = None
+
+    @classmethod
+    def _get_sdk(cls) -> MCPAgentSDK:
+        """获取或创建共享的 MCPAgentSDK 实例。"""
+        if cls._sdk is None:
+            cls._sdk = MCPAgentSDK()
+        return cls._sdk
+
+    @classmethod
+    def _ensure_loop(cls) -> asyncio.AbstractEventLoop:
+        """确保后台事件循环线程已启动，返回该循环。"""
+        if cls._loop is None or cls._loop.is_closed():
+            cls._loop = asyncio.new_event_loop()
+            cls._loop_thread = threading.Thread(
+                target=cls._loop.run_forever, daemon=True, name="ai-sdk-loop"
+            )
+            cls._loop_thread.start()
+        return cls._loop
+
+    @classmethod
+    def _run_in_loop(cls, coro) -> Any:
+        """将协程提交到后台事件循环并同步等待结果。"""
+        loop = cls._ensure_loop()
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result()  # 阻塞当前线程直到完成
+
+    @classmethod
+    async def _ensure_sdk_initialized(cls) -> MCPAgentSDK:
+        """确保 SDK 已初始化，返回可用的 SDK 实例。"""
+        sdk = cls._get_sdk()
+        if not cls._sdk_initialized:
+            await sdk.init()
+            cls._sdk_initialized = True
+        return sdk
+
     def __init__(self, outer: Entity) -> None:
         super().__init__(outer)
         self._ai_decisions: Dict[str, Any] = {}
@@ -100,7 +141,6 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
         """通过 MCPAgentSDK 调用 AI agent，返回解析后的决策 dict。"""
         prompt = self._build_prompt(context)
         logger.info("[AI] Prompt:\n%s", prompt)
-        sdk = MCPAgentSDK()
         config = AgentRunConfig(
             prompt=prompt,
             validate_fn=self._validate_fn,
@@ -109,7 +149,7 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
             permission_mode="plan",
         )
 
-        result = asyncio.run(self._run_agent(sdk, config))
+        result = AICompanyDecisionComponent._run_in_loop(self._run_agent(config))
 
         # 尝试从 result.message 解析 JSON
         decisions = self._parse_ai_result(result.message)
@@ -117,10 +157,10 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
                      json.dumps(decisions, ensure_ascii=False))
         return decisions
 
-    @staticmethod
-    async def _run_agent(sdk: MCPAgentSDK, config: AgentRunConfig) -> AgentResult:
+    @classmethod
+    async def _run_agent(cls, config: AgentRunConfig) -> AgentResult:
         """运行 AI agent 并收集最终结果，同时输出所有事件。"""
-        await sdk.init()
+        sdk = await cls._ensure_sdk_initialized()
         final_result = None
         async for event in sdk.run_agent(config):
             if isinstance(event, AgentResult):
