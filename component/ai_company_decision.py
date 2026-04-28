@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple
 
 from component.base_company_decision import BaseCompanyDecisionComponent, register_decision_component
 from component.classic_company_decision import ClassicCompanyDecisionComponent
-from mcp_agent_sdk import AgentResult, AgentRunConfig, AssistantMessage, MCPAgentSDK
+from mcp_agent_sdk import AgentResult, AgentRunConfig, AgentSession, AssistantMessage, MCPAgentSDK
 
 if TYPE_CHECKING:
     from core.entity import Entity
@@ -66,6 +66,7 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
     _sdk_initialized: bool = False
     _loop: asyncio.AbstractEventLoop | None = None
     _loop_thread: threading.Thread | None = None
+    _sessions: Dict[str, AgentSession] = {}
 
     @classmethod
     def _get_sdk(cls) -> MCPAgentSDK:
@@ -101,6 +102,59 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
             cls._sdk_initialized = True
         return sdk
 
+    # ── Session 池管理 ──
+
+    @classmethod
+    def prepare_session(cls, company_name: str) -> None:
+        """为指定公司 prepare 一个 AgentSession 并存入池。"""
+        config = AgentRunConfig(
+            validate_fn=cls._validate_fn,
+            max_retries=3,
+            model="glm-5.1",
+            permission_mode="plan",
+        )
+        session = cls._run_in_loop(cls._prepare_session_coro(config))
+        cls._sessions[company_name] = session
+
+    @classmethod
+    async def _prepare_session_coro(cls, config: AgentRunConfig) -> AgentSession:
+        """异步 prepare session 的协程。"""
+        sdk = await cls._ensure_sdk_initialized()
+        return await sdk.prepare(config)
+
+    @classmethod
+    def prepare_next_sessions(cls, company_names: List[str]) -> None:
+        """为所有指定公司并行 prepare session。"""
+        if not company_names:
+            return
+        configs = [
+            AgentRunConfig(
+                validate_fn=cls._validate_fn,
+                max_retries=3,
+                model="glm-5.1",
+                permission_mode="plan",
+            )
+            for _ in company_names
+        ]
+        sessions = cls._run_in_loop(cls._prepare_all_coro(configs))
+        for name, session in zip(company_names, sessions):
+            cls._sessions[name] = session
+
+    @classmethod
+    async def _prepare_all_coro(cls, configs: List[AgentRunConfig]) -> List[AgentSession]:
+        """异步并行 prepare 所有 session。"""
+        sdk = await cls._ensure_sdk_initialized()
+        tasks = [sdk.prepare(config) for config in configs]
+        return await asyncio.gather(*tasks)
+
+    @classmethod
+    def cleanup_sessions(cls) -> None:
+        """关闭所有 prepared session 并清空池。"""
+        for name, session in list(cls._sessions.items()):
+            if not session.closed:
+                cls._run_in_loop(session.close())
+        cls._sessions.clear()
+
     def __init__(self, outer: Entity) -> None:
         super().__init__(outer)
         self._ai_decisions: Dict[str, Any] = {}
@@ -110,7 +164,7 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
     def set_context(self, context: dict) -> None:
         """接收上下文并调用 AI 生成决策，结果缓存。"""
         super().set_context(context)
-        self._ai_decisions = self._call_ai(context)
+        self._ai_decisions = self._query_ai(context)
 
     # ── 覆写 3 个决策方法：读取缓存 ──
 
@@ -135,27 +189,95 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
             return (loan.get("amount", 0), loan.get("max_rate", 0))
         return super().decide_loan_needs()
 
-    # ── AI 调用 ──
+    # ── AI 调用（两阶段） ──
 
-    def _call_ai(self, context: dict) -> Dict[str, Any]:
-        """通过 MCPAgentSDK 调用 AI agent，返回解析后的决策 dict。"""
+    def _query_ai(self, context: dict) -> Dict[str, Any]:
+        """通过 MCPAgentSDK 调用 AI agent，优先使用 prepared session + do_query，无 session 时回退 run_agent。"""
         prompt = self._build_prompt(context)
-        logger.info("[AI] Prompt:\n%s", prompt)
-        config = AgentRunConfig(
-            prompt=prompt,
-            validate_fn=self._validate_fn,
-            max_retries=3,
-            model="glm-5.1",
-            permission_mode="plan",
-        )
+        # logger.info("[AI] Prompt:\n%s", prompt)
+        company_name = context.get("company", {}).get("name", "?")
 
-        result = AICompanyDecisionComponent._run_in_loop(self._run_agent(config))
+        session = self._sessions.pop(company_name, None)
+        if session is not None and not session.closed:
+            logger.info("[AI] %s 使用 prepared session do_query", company_name)
+            result = self._run_in_loop(self._do_query(session, prompt))
+        else:
+            logger.info("[AI] %s 无 prepared session，回退 run_agent", company_name)
+            config = AgentRunConfig(
+                prompt=prompt,
+                validate_fn=self._validate_fn,
+                max_retries=3,
+                model="glm-5.1",
+                permission_mode="plan",
+            )
+            result = self._run_in_loop(self._run_agent(config))
 
         # 尝试从 result.message 解析 JSON
         decisions = self._parse_ai_result(result.message)
-        logger.info("[AI] %s 决策结果: %s", self._context.get("company", {}).get("name", "?"),
+        logger.info("[AI] %s 决策结果: %s", company_name,
                      json.dumps(decisions, ensure_ascii=False))
         return decisions
+
+    @classmethod
+    def query_all_parallel(cls, queries: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
+        """并行查询所有 AI 公司。queries 为 (company_name, prompt) 列表，返回对应的 decisions 列表。"""
+        if not queries:
+            return []
+        coro = cls._query_all_coro(queries)
+        return cls._run_in_loop(coro)
+
+    @classmethod
+    async def _query_all_coro(cls, queries: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
+        """异步并行执行所有 query。"""
+        tasks = []
+        for company_name, prompt in queries:
+            session = cls._sessions.pop(company_name, None)
+            if session is not None and not session.closed:
+                logger.info("[AI] %s 使用 prepared session do_query", company_name)
+                tasks.append(cls._do_query(session, prompt))
+            else:
+                logger.info("[AI] %s 无 prepared session，回退 run_agent", company_name)
+                config = AgentRunConfig(
+                    prompt=prompt,
+                    validate_fn=cls._validate_fn,
+                    max_retries=3,
+                    model="glm-5.1",
+                    permission_mode="plan",
+                )
+                tasks.append(cls._run_agent(config))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        decisions_list: List[Dict[str, Any]] = []
+        for i, result in enumerate(results):
+            company_name = queries[i][0]
+            if isinstance(result, Exception):
+                logger.error("[AI] %s query 失败: %s", company_name, result)
+                decisions_list.append({})
+            else:
+                decisions = cls._parse_ai_result(result.message)
+                logger.info("[AI] %s 决策结果: %s", company_name,
+                             json.dumps(decisions, ensure_ascii=False))
+                decisions_list.append(decisions)
+        return decisions_list
+
+    @classmethod
+    async def _do_query(cls, session: AgentSession, prompt: str) -> AgentResult:
+        """在 prepared session 上发送 prompt 并收集结果。"""
+        final_result = None
+        async for event in cls._get_sdk().do_query(session, prompt):
+            if isinstance(event, AgentResult):
+                final_result = event
+                logger.info("[AI] AgentResult: status=%s message=%s", event.status, event.message[:500])
+            elif isinstance(event, AssistantMessage):
+                cls._log_assistant_message(event)
+        if final_result is None:
+            raise RuntimeError("AI agent do_query did not return a result")
+        return final_result
+
+    def _call_ai(self, context: dict) -> Dict[str, Any]:
+        """兼容旧接口，委托到 _query_ai。"""
+        return self._query_ai(context)
 
     @classmethod
     async def _run_agent(cls, config: AgentRunConfig) -> AgentResult:
