@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
+from component.ai_company_decision import AICompanyDecisionComponent
 from core.config import ConfigManager
 from entity.company.company import Company
 from entity.factory import FactoryType, load_factory_types, load_recipes
@@ -92,6 +93,8 @@ class Game:
 
     def game_loop(self) -> None:
         self.player_service.input_controller.on_game_start(self)
+        # 首轮预热：为所有 AI 公司 prepare session
+        self.decision_service.prepare_next_round(self.companies)
         while not self.game_end():
             self.update_phase()
             self.sell_phase()
@@ -104,6 +107,8 @@ class Game:
             self.settlement_phase()
             self.act_phase()
             self.snapshot_phase()
+        # 游戏结束清理：关闭所有 prepared session
+        AICompanyDecisionComponent.cleanup_sessions()
         self.player_service.input_controller.on_game_end(self)
 
     def update_phase(self) -> None:
