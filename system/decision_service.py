@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
+from component.ai_company_decision import AICompanyDecisionComponent
 from component.base_company_decision import BaseCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
@@ -87,13 +88,32 @@ class DecisionService:
     # ── 编排接口（供 Game 调用） ──
 
     def plan_phase(self, companies: List[Company]) -> None:
-        """决策阶段：组装 context → 委托到组件。"""
+        """决策阶段：组装 context → AI 公司并行 query → 回填结果 → prepare 下一轮。"""
+        # 1. 构建所有 context
+        contexts: List[Tuple[Company, BaseCompanyDecisionComponent, dict]] = []
+        ai_queries: List[Tuple[str, str]] = []  # (company_name, prompt)
+        ai_indices: List[int] = []  # ai_queries 中对应的公司在 contexts 中的下标
+
         for company in companies:
             dc = self._get_decision_component(company)
-
             ctx = self._build_context(company)
-            dc.set_context(ctx)
+            BaseCompanyDecisionComponent.set_context(dc, ctx)  # 只设 context 不触发 AI
 
+            if isinstance(dc, AICompanyDecisionComponent):
+                prompt = dc._build_prompt(ctx)
+                ai_queries.append((company.name, prompt))
+                ai_indices.append(len(contexts))
+            contexts.append((company, dc, ctx))
+
+        # 2. 并行 query 所有 AI 公司
+        if ai_queries:
+            decisions_list = AICompanyDecisionComponent.query_all_parallel(ai_queries)
+            for qi, ci in enumerate(ai_indices):
+                _, dc, _ = contexts[ci]
+                dc._ai_decisions = decisions_list[qi]
+
+        # 3. 逐个公司应用决策结果
+        for company, dc, ctx in contexts:
             # 决策一：定价
             new_prices = dc.decide_pricing()
             pc = company.get_component(ProductorComponent)
@@ -105,6 +125,26 @@ class DecisionService:
 
             # 决策二：投资计划
             dc.decide_investment_plan()
+
+        # plan_phase 完成后立即 prepare 下一轮 session
+        self.prepare_next_round(companies)
+
+    @staticmethod
+    def _set_context_on_component(dc: BaseCompanyDecisionComponent, ctx: dict) -> None:
+        """设置 context 到决策组件，不触发 AI 调用。"""
+        from component.base_company_decision import BaseCompanyDecisionComponent
+        # 只调用父类 set_context（Classic），不触发 AICompanyDecisionComponent 的 _query_ai
+        BaseCompanyDecisionComponent.set_context(dc, ctx)
+
+    def prepare_next_round(self, companies: List[Company]) -> None:
+        """为所有 AI 公司 prepare 下一轮的 AgentSession。"""
+        ai_company_names = []
+        for company in companies:
+            dc = self._get_decision_component(company)
+            if isinstance(dc, AICompanyDecisionComponent):
+                ai_company_names.append(company.name)
+        if ai_company_names:
+            AICompanyDecisionComponent.prepare_next_sessions(ai_company_names)
 
     def act_phase(self, companies: List[Company]) -> None:
         """执行阶段：委托预算分配 + 执行投资。"""
