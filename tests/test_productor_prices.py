@@ -23,7 +23,7 @@ class TestProductorPrices:
         )
         ft = FactoryType(
             recipe=recipe,
-            base_production=100,
+            labor_demand=50,
             build_cost=1000,
             maintenance_cost=50,
             build_time=1,
@@ -58,8 +58,8 @@ class TestProductorPrices:
         gt_b = GoodsType(name="chip", base_price=500)
         recipe_a = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt_a, output_quantity=10, tech_quality_weight=1.0)
         recipe_b = Recipe(input_goods_type=gt_a, input_quantity=5, output_goods_type=gt_b, output_quantity=2, tech_quality_weight=0.6)
-        ft_a = FactoryType(recipe=recipe_a, base_production=100, build_cost=500, maintenance_cost=20, build_time=1)
-        ft_b = FactoryType(recipe=recipe_b, base_production=50, build_cost=2000, maintenance_cost=100, build_time=2)
+        ft_a = FactoryType(recipe=recipe_a, labor_demand=50, build_cost=500, maintenance_cost=20, build_time=1)
+        ft_b = FactoryType(recipe=recipe_b, labor_demand=50, build_cost=2000, maintenance_cost=100, build_time=2)
 
         entity = Entity()
         pc = entity.init_component(ProductorComponent)

@@ -48,6 +48,7 @@ def _make_company(
     dc.price_sensitivity = price_sensitivity
     ledger = company.get_component(LedgerComponent)
     ledger.cash = cash
+    company.initial_wage = 10
     return company
 
 
@@ -69,7 +70,7 @@ def _set_context(svc: DecisionService, company: Company) -> None:
 def _make_factory_setup():
     gt = GoodsType(name="硅", base_price=100)
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=1, tech_quality_weight=1.0)
-    ft = FactoryType(recipe=recipe, base_production=100, build_cost=50000, maintenance_cost=3000, build_time=2)
+    ft = FactoryType(recipe=recipe, labor_demand=50, build_cost=50000, maintenance_cost=3000, build_time=2)
     return gt, recipe, ft
 
 
@@ -255,3 +256,24 @@ class TestLastAvgBuyPrices:
         company = _make_company()
         mc = company.get_component(MetricComponent)
         assert mc.last_avg_buy_prices == {}
+
+
+class TestDecideWage:
+    """DecisionService plan_phase 后企业有 wage 属性。"""
+
+    def test_plan_phase_sets_wage(self) -> None:
+        """plan_phase 后企业应有 wage 属性。"""
+        random.seed(42)
+        gt, recipe, ft = _make_factory_setup()
+        company = _make_company()
+        pc = company.init_component(ProductorComponent)
+        pc.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+
+        # 设置 initial_wage
+        company.initial_wage = 15
+
+        svc = _service()
+        svc.plan_phase([company])
+
+        assert hasattr(company, "wage")
+        assert company.wage == 15

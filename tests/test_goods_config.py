@@ -70,7 +70,7 @@ class TestGoodsConfig:
         factory_types = load_factory_types()
         chip_factory = factory_types["芯片工厂"]
         assert chip_factory.recipe is recipes["芯片制造"]
-        assert chip_factory.base_production == 10
+        assert chip_factory.labor_demand == 50
         assert chip_factory.build_cost == 100000
         assert chip_factory.maintenance_cost == 5000
         assert chip_factory.build_time == 3

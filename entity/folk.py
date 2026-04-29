@@ -20,6 +20,8 @@ class Folk(Entity):
         w_brand: float,
         w_price: float,
         base_demands: Dict[GoodsType, Dict[str, float]],
+        labor_participation_rate: float,
+        labor_points_per_capita: float,
     ) -> None:
         super().__init__()
         self.population = population
@@ -27,9 +29,16 @@ class Folk(Entity):
         self.w_brand = w_brand
         self.w_price = w_price
         self.base_demands = base_demands
+        self.labor_participation_rate = labor_participation_rate
+        self.labor_points_per_capita = labor_points_per_capita
         self.init_component(LedgerComponent)
         self.init_component(StorageComponent)
         self.init_component(MetricComponent)
+
+    @property
+    def labor_supply(self) -> int:
+        """劳动力供给 = 人口 × 参与率 × 人均劳动力点数（取整）。"""
+        return int(self.population * self.labor_participation_rate * self.labor_points_per_capita)
 
 
 def load_folks() -> List[Folk]:
@@ -62,5 +71,7 @@ def load_folks() -> List[Folk]:
             w_brand=item.w_brand,
             w_price=item.w_price,
             base_demands=base_demands,
+            labor_participation_rate=item.labor_participation_rate,
+            labor_points_per_capita=item.labor_points_per_capita,
         ))
     return folks

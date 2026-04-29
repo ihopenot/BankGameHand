@@ -229,7 +229,7 @@ class TestProductorRegressionCoverage:
         )
         factory_type = FactoryType(
             recipe=recipe,
-            base_production=1,
+            labor_demand=50,
             build_cost=100,
             maintenance_cost=10,
             build_time=0,

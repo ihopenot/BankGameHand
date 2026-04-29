@@ -44,6 +44,8 @@ class PlayerService(Service):
         table.add_column("工厂类型")
         table.add_column("工厂数", justify="right")
         table.add_column("现金", justify="right", style="green")
+        table.add_column("工资", justify="right", style="yellow")
+        table.add_column("雇佣劳动力", justify="right")
         table.add_column("科技", justify="right", style="cyan")
         table.add_column("品牌", justify="right", style="magenta")
         table.add_column("定价")
@@ -86,6 +88,8 @@ class PlayerService(Service):
                 ", ".join(ft_parts) or "-",
                 str(factory_count),
                 str(cash),
+                str(company.wage),
+                str(pc.hired_labor_points),
                 str(total_tech),
                 str(total_brand),
                 ", ".join(price_parts) or "-",
@@ -228,6 +232,8 @@ class PlayerService(Service):
                 "factory_types": ", ".join(ft_parts) or "-",
                 "factory_count": factory_count,
                 "cash": ledger.cash,
+                "wage": company.wage,
+                "hired_labor_points": pc.hired_labor_points,
                 "tech": sum(pc.tech_values.values()),
                 "brand": sum(pc.brand_values.values()),
                 "prices": ", ".join(price_parts) or "-",

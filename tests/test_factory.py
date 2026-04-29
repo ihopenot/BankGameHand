@@ -48,16 +48,35 @@ class TestFactoryType:
         )
         ft = FactoryType(
             recipe=recipe,
-            base_production=10,
+            labor_demand=50,
             build_cost=100000,
             maintenance_cost=5000,
             build_time=3,
         )
         assert ft.recipe is recipe
-        assert ft.base_production == 10
+        assert ft.labor_demand == 50
         assert ft.build_cost == 100000
         assert ft.maintenance_cost == 5000
         assert ft.build_time == 3
+
+    def test_no_base_production(self):
+        """FactoryType 不应再包含 base_production 字段。"""
+        silicon = GoodsType(name="硅", base_price=1000)
+        recipe = Recipe(
+            input_goods_type=None,
+            input_quantity=0,
+            output_goods_type=silicon,
+            output_quantity=100,
+            tech_quality_weight=1.0,
+        )
+        ft = FactoryType(
+            recipe=recipe,
+            labor_demand=30,
+            build_cost=50000,
+            maintenance_cost=3000,
+            build_time=2,
+        )
+        assert not hasattr(ft, "base_production")
 
 
 # --- Fixtures ---
@@ -75,7 +94,7 @@ def _make_chip_factory(build_remaining: int = 0) -> Factory:
     )
     ft = FactoryType(
         recipe=recipe,
-        base_production=10,
+        labor_demand=50,
         build_cost=100000,
         maintenance_cost=5000,
         build_time=3,
@@ -95,7 +114,7 @@ def _make_raw_factory(build_remaining: int = 0) -> Factory:
     )
     ft = FactoryType(
         recipe=recipe,
-        base_production=10,
+        labor_demand=30,
         build_cost=50000,
         maintenance_cost=3000,
         build_time=2,
@@ -128,58 +147,50 @@ class TestFactory:
         assert factory.build_remaining == 0
 
     def test_produce_full_supply(self):
-        """满原料供应——无品质加成，传递原料品质。"""
-        factory = _make_chip_factory()
+        """满原料供应，满劳动力，传递原料品质。"""
+        factory = _make_chip_factory()  # labor_demand=50
         silicon = factory.factory_type.recipe.input_goods_type
-        # 满产需求 = 200 * 10 = 2000, quality=0.8
-        supply = GoodsBatch(goods_type=silicon, quantity=2000, quality=0.8, brand_value=0)
-        result = factory.produce(supply)
-        # sufficiency=1.0, 无 quality_bonus
-        # output=10*100*1.0=1000
-        assert result.quantity == 1000
-        assert result.quality == 0.8  # 传递原料品质
+        supply = GoodsBatch(goods_type=silicon, quantity=200, quality=0.8, brand_value=0)
+        result = factory.produce(supply, labor_points=50)  # 满员
+        assert result.quantity == 100
+        assert result.quality == 0.8
         assert result.brand_value == 0
 
     def test_produce_partial_supply(self):
         """原料不足减产。"""
         factory = _make_chip_factory()
         silicon = factory.factory_type.recipe.input_goods_type
-        # 1000/2000=0.5 充足率, quality=0.6
-        supply = GoodsBatch(goods_type=silicon, quantity=1000, quality=0.6, brand_value=0)
-        result = factory.produce(supply)
-        # sufficiency=0.5, 无 quality_bonus
-        # output=int(10*100*0.5)=500
-        assert result.quantity == 500
-        assert result.quality == 0.6  # 传递原料品质
+        supply = GoodsBatch(goods_type=silicon, quantity=100, quality=0.6, brand_value=0)
+        result = factory.produce(supply, labor_points=50)  # 满员，原料 0.5
+        # material_ratio=0.5, staffing=1.0 → output=50
+        assert result.quantity == 50
+        assert result.quality == 0.6
 
     def test_produce_raw_material(self):
         """原料层生产。"""
-        factory = _make_raw_factory()
+        factory = _make_raw_factory()  # labor_demand=30
         silicon = factory.factory_type.recipe.output_goods_type
         supply = GoodsBatch(goods_type=silicon, quantity=0, quality=0.0, brand_value=0)
-        result = factory.produce(supply)
-        # 原料层：10 * 100 = 1000
-        assert result.quantity == 1000
+        result = factory.produce(supply, labor_points=30)  # 满员
+        assert result.quantity == 100
         assert result.quality == 0.0
 
     def test_produce_zero_supply_non_raw(self):
-        """非原料层零供给返回0。"""
+        """非原料层零供给返回0（无论劳动力多少）。"""
         factory = _make_chip_factory()
         silicon = factory.factory_type.recipe.input_goods_type
         supply = GoodsBatch(goods_type=silicon, quantity=0, quality=0.0, brand_value=0)
-        result = factory.produce(supply)
+        result = factory.produce(supply, labor_points=50)
         assert result.quantity == 0
 
     def test_produce_oversupply_capped(self):
         """超额供给充足率上限1.0。"""
         factory = _make_chip_factory()
         silicon = factory.factory_type.recipe.input_goods_type
-        supply = GoodsBatch(goods_type=silicon, quantity=4000, quality=0.5, brand_value=0)
-        result = factory.produce(supply)
-        # sufficiency=1.0, 无 quality_bonus
-        # output=int(10*100*1.0)=1000
-        assert result.quantity == 1000
-        assert result.quality == 0.5  # 传递原料品质
+        supply = GoodsBatch(goods_type=silicon, quantity=400, quality=0.5, brand_value=0)
+        result = factory.produce(supply, labor_points=50)
+        assert result.quantity == 100
+        assert result.quality == 0.5
 
     def test_produce_not_built_raises(self):
         """未建成的工厂不能生产。"""
@@ -187,4 +198,46 @@ class TestFactory:
         silicon = factory.factory_type.recipe.input_goods_type
         supply = GoodsBatch(goods_type=silicon, quantity=0, quality=0.0, brand_value=0)
         with pytest.raises(RuntimeError):
-            factory.produce(supply)
+            factory.produce(supply, labor_points=50)
+
+    def test_produce_with_full_labor(self):
+        """满劳动力时，产出仅受原料约束。"""
+        factory = _make_chip_factory()  # labor_demand=50
+        silicon = factory.factory_type.recipe.input_goods_type
+        supply = GoodsBatch(goods_type=silicon, quantity=200, quality=0.8, brand_value=0)
+        result = factory.produce(supply, labor_points=50)
+        assert result.quantity == 100
+
+    def test_produce_with_partial_labor(self):
+        """劳动力不足时按比例减产。"""
+        factory = _make_chip_factory()  # labor_demand=50
+        silicon = factory.factory_type.recipe.input_goods_type
+        supply = GoodsBatch(goods_type=silicon, quantity=200, quality=0.8, brand_value=0)
+        result = factory.produce(supply, labor_points=25)  # 25/50=0.5
+        # material_ratio=1.0, staffing=0.5 → output=50
+        assert result.quantity == 50
+
+    def test_produce_labor_limits_output_below_material(self):
+        """木桶效应：劳动力和原料取最小值。"""
+        factory = _make_chip_factory()  # labor_demand=50
+        silicon = factory.factory_type.recipe.input_goods_type
+        supply = GoodsBatch(goods_type=silicon, quantity=100, quality=0.6, brand_value=0)
+        result = factory.produce(supply, labor_points=15)  # 15/50=0.3
+        # material_ratio=0.5, staffing=0.3 → min=0.3 → output=30
+        assert result.quantity == 30
+
+    def test_produce_raw_with_labor(self):
+        """原料层也受劳动力约束。"""
+        factory = _make_raw_factory()  # labor_demand=30
+        silicon = factory.factory_type.recipe.output_goods_type
+        supply = GoodsBatch(goods_type=silicon, quantity=0, quality=0.0, brand_value=0)
+        result = factory.produce(supply, labor_points=18)  # 18/30=0.6
+        assert result.quantity == 60
+
+    def test_produce_zero_labor_no_output(self):
+        """零劳动力时无产出。"""
+        factory = _make_chip_factory()
+        silicon = factory.factory_type.recipe.input_goods_type
+        supply = GoodsBatch(goods_type=silicon, quantity=200, quality=0.8, brand_value=0)
+        result = factory.produce(supply, labor_points=0)
+        assert result.quantity == 0

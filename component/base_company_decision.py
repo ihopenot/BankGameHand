@@ -72,3 +72,7 @@ class BaseCompanyDecisionComponent(BaseComponent, ABC):
     @abstractmethod
     def make_purchase_sort_key(self) -> Callable[[SellOrder], float]:
         """采购排序函数。"""
+
+    @abstractmethod
+    def decide_wage(self) -> int:
+        """决策：工资定价。返回每劳动力点数的工资。"""

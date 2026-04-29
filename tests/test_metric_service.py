@@ -17,7 +17,7 @@ from system.metric_service import MetricService
 def _make_company(gt: GoodsType, cash: int = 10000) -> Company:
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt,
                     output_quantity=10, tech_quality_weight=1.0)
-    ft = FactoryType(recipe=recipe, base_production=100, build_cost=1000,
+    ft = FactoryType(recipe=recipe, labor_demand=50, build_cost=1000,
                      maintenance_cost=50, build_time=1)
     company = Company(name="test_company")
     pc = company.get_component(ProductorComponent)
@@ -64,7 +64,8 @@ class TestSnapshotPhase:
 
     def test_folk_snapshot_created(self) -> None:
         folk = Folk(population=100, w_quality=0.5, w_brand=0.3, w_price=0.2,
-                    base_demands={})
+                    base_demands={},
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
         folk.get_component(LedgerComponent).cash = 8000
 
         service = MetricService()

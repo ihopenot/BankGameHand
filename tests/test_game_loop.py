@@ -93,7 +93,7 @@ class TestGameLoop:
 
         game.game_loop()
 
-        expected = ["update", "sell", "buy", "product", "plan", "player_act", "settlement", "act"]
+        expected = ["update", "sell", "buy", "plan", "product", "player_act", "settlement", "act"]
         assert phase_log == expected
 
     def test_no_exception_full_loop(self):
@@ -133,3 +133,50 @@ class TestGameLoop:
         game.buy_phase()
         game.product_phase()
         game.settlement_phase()
+
+
+class TestLaborMarketPhaseOrder:
+    """验证 labor_market 功能集成后的正确阶段顺序。"""
+
+    def test_new_phase_order(self):
+        """新阶段顺序应为 update→sell→buy→plan→labor_match→produce→loan→player_act→settlement→act。"""
+        game = Game()
+        game.total_rounds = 1
+        phase_log = []
+
+        original_phases = {
+            "update": game.update_phase,
+            "sell": game.sell_phase,
+            "buy": game.buy_phase,
+            "plan": game.plan_phase,
+            "labor_match": getattr(game, "labor_match_phase", None),
+            "product": game.product_phase,
+            "player_act": game.player_act,
+            "settlement": game.settlement_phase,
+            "act": game.act_phase,
+        }
+
+        def log(name, fn):
+            def wrapper():
+                phase_log.append(name)
+                fn()
+            return wrapper
+
+        for name, fn in original_phases.items():
+            if fn is not None:
+                setattr(game, f"{name}_phase" if name != "player_act" else "player_act", log(name, fn))
+
+        game.game_loop()
+
+        # 验证 plan 在 product 之前
+        assert phase_log.index("plan") < phase_log.index("product"), \
+            f"plan should come before product, got: {phase_log}"
+        # 验证 labor_match 存在且在 plan 和 product 之间
+        assert "labor_match" in phase_log, "labor_match_phase should exist in game loop"
+        assert phase_log.index("plan") < phase_log.index("labor_match") < phase_log.index("product"), \
+            f"labor_match should be between plan and product, got: {phase_log}"
+
+    def test_labor_match_phase_exists(self):
+        """Game 应有 labor_match_phase 方法，并调用 LaborService。"""
+        game = Game()
+        assert hasattr(game, "labor_match_phase"), "Game should have labor_match_phase method"

@@ -7,40 +7,49 @@ companies:
   - factory_type: "硅矿场"
     count: 2
     initial_cash: 100000
-    decision_component: "ai"
+    initial_wage: 10
+    decision_component: "classic"
   - factory_type: "芯片工厂"
     count: 2
     initial_cash: 200000
+    initial_wage: 15
     decision_component: "classic"
   - factory_type: "手机工厂"
     count: 2
     initial_cash: 150000
+    initial_wage: 12
     decision_component: "classic"
   # 纺织产业链
   - factory_type: "棉花农场"
     count: 2
     initial_cash: 80000
+    initial_wage: 8
     decision_component: "classic"
   - factory_type: "纺织厂"
     count: 2
     initial_cash: 120000
+    initial_wage: 12
     decision_component: "classic"
   - factory_type: "服装厂"
     count: 2
     initial_cash: 100000
+    initial_wage: 10
     decision_component: "classic"
   # 食品产业链
   - factory_type: "麦田"
     count: 3
     initial_cash: 60000
+    initial_wage: 8
     decision_component: "classic"
   - factory_type: "面粉厂"
     count: 2
     initial_cash: 80000
+    initial_wage: 10
     decision_component: "classic"
   - factory_type: "食品厂"
     count: 2
     initial_cash: 90000
+    initial_wage: 10
     decision_component: "classic"
 
 # 银行（玩家控制）
@@ -59,3 +68,4 @@ bankruptcy:
   min_producers_per_goods: 2       # 每种商品最低存活生产者数量
   new_company_initial_cash: 100000 # 政府新建公司的启动资金
   replenish_decision_component: "classic"  # 市场补充新建公司使用的决策组件
+  replenish_initial_wage: 10       # 政府新建公司的初始工资

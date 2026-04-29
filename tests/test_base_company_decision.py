@@ -27,6 +27,9 @@ class _StubDecisionComponent(BaseCompanyDecisionComponent):
     def make_purchase_sort_key(self) -> Callable:
         return lambda x: 0.0
 
+    def decide_wage(self) -> int:
+        return 0
+
 
 class TestBaseCompanyDecisionComponentAbstract:
     """1.1.1: 抽象基类不可实例化，子类必须实现所有抽象方法。"""
@@ -166,3 +169,7 @@ class TestBaseCompanyDecisionComponentAPI:
 
     def test_make_purchase_sort_key_is_abstract(self) -> None:
         assert getattr(BaseCompanyDecisionComponent.make_purchase_sort_key, "__isabstractmethod__", False)
+
+    def test_decide_wage_is_abstract(self) -> None:
+        """decide_wage 应为抽象方法。"""
+        assert getattr(BaseCompanyDecisionComponent.decide_wage, "__isabstractmethod__", False)

@@ -62,6 +62,7 @@ class DecisionService:
             "company": {
                 "name": company.name,
                 "ceo_traits": ceo_traits,
+                "initial_wage": company.initial_wage,
             },
             "ledger": {
                 "cash": ledger.cash,
@@ -125,6 +126,9 @@ class DecisionService:
 
             # 决策二：投资计划
             dc.decide_investment_plan()
+
+            # 决策：工资定价
+            company.wage = dc.decide_wage()
 
         # plan_phase 完成后立即 prepare 下一轮 session
         self.prepare_next_round(companies)

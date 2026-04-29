@@ -476,7 +476,7 @@ class AICompanyDecisionComponent(ClassicCompanyDecisionComponent):
             type_info = {
                 "output": f"{recipe.output_goods_type.name}x{recipe.output_quantity}",
                 "input": f"{recipe.input_goods_type.name}x{recipe.input_quantity}" if recipe.input_goods_type else "无",
-                "base_production": ft.base_production,
+                "labor_demand": ft.labor_demand,
                 "maintenance_cost": ft.maintenance_cost,
                 "build_cost": ft.build_cost,
                 "build_time": ft.build_time,

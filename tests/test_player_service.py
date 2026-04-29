@@ -47,8 +47,9 @@ def _make_company_with_price():
     """创建有工厂和定价的公司。"""
     gt = GoodsType(name="硅", base_price=1000)
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=100, tech_quality_weight=1.0)
-    ft = FactoryType(recipe=recipe, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
+    ft = FactoryType(recipe=recipe, labor_demand=50, build_cost=50000, maintenance_cost=3000, build_time=2)
     company = Company(name="test_company")
+    company.wage = 10
     pc = company.get_component(ProductorComponent)
     pc.factories[ft].append(Factory(ft, build_remaining=0))
     pc.prices[gt] = 1200
@@ -85,8 +86,9 @@ class TestFormatCompanyTable:
         gt1 = GoodsType(name="硅", base_price=1000)
         gt2 = GoodsType(name="芯片", base_price=5000)
         recipe1 = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt1, output_quantity=100, tech_quality_weight=1.0)
-        ft1 = FactoryType(recipe=recipe1, base_production=10, build_cost=50000, maintenance_cost=3000, build_time=2)
+        ft1 = FactoryType(recipe=recipe1, labor_demand=50, build_cost=50000, maintenance_cost=3000, build_time=2)
         company = Company(name="multi_product_company")
+        company.wage = 10
         pc = company.get_component(ProductorComponent)
         pc.factories[ft1].append(Factory(ft1, build_remaining=0))
         pc.prices[gt1] = 1200

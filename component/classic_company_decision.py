@@ -219,6 +219,14 @@ class ClassicCompanyDecisionComponent(BaseCompanyDecisionComponent):
         price_score = self._price_attractiveness(price, avg_price)
         return w_quality * quality + w_brand * brand_value + w_price * price_score
 
+    # ── 决策：工资定价 ──
+
+    def decide_wage(self) -> int:
+        """返回固定 initial_wage（来自 context）。"""
+        ctx = self._context
+        company = ctx.get("company", {})
+        return company.get("initial_wage", 10)
+
     # ── 内部方法 ──
 
     def _calc_operating_expense(self) -> int:

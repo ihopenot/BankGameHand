@@ -5,38 +5,47 @@ companies:
   - factory_type: "硅矿场"
     count: 1
     initial_cash: 100000
+    initial_wage: 10
     decision_component: "classic"
   - factory_type: "芯片工厂"
     count: 1
     initial_cash: 200000
+    initial_wage: 15
     decision_component: "classic"
   - factory_type: "手机工厂"
     count: 1
     initial_cash: 150000
+    initial_wage: 12
     decision_component: "classic"
   - factory_type: "棉花农场"
     count: 1
     initial_cash: 80000
+    initial_wage: 8
     decision_component: "classic"
   - factory_type: "纺织厂"
     count: 1
     initial_cash: 120000
+    initial_wage: 12
     decision_component: "classic"
   - factory_type: "服装厂"
     count: 1
     initial_cash: 100000
+    initial_wage: 10
     decision_component: "classic"
   - factory_type: "麦田"
     count: 1
     initial_cash: 60000
+    initial_wage: 8
     decision_component: "classic"
   - factory_type: "面粉厂"
     count: 1
     initial_cash: 80000
+    initial_wage: 10
     decision_component: "classic"
   - factory_type: "食品厂"
     count: 1
     initial_cash: 90000
+    initial_wage: 10
     decision_component: "classic"
 
 banks:
@@ -50,3 +59,4 @@ bankruptcy:
   min_producers_per_goods: 2
   new_company_initial_cash: 100000
   replenish_decision_component: "classic"
+  replenish_initial_wage: 10

@@ -35,13 +35,13 @@ class FactoryType:
     def __init__(
         self,
         recipe: Recipe,
-        base_production: int,
+        labor_demand: int,
         build_cost: Money,
         maintenance_cost: Money,
         build_time: int,
     ) -> None:
         self.recipe = recipe
-        self.base_production = base_production
+        self.labor_demand = labor_demand
         self.build_cost = build_cost
         self.maintenance_cost = maintenance_cost
         self.build_time = build_time
@@ -63,11 +63,12 @@ class Factory:
         if self.build_remaining > 0:
             self.build_remaining -= 1
 
-    def produce(self, supply: GoodsBatch) -> GoodsBatch:
+    def produce(self, supply: GoodsBatch, labor_points: int = 0) -> GoodsBatch:
         """计算一回合产出。
 
         Args:
             supply: 输入原料批次（原料层传 quantity=0 的空批次）。
+            labor_points: 本台工厂分配到的劳动力点数。
 
         Returns:
             产出 GoodsBatch，品质为原材料品质（原料层为 0.0），品牌留空。
@@ -76,14 +77,21 @@ class Factory:
             raise RuntimeError("Factory is not built yet")
 
         recipe = self.factory_type.recipe
-        base = self.factory_type.base_production
         output_type = recipe.output_goods_type
+        labor_demand = self.factory_type.labor_demand
+
+        # 劳动力充足率
+        if labor_demand <= 0:
+            staffing_ratio = 1.0
+        else:
+            staffing_ratio = min(labor_points / labor_demand, 1.0)
 
         if recipe.input_goods_type is None:
-            # 原料层：无需输入，直接按基础产能生产
+            # 原料层：产出受 staffing 约束
+            output_qty = int(recipe.output_quantity * staffing_ratio)
             return GoodsBatch(
                 goods_type=output_type,
-                quantity=base * recipe.output_quantity,
+                quantity=output_qty,
                 quality=0.0,
                 brand_value=0,
             )
@@ -93,11 +101,10 @@ class Factory:
                 goods_type=output_type, quantity=0, quality=0.0, brand_value=0
             )
 
-        # 满产需求量 = recipe.input_quantity * base_production
-        full_demand = recipe.input_quantity * base
-        sufficiency = min(supply.quantity / full_demand, 1.0)
-
-        output_qty = int(base * recipe.output_quantity * sufficiency)
+        # 木桶效应：取原料和劳动力的最小值
+        material_ratio = min(supply.quantity / recipe.input_quantity, 1.0)
+        effective_ratio = min(material_ratio, staffing_ratio)
+        output_qty = int(recipe.output_quantity * effective_ratio)
 
         return GoodsBatch(
             goods_type=output_type, quantity=output_qty, quality=supply.quality, brand_value=0
@@ -133,7 +140,7 @@ def load_factory_types() -> Dict[str, FactoryType]:
     for item in section.factory_types:
         ft = FactoryType(
             recipe=recipes[item.recipe],
-            base_production=item.base_production,
+            labor_demand=item.labor_demand,
             build_cost=item.build_cost,
             maintenance_cost=item.maintenance_cost,
             build_time=item.build_time,

@@ -26,6 +26,7 @@ class ProductorComponent(BaseComponent):
         self.brand_values: Dict[GoodsType, int] = {}
         self.factories: Dict[FactoryType, List[Factory]] = defaultdict(list)
         self.prices: Dict[GoodsType, Money] = {}
+        self.hired_labor_points: int = 0
 
     def update_max_tech(self) -> None:
         """用自身科技值更新全局 max_tech 表。"""
@@ -43,49 +44,44 @@ class ProductorComponent(BaseComponent):
     def produce(self, factory_type: FactoryType) -> GoodsBatch:
         """对一个 FactoryType 下的所有工厂执行生产。
 
-        每个工厂各自从库存取料生产，产出合并后贴品质和品牌。
-        品质 = tech_rank_ratio * tech_quality_weight + avg_material_quality * (1 - tech_quality_weight)
-
-        Args:
-            factory_type: 工厂类型。
-
-        Returns:
-            贴好品质和品牌的合并产出 GoodsBatch。
+        每台工厂从 hired_labor_points 中取 labor_demand 点劳动力（先到先得），
+        从 storage 取原料，调 factory.produce() 计算产出，合并后贴品质和品牌。
         """
         recipe = factory_type.recipe
         output_goods_type = recipe.output_goods_type
 
-        # 1. 计算科技品质比
+        # 科技品质比
         my_tech = self.tech_values.get(recipe, 0)
         global_max = ProductorComponent.max_tech.get(recipe, 0)
         tech_rank_ratio: Radio = my_tech / global_max if global_max > 0 else 0.0
 
-        # 2. 计算品牌
+        # 品牌
         brand = self.brand_values.get(output_goods_type, 0)
 
-        # 3. 遍历工厂逐个生产，收集产出和原材料品质
         total_quantity = 0
         weighted_material_quality = 0.0
+
         for factory in self.factories.get(factory_type, []):
             if not factory.is_built:
                 continue
 
-            if recipe.input_goods_type is not None:
-                demand = recipe.input_quantity * factory_type.base_production
-                supply_batch = self.storage.require_goods(
-                    recipe.input_goods_type, demand, recipe.input_quantity
-                )
-            else:
-                # 原料层：传入空 GoodsBatch
-                supply_batch = GoodsBatch(
-                    goods_type=output_goods_type, quantity=0, quality=0.0, brand_value=0
-                )
+            # 取劳动力（先到先得）
+            labor_demand = factory_type.labor_demand
+            labor_points = min(self.hired_labor_points, labor_demand)
+            self.hired_labor_points -= labor_points
 
-            output_batch = factory.produce(supply_batch)
+            # 取原料
+            if recipe.input_goods_type is not None:
+                supply_batch = self.storage.require_goods(recipe.input_goods_type, recipe.input_quantity, 1)
+            else:
+                supply_batch = GoodsBatch(goods_type=output_goods_type, quantity=0, quality=0.0, brand_value=0)
+
+            # 工厂自己算产出（含原料比和劳动力比）
+            output_batch = factory.produce(supply_batch, labor_points=labor_points)
             total_quantity += output_batch.quantity
             weighted_material_quality += output_batch.quality * output_batch.quantity
 
-        # 4. 计算最终品质
+        # 品质混合
         if recipe.input_goods_type is not None and total_quantity > 0:
             avg_material_quality = weighted_material_quality / total_quantity
             w = recipe.tech_quality_weight

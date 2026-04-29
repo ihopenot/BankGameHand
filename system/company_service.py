@@ -27,6 +27,7 @@ class CompanyService:
         self._min_producers: int = bankruptcy_cfg.min_producers_per_goods
         self._new_company_cash: int = bankruptcy_cfg.new_company_initial_cash
         self._replenish_decision_component: str = bankruptcy_cfg.replenish_decision_component
+        self._replenish_initial_wage: int = bankruptcy_cfg.replenish_initial_wage
 
     def create_company(
         self,
@@ -34,9 +35,12 @@ class CompanyService:
         factory_type: FactoryType,
         initial_cash: int,
         decision_component: str,
+        initial_wage: int,
     ) -> Company:
         """创建一家拥有指定工厂类型和初始资金的公司。"""
         company = Company(name=name)
+        company.initial_wage = initial_wage
+        company.wage = initial_wage
         ledger = company.get_component(LedgerComponent)
         ledger.cash = initial_cash
         pc = company.get_component(ProductorComponent)
@@ -92,7 +96,7 @@ class CompanyService:
                 built_count = sum(1 for f in factories if f.is_built)
                 if built_count == 0:
                     continue
-                raw_demand = recipe.input_quantity * ft.base_production * built_count
+                raw_demand = recipe.input_quantity * built_count
                 gt = recipe.input_goods_type
                 demand_map[gt] = demand_map.get(gt, 0) + raw_demand
 
@@ -282,6 +286,7 @@ class CompanyService:
                     factory_type=ft,
                     initial_cash=self._new_company_cash,
                     decision_component=self._replenish_decision_component,
+                    initial_wage=self._replenish_initial_wage,
                 )
                 company_idx += 1
                 count += 1
