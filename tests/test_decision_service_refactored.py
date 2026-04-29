@@ -113,12 +113,14 @@ class TestDecisionServicePlanPhase:
     def test_plan_phase_calls_set_context(self) -> None:
         ds = _make_ds_with_market()
         company = _make_company()
-        comp = company.get_component(ClassicCompanyDecisionComponent)
 
-        with patch.object(comp, "set_context", wraps=comp.set_context) as mock_set:
+        original = BaseCompanyDecisionComponent.set_context
+        with patch.object(
+            BaseCompanyDecisionComponent, "set_context", wraps=original
+        ) as mock_set:
             ds.plan_phase([company])
             mock_set.assert_called_once()
-            ctx = mock_set.call_args[0][0]
+            ctx = mock_set.call_args[0][1]
             assert "ledger" in ctx
 
     def test_plan_phase_calls_decide_pricing(self) -> None:

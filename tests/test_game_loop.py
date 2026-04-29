@@ -17,10 +17,17 @@ from game.game import Game
 
 @pytest.fixture(autouse=True)
 def _mock_ai():
-    """AI 组件的 _call_ai 返回空决策，避免调用真实 SDK。"""
-    with patch.object(AICompanyDecisionComponent, "_call_ai", return_value={
+    """AI 组件的所有 SDK 调用全部 mock，避免调用真实 SDK。"""
+    empty_decisions = {
         "pricing": {}, "investment_plan": {"expansion": 0, "brand": 0, "tech": 0}, "loan_needs": {"amount": 0, "max_rate": 0}
-    }):
+    }
+    with patch.object(AICompanyDecisionComponent, "_call_ai", return_value=empty_decisions), \
+         patch.object(AICompanyDecisionComponent, "prepare_next_sessions"), \
+         patch.object(AICompanyDecisionComponent, "cleanup_sessions"), \
+         patch.object(
+             AICompanyDecisionComponent, "query_all_parallel",
+             side_effect=lambda queries: [empty_decisions for _ in queries],
+         ):
         yield
 
 
