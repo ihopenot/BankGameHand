@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from component.ai_company_decision import AICompanyDecisionComponent
+from component.productor_component import ProductorComponent
 from core.config import ConfigManager
 from entity.company.company import Company
 from entity.factory import FactoryType, load_factory_types, load_recipes
@@ -14,6 +15,7 @@ from system.company_service import CompanyService
 from system.decision_service import DecisionService
 from system.economy_service import EconomyService
 from system.folk_service import FolkService
+from system.labor_service import LaborService
 from system.ledger_service import LedgerService
 from system.market_service import MarketService
 from system.metric_service import MetricService
@@ -49,6 +51,7 @@ class Game:
         self.decision_service = DecisionService()
         self.bank_service = BankService()
         self.metric_service = MetricService()
+        self.labor_service = LaborService()
 
         # 业务逻辑初始化
         self.init_game()
@@ -71,6 +74,7 @@ class Game:
                     factory_type=ft,
                     initial_cash=item.initial_cash,
                     decision_component=decision,
+                    initial_wage=item.initial_wage,
                 )
                 company_idx += 1
 
@@ -99,8 +103,9 @@ class Game:
             self.update_phase()
             self.sell_phase()
             self.buy_phase()
-            self.product_phase()
             self.plan_phase()
+            self.labor_match_phase()
+            self.product_phase()
             self.loan_application_phase()
             self.player_act()
             self.loan_acceptance_phase()
@@ -144,6 +149,11 @@ class Game:
             economy_index=economy_index,
         )
         self.decision_service.plan_phase(self.companies)
+
+    def labor_match_phase(self) -> None:
+        """劳动力匹配阶段：匹配岗位与劳动力，生成工资负债。"""
+        hire_records = self.labor_service.match(self.companies, self.folks)
+        self.labor_service.apply(self.companies, hire_records)
 
     def loan_application_phase(self) -> None:
         """贷款申请阶段：收集企业贷款申请。"""

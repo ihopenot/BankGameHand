@@ -1,9 +1,11 @@
 folks:
-  # 低收入群体：价格敏感，主要消费刚需品
+  # 低收入群体：价格敏感，主要消费刚需品，劳动力参与率高
   - population: 6000
     w_quality: 0.4
     w_brand: 0.05
     w_price: 0.55
+    labor_participation_rate: 0.7
+    labor_points_per_capita: 1.0
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.1 }
       服装: { per_capita: 1, sensitivity: 0.5 }
@@ -14,6 +16,8 @@ folks:
     w_quality: 0.35
     w_brand: 0.35
     w_price: 0.3
+    labor_participation_rate: 0.6
+    labor_points_per_capita: 1.0
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.2 }
       服装: { per_capita: 5, sensitivity: 0.5 }
@@ -24,6 +28,8 @@ folks:
     w_quality: 0.15
     w_brand: 0.75
     w_price: 0.1
+    labor_participation_rate: 0.4
+    labor_points_per_capita: 1.0
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.05 }
       服装: { per_capita: 8, sensitivity: 0.3 }

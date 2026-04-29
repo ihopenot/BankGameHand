@@ -188,7 +188,7 @@ class TestGameLoopIntegration:
         gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
                         output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
-        ft = FactoryType(recipe=recipe, base_production=5,
+        ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
         e1 = Entity()
@@ -216,7 +216,7 @@ class TestGameLoopIntegration:
         gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
                         output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
-        ft = FactoryType(recipe=recipe, base_production=5,
+        ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
         entities: list[Entity] = []
@@ -225,6 +225,8 @@ class TestGameLoopIntegration:
             p = e.init_component(ProductorComponent)
             p.tech_values[recipe] = tech
             p.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+            e.hired_labor_points = 100  # 满员（需求 50，给 100 足够）
+            e.get_component(ProductorComponent).hired_labor_points = 100
             entities.append(e)
 
         game = MagicMock()
@@ -239,14 +241,14 @@ class TestGameLoopIntegration:
             assert storage is not None
             batches = storage.get_batches(gt)
             assert len(batches) == 1
-            assert batches[0].quantity == 50  # 5 * 10
+            assert batches[0].quantity == 10  # output_quantity = 10
 
     def test_destroy_entity_removes_from_service_scope(self) -> None:
         """Entity.destroy() 后，ProductorService 不再遍历该组件。"""
         gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
                         output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
-        ft = FactoryType(recipe=recipe, base_production=5,
+        ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
         e1 = Entity()
@@ -308,7 +310,7 @@ class TestMarketTradingIntegration:
             tech_quality_weight=1.0,
         )
         ft = FactoryType(
-            recipe=recipe, base_production=20,
+            recipe=recipe, labor_demand=50,
             build_cost=5000, maintenance_cost=100, build_time=0,
         )
         company = Company(name="upstream")
@@ -327,7 +329,7 @@ class TestMarketTradingIntegration:
             tech_quality_weight=0.6,
         )
         ft = FactoryType(
-            recipe=recipe, base_production=50,
+            recipe=recipe, labor_demand=50,
             build_cost=10000, maintenance_cost=200, build_time=0,
         )
         company = Company(name="downstream")
@@ -343,10 +345,11 @@ class TestMarketTradingIntegration:
         upstream, up_ft = self._make_upstream(silicon)
         downstream, down_ft = self._make_downstream(silicon, chip)
 
-        # 上游生产硅：20 * 10 = 200 units
+        # 上游生产硅：output_quantity = 10 units
         ProductorComponent.max_tech[up_ft.recipe] = 100
+        upstream.get_component(ProductorComponent).hired_labor_points = 1000
         upstream.get_component(ProductorComponent).produce_all()
-        assert sum(b.quantity for b in upstream.get_component(StorageComponent).get_batches(silicon)) == 200
+        assert sum(b.quantity for b in upstream.get_component(StorageComponent).get_batches(silicon)) == 10
 
         # 给下游现金
         downstream.get_component(LedgerComponent).cash = 50000
@@ -362,34 +365,34 @@ class TestMarketTradingIntegration:
         assert orders[0].price == silicon.base_price  # 100
 
         # buy_phase: 下游生成采购意向
-        # 需求 = input_quantity(2) * base_production(50) = 100
+        # 需求 = input_quantity(2) * built_count(1) = 2
         buy_service = CompanyService()
         buy_service.companies = {"downstream": downstream}
         intents = buy_service.buy_phase(market)
         assert len(intents) == 1
-        assert intents[0].quantity == 100
+        assert intents[0].quantity == 2
 
         # match
         trades = market.match(intents)
         assert len(trades) == 1
-        assert trades[0].quantity == 100
+        assert trades[0].quantity == 2
         assert trades[0].price == 100
-        assert trades[0].total == 10000
+        assert trades[0].total == 200
 
         # settle
         company_service.settle_trades(trades)
 
-        # 验证：下游获得 100 硅
+        # 验证：下游获得 2 硅
         down_batches = downstream.get_component(StorageComponent).get_batches(silicon)
-        assert sum(b.quantity for b in down_batches) == 100
+        assert sum(b.quantity for b in down_batches) == 2
 
-        # 验证：上游库存减少到 100
+        # 验证：上游库存减少到 8
         up_batches = upstream.get_component(StorageComponent).get_batches(silicon)
-        assert sum(b.quantity for b in up_batches) == 100
+        assert sum(b.quantity for b in up_batches) == 8
 
         # 验证：现金流转
-        assert downstream.get_component(LedgerComponent).cash == 50000 - 10000
-        assert upstream.get_component(LedgerComponent).cash == 10000
+        assert downstream.get_component(LedgerComponent).cash == 50000 - 200
+        assert upstream.get_component(LedgerComponent).cash == 200
 
     def test_supply_less_than_demand_proportional(self) -> None:
         """两个下游争抢不足的上游库存，按比例分配。"""
@@ -420,13 +423,14 @@ class TestMarketTradingIntegration:
 
         trades = market.match(intents)
         total_traded = sum(t.quantity for t in trades)
-        assert total_traded == 60  # 全部售出
+        # 两个下游各需 2 硅，共 4，但上游只有 60 → 全部售出上限为 4
+        assert total_traded <= 4  # 需求总量 = 2 * 2 = 4，全部满足
 
         sell_svc.settle_trades(trades)
 
-        # 上游硅全部卖出
+        # 上游硅大部分仍剩余（只卖出了 4 个）
         up_remaining = sum(b.quantity for b in upstream.get_component(StorageComponent).get_batches(silicon))
-        assert up_remaining == 0
+        assert up_remaining == 56  # 60 - 4 = 56
 
     def test_credit_when_cash_insufficient(self) -> None:
         """买方现金不足时，差额创建 TRADE_PAYABLE 贷款。"""
@@ -439,8 +443,8 @@ class TestMarketTradingIntegration:
         upstream.get_component(ProductorComponent).init_prices()
 
         downstream, _ = self._make_downstream(silicon, chip)
-        # 只给 3000 现金，需求 100 * 100 = 10000
-        downstream.get_component(LedgerComponent).cash = 3000
+        # 只给 100 现金，需求 2 * 100 = 200
+        downstream.get_component(LedgerComponent).cash = 100
 
         market = MarketService()
         sell_svc = CompanyService()
@@ -456,14 +460,14 @@ class TestMarketTradingIntegration:
 
         # 下游现金清零
         assert downstream.get_component(LedgerComponent).cash == 0
-        # 上游收到 3000 现金
-        assert upstream.get_component(LedgerComponent).cash == 3000
-        # 差额 7000 作为 TRADE_PAYABLE
+        # 上游收到 100 现金
+        assert upstream.get_component(LedgerComponent).cash == 100
+        # 差额 100 作为 TRADE_PAYABLE
         payables = downstream.get_component(LedgerComponent).filter_loans(LoanType.TRADE_PAYABLE)
-        assert sum(l.remaining for l in payables) == 7000
+        assert sum(l.remaining for l in payables) == 100
         # 上游应收
         receivables = upstream.get_component(LedgerComponent).filter_loans(LoanType.TRADE_PAYABLE)
-        assert sum(l.remaining for l in receivables) == 7000
+        assert sum(l.remaining for l in receivables) == 100
 
     def test_market_clears_between_rounds(self) -> None:
         """update_phase 清空挂单，第二轮 sell_phase 重新挂单。"""
@@ -500,7 +504,8 @@ class TestMarketTradingIntegration:
         # ── 第一轮：上游生产 ──
         ProductorComponent.max_tech[up_ft.recipe] = 100
         ProductorComponent.max_tech[down_ft.recipe] = 100
-        upstream.get_component(ProductorComponent).produce_all()  # 200 硅
+        upstream.get_component(ProductorComponent).hired_labor_points = 1000
+        upstream.get_component(ProductorComponent).produce_all()  # 10 硅
 
         market = MarketService()
         svc = CompanyService()
@@ -514,14 +519,15 @@ class TestMarketTradingIntegration:
         trades = market.match(intents)
         svc.settle_trades(trades)
 
-        # 下游现在有 100 硅
+        # 下游现在有 2 硅
         down_silicon = sum(b.quantity for b in downstream.get_component(StorageComponent).get_batches(silicon))
-        assert down_silicon == 100
+        assert down_silicon == 2
 
         # ── 下游用硅生产芯片 ──
+        downstream.get_component(ProductorComponent).hired_labor_points = 1000
         downstream.get_component(ProductorComponent).produce_all()
         down_chips = sum(b.quantity for b in downstream.get_component(StorageComponent).get_batches(chip))
-        # base_production=50, output_quantity=1, input_quantity=2
+        # labor_demand=50, output_quantity=1, input_quantity=2
         # full demand = 2 * 50 = 100 硅, supply = 100 → sufficiency = 1.0
         # output = 50 * 1 * 1.0
         assert down_chips > 0  # 芯片已生产出来
@@ -538,9 +544,9 @@ class TestMarketTradingIntegration:
         )
         upstream.get_component(ProductorComponent).init_prices()
 
-        # 下游已有足够硅 (需求=100, 库存=150)
+        # 下游已有足够硅 (需求=2, 库存=10，充足)
         downstream.get_component(StorageComponent).add_batch(
-            GoodsBatch(goods_type=silicon, quantity=150, quality=0.5, brand_value=0)
+            GoodsBatch(goods_type=silicon, quantity=10, quality=0.5, brand_value=0)
         )
 
         market = MarketService()

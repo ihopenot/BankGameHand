@@ -429,3 +429,23 @@ class TestClassicLoanNeeds:
         _, rate_high_risk = comp.decide_loan_needs()
 
         assert rate_high_risk < rate_low_risk
+
+
+class TestClassicDecideWage:
+    """3.2: decide_wage 返回 initial_wage 配置值。"""
+
+    def test_decide_wage_returns_int(self, comp) -> None:
+        """decide_wage 应返回 int。"""
+        ctx = _make_context()
+        ctx["company"]["initial_wage"] = 10
+        comp.set_context(ctx)
+        result = comp.decide_wage()
+        assert isinstance(result, int)
+
+    def test_decide_wage_returns_initial_wage(self, comp) -> None:
+        """decide_wage 应返回 context 中的 initial_wage。"""
+        ctx = _make_context()
+        ctx["company"]["initial_wage"] = 15
+        comp.set_context(ctx)
+        result = comp.decide_wage()
+        assert result == 15

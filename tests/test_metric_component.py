@@ -143,6 +143,8 @@ class TestEntityMounting:
             w_brand=0.3,
             w_price=0.2,
             base_demands={},
+            labor_participation_rate=0.6,
+            labor_points_per_capita=1.0,
         )
         mc = folk.get_component(MetricComponent)
         assert mc is not None

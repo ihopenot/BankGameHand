@@ -42,7 +42,7 @@ def _setup_goods_and_factory() -> FactoryType:
     if ft_key not in FactoryType.factory_types:
         ft = FactoryType(
             recipe=recipe,
-            base_production=10,
+            labor_demand=50,
             build_cost=10000,
             maintenance_cost=100,
             build_time=0,
@@ -339,7 +339,7 @@ class TestReplenishMarket:
         if ft2_key not in FactoryType.factory_types:
             ft2 = FactoryType(
                 recipe=recipe2,
-                base_production=5,
+                labor_demand=50,
                 build_cost=20000,
                 maintenance_cost=200,
                 build_time=0,

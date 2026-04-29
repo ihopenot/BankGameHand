@@ -34,7 +34,7 @@ class TestProductorServiceUpdatePhase:
         gt = GoodsType(name="硅", base_price=1000)
         recipe = Recipe(input_goods_type=None, input_quantity=0,
                         output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
-        ft = FactoryType(recipe=recipe, base_production=5,
+        ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=2)
         entity = Entity()
         pc = entity.init_component(ProductorComponent)

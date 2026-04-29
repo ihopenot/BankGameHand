@@ -44,7 +44,7 @@ def _make_intermediate_recipe(input_gt: GoodsType, output_gt: GoodsType,
 def _make_factory_type(recipe: Recipe) -> FactoryType:
     return FactoryType(
         recipe=recipe,
-        base_production=5,
+        labor_demand=25,
         build_cost=10000,
         maintenance_cost=500,
         build_time=0,
@@ -102,13 +102,15 @@ class TestProductorService:
         assert ProductorComponent.max_tech[recipe] == 200
 
     def test_product_phase_produces_for_all(self) -> None:
-        """product_phase 遍历所有 ProductorComponent 执行 produce_all。"""
+        """product_phase 遍历所有 ProductorComponent 执行生产（需要 hired_labor_points）。"""
         gt = _make_goods_type()
         recipe = _make_raw_recipe(gt)
-        ft = _make_factory_type(recipe)
+        ft = _make_factory_type(recipe)  # labor_demand=25
 
         e1 = _make_entity_with_productor(recipe, ft, tech=100)
         e2 = _make_entity_with_productor(recipe, ft, tech=100)
+        e1.get_component(ProductorComponent).hired_labor_points = 100
+        e2.get_component(ProductorComponent).hired_labor_points = 100
 
         # 先 update_phase 让 max_tech 有值
         game = _make_game()
@@ -163,6 +165,7 @@ class TestProductorService:
         ProductorComponent.max_tech[recipe] = 200  # tech_rank_ratio = 0.5
 
         pc = entity.get_component(ProductorComponent)
+        pc.hired_labor_points = 100  # 满员
         batch = pc.produce(ft)
         assert batch.quality == pytest.approx(0.5)
 
@@ -182,6 +185,7 @@ class TestProductorService:
         storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=10000, quality=0.8, brand_value=0))
 
         pc = entity.get_component(ProductorComponent)
+        pc.hired_labor_points = 100  # 满员
         batch = pc.produce(ft)
         # quality = 1.0 * 0.6 + 0.8 * 0.4 = 0.92
         assert batch.quality == pytest.approx(0.92)
@@ -201,6 +205,7 @@ class TestProductorService:
         # 两个已建成工厂
         pc.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
         pc.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
+        pc.hired_labor_points = 200  # 满员（两台各需 25）
 
         # 放入不同品质的原料批次
         storage = entity.get_component(StorageComponent)
@@ -213,3 +218,91 @@ class TestProductorService:
         assert batch.quantity > 0
         # 品质应介于纯tech(1.0)和纯原料之间
         assert 0.0 < batch.quality < 1.0
+
+
+class TestProductorServiceStaffing:
+    def setup_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def teardown_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def test_product_phase_uses_hired_labor_points(self):
+        """product_phase 应按工厂顺序分配 hired_labor_points。"""
+        gt = _make_goods_type()
+        recipe = _make_raw_recipe(gt)
+        ft = _make_factory_type(recipe)  # labor_demand=25
+        entity = _make_entity_with_productor(recipe, ft, tech=100)
+        # 雇到了 12 个劳动力点，工厂需求 25，staffing_ratio = 12/25 = 0.48
+        entity.get_component(ProductorComponent).hired_labor_points = 12
+
+        game = _make_game()
+        service = ProductorService(game)
+        service.update_phase()
+        service.product_phase()
+
+        storage = entity.get_component(StorageComponent)
+        batches = storage.get_batches(gt)
+        total_qty = sum(b.quantity for b in batches)
+        # output_quantity=10, staffing_ratio=12/25=0.48 → int(10*0.48)=4
+        assert total_qty == 4
+
+    def test_product_phase_full_staffing(self):
+        """hired_labor_points 满足需求时产出不受约束。"""
+        gt = _make_goods_type()
+        recipe = _make_raw_recipe(gt)
+        ft = _make_factory_type(recipe)  # labor_demand=25
+        entity = _make_entity_with_productor(recipe, ft, tech=100)
+        entity.get_component(ProductorComponent).hired_labor_points = 50  # 超过需求 25，staffing_ratio=1.0
+
+        game = _make_game()
+        service = ProductorService(game)
+        service.update_phase()
+        service.product_phase()
+
+        storage = entity.get_component(StorageComponent)
+        batches = storage.get_batches(gt)
+        total_qty = sum(b.quantity for b in batches)
+        # output_quantity=10, staffing_ratio=1.0 → 10
+        assert total_qty == 10
+
+
+class TestProductorServiceWageLiability:
+    """工资负债现在在 labor_match_phase 生成，product_phase 不再生成工资负债。"""
+
+    def setup_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def teardown_method(self) -> None:
+        ProductorComponent.components.clear()
+        ProductorComponent.max_tech.clear()
+        StorageComponent.components.clear()
+
+    def test_product_phase_does_not_create_wage_liability(self):
+        """product_phase 不应再生成工资负债（已移至 labor_match_phase）。"""
+        from component.ledger_component import LedgerComponent
+        from core.types import LoanType
+
+        gt = _make_goods_type()
+        recipe = _make_raw_recipe(gt)
+        ft = _make_factory_type(recipe)
+        entity = _make_entity_with_productor(recipe, ft, tech=100)
+        entity.init_component(LedgerComponent)
+        entity.get_component(ProductorComponent).hired_labor_points = 50
+        entity.wage = 10
+
+        game = _make_game()
+        service = ProductorService(game)
+        service.update_phase()
+        service.product_phase()
+
+        # product_phase 后不应有工资负债
+        ledger = entity.get_component(LedgerComponent)
+        payables = ledger.filter_loans(LoanType.TRADE_PAYABLE)
+        assert len(payables) == 0

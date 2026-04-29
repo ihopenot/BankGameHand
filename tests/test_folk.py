@@ -26,23 +26,44 @@ class TestFolkInit:
             w_brand=0.05,
             w_price=0.0,
             base_demands=base_demands,
+            labor_participation_rate=0.6,
+            labor_points_per_capita=1.0,
         )
         assert folk.population == 6000
         assert folk.w_quality == 0.95
         assert folk.w_brand == 0.05
         assert folk.base_demands is base_demands
+        assert folk.labor_participation_rate == 0.6
+        assert folk.labor_points_per_capita == 1.0
+
+    def test_folk_labor_supply(self) -> None:
+        """劳动力供给 = population * labor_participation_rate * labor_points_per_capita。"""
+        from entity.folk import Folk
+
+        folk = Folk(
+            population=6000,
+            w_quality=0.95,
+            w_brand=0.05,
+            w_price=0.0,
+            base_demands={},
+            labor_participation_rate=0.6,
+            labor_points_per_capita=1.0,
+        )
+        assert folk.labor_supply == int(6000 * 0.6 * 1.0)
 
     def test_folk_has_ledger_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={})
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={},
+                     labor_participation_rate=0.5, labor_points_per_capita=1.0)
         ledger = folk.get_component(LedgerComponent)
         assert ledger is not None
 
     def test_folk_has_storage_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={})
+        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={},
+                     labor_participation_rate=0.5, labor_points_per_capita=1.0)
         storage = folk.get_component(StorageComponent)
         assert storage is not None
 
@@ -61,6 +82,8 @@ class TestFolkInit:
                 gt_food: {"per_capita": 10, "sensitivity": 0.1},
                 gt_phone: {"per_capita": 0, "sensitivity": 0.8},
             },
+            labor_participation_rate=0.6,
+            labor_points_per_capita=1.0,
         )
         folk_b = Folk(
             population=1000,
@@ -71,6 +94,8 @@ class TestFolkInit:
                 gt_food: {"per_capita": 10, "sensitivity": 0.05},
                 gt_phone: {"per_capita": 8, "sensitivity": 0.4},
             },
+            labor_participation_rate=0.7,
+            labor_points_per_capita=1.5,
         )
         # folk_a 不需要手机
         assert folk_a.base_demands[gt_phone]["per_capita"] == 0
@@ -101,6 +126,8 @@ class TestLoadFolks:
                     "w_quality": 0.95,
                     "w_brand": 0.05,
                     "w_price": 0.0,
+                    "labor_participation_rate": 0.6,
+                    "labor_points_per_capita": 1.0,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.1}),
                     }),
@@ -110,6 +137,8 @@ class TestLoadFolks:
                     "w_quality": 0.2,
                     "w_brand": 0.8,
                     "w_price": 0.0,
+                    "labor_participation_rate": 0.7,
+                    "labor_points_per_capita": 1.5,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 5, "sensitivity": 0.05}),
                     }),
@@ -122,7 +151,10 @@ class TestLoadFolks:
             folks = load_folks()
         assert len(folks) == 2
         assert folks[0].population == 6000
+        assert folks[0].labor_participation_rate == 0.6
+        assert folks[0].labor_points_per_capita == 1.0
         assert folks[1].population == 1000
+        assert folks[1].labor_participation_rate == 0.7
 
     def test_load_folks_maps_goods_types(self) -> None:
         from core.config import AttrDict
@@ -139,6 +171,8 @@ class TestLoadFolks:
                     "w_quality": 0.5,
                     "w_brand": 0.5,
                     "w_price": 0.0,
+                    "labor_participation_rate": 0.6,
+                    "labor_points_per_capita": 1.0,
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.2}),
                         "手机": AttrDict({"per_capita": 3, "sensitivity": 0.7}),

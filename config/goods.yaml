@@ -81,57 +81,57 @@ factory_types:
   # 电子产业链
   - name: "硅矿场"
     recipe: "硅矿开采"
-    base_production: 10
+    labor_demand: 30
     build_cost: 50000
     maintenance_cost: 3000
     build_time: 2
   - name: "芯片工厂"
     recipe: "芯片制造"
-    base_production: 10
+    labor_demand: 50
     build_cost: 100000
     maintenance_cost: 5000
     build_time: 3
   - name: "手机工厂"
     recipe: "手机组装"
-    base_production: 8
+    labor_demand: 40
     build_cost: 80000
     maintenance_cost: 4000
     build_time: 3
   # 纺织产业链
   - name: "棉花农场"
     recipe: "棉花种植"
-    base_production: 12
+    labor_demand: 25
     build_cost: 30000
     maintenance_cost: 2000
     build_time: 1
   - name: "纺织厂"
     recipe: "布料加工"
-    base_production: 10
+    labor_demand: 35
     build_cost: 60000
     maintenance_cost: 3500
     build_time: 2
   - name: "服装厂"
     recipe: "服装生产"
-    base_production: 9
+    labor_demand: 30
     build_cost: 50000
     maintenance_cost: 3000
     build_time: 2
   # 食品产业链
   - name: "麦田"
     recipe: "小麦种植"
-    base_production: 15
+    labor_demand: 20
     build_cost: 20000
     maintenance_cost: 1500
     build_time: 1
   - name: "面粉厂"
     recipe: "面粉加工"
-    base_production: 12
+    labor_demand: 25
     build_cost: 40000
     maintenance_cost: 2500
     build_time: 2
   - name: "食品厂"
     recipe: "食品生产"
-    base_production: 10
+    labor_demand: 30
     build_cost: 45000
     maintenance_cost: 2800
     build_time: 2

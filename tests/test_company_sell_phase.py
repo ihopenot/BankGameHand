@@ -20,7 +20,7 @@ def _make_goods_type(name: str = "chip", base_price: int = 500) -> GoodsType:
 
 def _make_factory_type(gt: GoodsType) -> FactoryType:
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
-    return FactoryType(recipe=recipe, base_production=100, build_cost=1000, maintenance_cost=50, build_time=1)
+    return FactoryType(recipe=recipe, labor_demand=50, build_cost=1000, maintenance_cost=50, build_time=1)
 
 
 class TestSellPhase:
