@@ -41,11 +41,14 @@ class ProductorComponent(BaseComponent):
             if gt not in self.prices:
                 self.prices[gt] = gt.base_price
 
-    def produce(self, factory_type: FactoryType) -> GoodsBatch:
+    def produce(self, factory_type: FactoryType, remaining_labor: int) -> tuple:
         """对一个 FactoryType 下的所有工厂执行生产。
 
-        每台工厂从 hired_labor_points 中取 labor_demand 点劳动力（先到先得），
+        每台工厂从 remaining_labor 中取 labor_demand 点劳动力（先到先得），
         从 storage 取原料，调 factory.produce() 计算产出，合并后贴品质和品牌。
+
+        Returns:
+            (GoodsBatch 产出, 实际消耗的劳动力点数)
         """
         recipe = factory_type.recipe
         output_goods_type = recipe.output_goods_type
@@ -60,15 +63,17 @@ class ProductorComponent(BaseComponent):
 
         total_quantity = 0
         weighted_material_quality = 0.0
+        labor_used = 0
 
         for factory in self.factories.get(factory_type, []):
             if not factory.is_built:
                 continue
 
-            # 取劳动力（先到先得）
+            # 取劳动力（先到先得，从局部剩余中扣）
             labor_demand = factory_type.labor_demand
-            labor_points = min(self.hired_labor_points, labor_demand)
-            self.hired_labor_points -= labor_points
+            labor_points = min(remaining_labor, labor_demand)
+            remaining_labor -= labor_points
+            labor_used += labor_points
 
             # 取原料
             if recipe.input_goods_type is not None:
@@ -94,11 +99,17 @@ class ProductorComponent(BaseComponent):
             quantity=total_quantity,
             quality=output_quality,
             brand_value=brand,
-        )
+        ), labor_used
 
     def produce_all(self) -> None:
-        """枚举所有 FactoryType，依次生产并将产出存入库存。"""
+        """枚举所有 FactoryType，依次生产并将产出存入库存。
+
+        劳动力从 hired_labor_points 中顺序分配，不修改 hired_labor_points 本身
+        （保留为本回合雇佣量的记录，供展示使用）。
+        """
+        remaining_labor = self.hired_labor_points
         for factory_type in self.factories:
-            batch = self.produce(factory_type)
+            batch, labor_used = self.produce(factory_type, remaining_labor)
+            remaining_labor -= labor_used
             if batch.quantity > 0:
                 self.storage.add_batch(batch)

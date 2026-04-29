@@ -45,7 +45,7 @@ class PlayerService(Service):
         table.add_column("工厂数", justify="right")
         table.add_column("现金", justify="right", style="green")
         table.add_column("工资", justify="right", style="yellow")
-        table.add_column("雇佣劳动力", justify="right")
+        table.add_column("雇佣人数", justify="right")
         table.add_column("科技", justify="right", style="cyan")
         table.add_column("品牌", justify="right", style="magenta")
         table.add_column("定价")
@@ -57,7 +57,7 @@ class PlayerService(Service):
             ledger = company.get_component(LedgerComponent)
             storage = company.get_component(StorageComponent)
             pc = company.get_component(ProductorComponent)
-
+            mc = company.get_component(MetricComponent)
             cash = ledger.cash
             receivables = ledger.total_receivables()
             payables = ledger.total_payables()
@@ -89,7 +89,7 @@ class PlayerService(Service):
                 str(factory_count),
                 str(cash),
                 str(company.wage),
-                str(pc.hired_labor_points),
+                str(mc.last_hired_workers),
                 str(total_tech),
                 str(total_brand),
                 ", ".join(price_parts) or "-",
@@ -209,6 +209,7 @@ class PlayerService(Service):
             ledger = company.get_component(LedgerComponent)
             storage = company.get_component(StorageComponent)
             pc = company.get_component(ProductorComponent)
+            mc = company.get_component(MetricComponent)
 
             ft_parts: List[str] = []
             factory_count = 0
@@ -233,7 +234,7 @@ class PlayerService(Service):
                 "factory_count": factory_count,
                 "cash": ledger.cash,
                 "wage": company.wage,
-                "hired_labor_points": pc.hired_labor_points,
+                "hired_workers": mc.last_hired_workers,
                 "tech": sum(pc.tech_values.values()),
                 "brand": sum(pc.brand_values.values()),
                 "prices": ", ".join(price_parts) or "-",

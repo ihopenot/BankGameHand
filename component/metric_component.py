@@ -37,7 +37,7 @@ class MetricComponent(BaseComponent):
         self.last_sold_quantities: Dict[GoodsType, int] = {}
         self.last_revenue: int = 0
         self.last_avg_buy_prices: Dict[GoodsType, float] = {}
-
+        self.last_hired_workers: int = 0
         # 累计计数器
         self.cumulative_revenue: int = 0
         self.cumulative_brand_spend: int = 0
@@ -56,3 +56,4 @@ class MetricComponent(BaseComponent):
         self.last_sell_orders = {}
         self.last_sold_quantities = {}
         self.last_revenue = 0
+        self.last_hired_labor_points = 0

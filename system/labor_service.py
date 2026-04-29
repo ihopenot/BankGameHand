@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import List, Tuple
 
 from component.ledger_component import LedgerComponent
+from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from core.types import Loan, LoanType, RepaymentType
 from entity.folk import Folk
@@ -68,31 +70,37 @@ class LaborService:
                 # 实际满足量
                 filled = min(batch_supply, batch_demand)
 
-                # 按 WorkBatch 内各公司需求比例分配劳动力
-                for company, c_demand in work_group.items():
-                    c_remaining = company_remaining.get(company, 0)
-                    if c_remaining <= 0:
-                        continue
-                    # 该公司在 WorkBatch 中的占比
-                    company_share = int(filled * c_remaining / batch_demand)
+                # 按 WorkBatch 内各公司需求比例分配劳动力（向上取整，cap 住不超过剩余）
+                remaining_filled = filled
+                companies_to_fill = [(c, company_remaining.get(c, 0)) for c in work_group if company_remaining.get(c, 0) > 0]
+                for idx, (company, c_remaining) in enumerate(companies_to_fill):
+                    if idx == len(companies_to_fill) - 1:
+                        company_share = remaining_filled
+                    else:
+                        company_share = min(math.ceil(filled * c_remaining / batch_demand), remaining_filled)
                     if company_share <= 0:
                         continue
 
-                    # 按 FolkBatch 内各 Folk 的供给比例分配给这家公司
+                    # 按 FolkBatch 内各 Folk 的供给比例分配给这家公司（向上取整，cap 住不超过剩余）
                     folk_supply_total = sum(folk_remaining[f] for f in folk_group if folk_remaining[f] > 0)
                     if folk_supply_total <= 0:
                         continue
 
-                    for folk in folk_group:
+                    remaining_company_share = company_share
+                    active_folks = [f for f in folk_group if folk_remaining[f] > 0]
+                    for fidx, folk in enumerate(active_folks):
                         f_remaining = folk_remaining[folk]
-                        if f_remaining <= 0:
-                            continue
-                        folk_share = int(company_share * f_remaining / folk_supply_total)
+                        if fidx == len(active_folks) - 1:
+                            folk_share = remaining_company_share
+                        else:
+                            folk_share = min(math.ceil(company_share * f_remaining / folk_supply_total), remaining_company_share)
                         if folk_share <= 0:
                             continue
                         hire_records.append((folk, company, folk_share))
                         folk_remaining[folk] -= folk_share
+                        remaining_company_share -= folk_share
 
+                    remaining_filled -= company_share
                     company_remaining[company] = max(0, c_remaining - company_share)
 
         return hire_records
@@ -104,13 +112,15 @@ class LaborService:
             companies: 企业列表（用于初始化 hired_labor_points = 0）。
             hire_records: match() 返回的雇佣关系列表。
         """
-        # 重置所有公司的劳动力点数
+        # 重置所有公司的劳动力点数和 metric
         for company in companies:
             company.get_component(ProductorComponent).hired_labor_points = 0
+            company.get_component(MetricComponent).last_hired_workers = 0
 
-        # 按雇佣关系累加劳动力点数，生成工资负债
+        # 按雇佣关系累加劳动力点数和雇佣人数，生成工资负债
         for folk, company, labor_points in hire_records:
             company.get_component(ProductorComponent).hired_labor_points += labor_points
+            company.get_component(MetricComponent).last_hired_workers += int(labor_points / folk.labor_points_per_capita)
 
             # 工资 = (劳动力点数 / per_capita) × wage，即按人口单位计算
             wage_units = labor_points / folk.labor_points_per_capita

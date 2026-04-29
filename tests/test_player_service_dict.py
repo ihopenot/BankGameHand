@@ -40,7 +40,7 @@ class TestCompanyTableDict:
         assert "factory_count" in entry
         assert "cash" in entry
         assert "wage" in entry
-        assert "hired_labor_points" in entry
+        assert "hired_workers" in entry
         assert "tech" in entry
         assert "brand" in entry
         assert "prices" in entry
