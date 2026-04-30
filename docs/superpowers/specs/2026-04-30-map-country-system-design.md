@@ -141,11 +141,11 @@ class MapService(Service):
     def get_plots_by_country(self, country_name: str) -> List[Plot]:
         """获取某国家下所有地块"""
 
-    def get_companies_in_plot(self, plot_name: str) -> List[Company]:
-        """获取某地块中所有公司"""
+    def get_companies_in_plot(self, plot_name: str, companies: List[Company]) -> List[Company]:
+        """获取某地块中所有公司。companies 参数为当前游戏中所有公司列表（由调用方传入）"""
 
-    def get_companies_in_country(self, country_name: str) -> List[Company]:
-        """获取某国家中所有公司"""
+    def get_companies_in_country(self, country_name: str, companies: List[Company]) -> List[Company]:
+        """获取某国家中所有公司。companies 参数为当前游戏中所有公司列表（由调用方传入）"""
 
     def get_neighbors(self, plot_name: str) -> List[Plot]:
         """获取地块的相邻地块列表"""
