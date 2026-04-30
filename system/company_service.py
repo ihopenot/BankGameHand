@@ -258,6 +258,17 @@ class CompanyService:
         # 6. 销毁公司实体
         entity.destroy()
 
+    def _find_plot_for_goods(self, goods_type: GoodsType) -> 'Plot | None':
+        """查找生产指定商品的现有公司的地块，用于政府补充公司。"""
+        for company in self.companies.values():
+            pc = company.get_component(ProductorComponent)
+            if pc is None:
+                continue
+            for ft in pc.factories.keys():
+                if ft.recipe.output_goods_type == goods_type:
+                    return company.plot
+        return self._default_plot
+
     # ── 市场补充 ──
 
     def replenish_market(self) -> None:
@@ -288,11 +299,13 @@ class CompanyService:
                 ft = goods_to_factory_type[gt]
                 name = f"gov_company_{self._next_gov_idx}"
                 self._next_gov_idx += 1
+                plot = self._find_plot_for_goods(gt)
                 self.create_company(
                     name=name,
                     factory_type=ft,
                     initial_cash=self._new_company_cash,
                     decision_component=self._replenish_decision_component,
                     initial_wage=self._replenish_initial_wage,
+                    plot=plot,
                 )
                 count += 1

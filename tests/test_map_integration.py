@@ -1,5 +1,7 @@
 """地图系统集成测试：Game 初始化后公司正确持有 Plot 引用。"""
 
+from component.ledger_component import LedgerComponent
+from component.productor_component import ProductorComponent
 from rich.console import Console
 
 from game.game import Game
@@ -81,3 +83,26 @@ class TestMapPanel:
         output = capture.get()
         # 硅谷工业区的相邻应显示江南纺织区
         assert "相邻" in output
+
+
+class TestGovernmentCompanyPlot:
+    def test_replenished_company_has_plot(self):
+        """政府补充的公司也应有 plot 属性。"""
+        game = Game()
+        # 强制让食品厂公司全部破产
+        food_companies = [
+            c for c in game.companies
+            if any("食品" in ft.recipe.output_goods_type.name
+                   for ft in c.get_component(ProductorComponent).factories.keys())
+        ]
+        for c in food_companies:
+            c.get_component(LedgerComponent).is_bankrupt = True
+
+        # 执行破产清算和市场补充
+        game.company_service.process_bankruptcies()
+        game.company_service.replenish_market()
+        game.companies = list(game.company_service.companies.values())
+
+        # 新公司也应该有 plot
+        for company in game.companies:
+            assert company.plot is not None, f"{company.name} has no plot"
