@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from component.decision.company.base import get_decision_component_class
 from component.ledger_component import LedgerComponent
@@ -14,6 +14,9 @@ from entity.factory import Factory, FactoryType
 from entity.goods import GoodsType
 from system.market_service import BuyIntent, MarketService, SellOrder, TradeRecord
 
+if TYPE_CHECKING:
+    from entity.map import Plot
+
 
 class CompanyService:
 
@@ -21,6 +24,7 @@ class CompanyService:
     def __init__(self) -> None:
         self.companies: Dict[str, Company] = {}
         self._next_gov_idx: int = 0
+        self._default_plot = None  # fallback plot for government companies
 
         config = ConfigManager()
         bankruptcy_cfg = config.section("game").bankruptcy
@@ -37,9 +41,11 @@ class CompanyService:
         initial_cash: int,
         decision_component: str,
         initial_wage: int,
+        plot: Optional[Plot] = None,
     ) -> Company:
         """创建一家拥有指定工厂类型和初始资金的公司。"""
         company = Company(name=name)
+        company.plot = plot
         company.initial_wage = initial_wage
         company.wage = initial_wage
         ledger = company.get_component(LedgerComponent)

@@ -17,6 +17,7 @@ from system.economy_service import EconomyService
 from system.folk_service import FolkService
 from system.labor_service import LaborService
 from system.ledger_service import LedgerService
+from system.map_service import MapService
 from system.market_service import MarketService
 from system.metric_service import MetricService
 from system.player_service import PlayerService
@@ -53,6 +54,9 @@ class Game:
         self.metric_service = MetricService()
         self.labor_service = LaborService()
 
+        # 地图服务
+        self.map_service = MapService()
+
         # 业务逻辑初始化
         self.init_game()
 
@@ -61,12 +65,33 @@ class Game:
         config = ConfigManager()
         game_cfg = config.section("game")
 
+        # 加载地图配置（可选，测试配置可能不含 map section）
+        if "map" in config._sections:
+            map_cfg = config.section("map")
+            self.map_service.load_map({
+                "countries": [
+                    {"name": c.name, "description": getattr(c, 'description', '')}
+                    for c in map_cfg.countries
+                ],
+                "plots": [
+                    {
+                        "name": p.name,
+                        "country": p.country,
+                        "description": getattr(p, 'description', ''),
+                        "neighbors": p.neighbors if hasattr(p, 'neighbors') else [],
+                    }
+                    for p in map_cfg.plots
+                ],
+            })
+
         # 通过 CompanyService 创建公司
         factory_types = FactoryType.factory_types
         company_idx = 0
         for item in game_cfg.companies:
             ft = factory_types[item.factory_type]
             decision = item.decision_component
+            plot_name = getattr(item, 'plot', None)
+            plot = self.map_service.get_plot(plot_name) if plot_name else None
             for _ in range(item.count):
                 name = f"company_{company_idx}"
                 self.company_service.create_company(
@@ -75,10 +100,16 @@ class Game:
                     initial_cash=item.initial_cash,
                     decision_component=decision,
                     initial_wage=item.initial_wage,
+                    plot=plot,
                 )
                 company_idx += 1
 
         self.companies: List[Company] = list(self.company_service.companies.values())
+
+        # 设置 CompanyService 的默认地块（用于政府补充公司）
+        if self.map_service.plots:
+            first_plot = next(iter(self.map_service.plots.values()))
+            self.company_service._default_plot = first_plot
 
         # 通过 FolkService 创建居民
         folk_initial_cash = game_cfg.folk_initial_cash
