@@ -84,7 +84,7 @@ class PlayerService(Service):
                 price_parts.append(f"{gt.name}:{price}")
 
             table.add_row(
-                name,
+                company.name,
                 ", ".join(ft_parts) or "-",
                 str(mc.factories_active),
                 str(mc.factories_idle),
@@ -112,8 +112,7 @@ class PlayerService(Service):
         table.add_column("价格偏好", justify="right")
         table.add_column("库存")
 
-        folk_labels = [f"居民组{i+1}" for i in range(len(self.game.folks))]
-        for label, folk in zip(folk_labels, self.game.folks):
+        for folk in self.game.folks:
             ledger = folk.get_component(LedgerComponent)
             storage = folk.get_component(StorageComponent)
 
@@ -125,7 +124,7 @@ class PlayerService(Service):
                         inv_parts.append(f"{gt.name} x{total_qty}")
 
             table.add_row(
-                label,
+                folk.name,
                 str(folk.population),
                 str(ledger.cash),
                 f"{folk.w_quality:.2f}",
@@ -151,7 +150,7 @@ class PlayerService(Service):
                 min(bill.interest_due, bill.total_paid)
                 for bill in ledger.bills
             )
-            table.add_row(name, str(cash), str(total_loans), str(interest_income))
+            table.add_row(bank.name, str(cash), str(total_loans), str(interest_income))
 
         return table
 
@@ -169,7 +168,7 @@ class PlayerService(Service):
 
         for loan in loans:
             remaining_term = str(max(0, loan.term - loan.elapsed)) if loan.term > 0 else "永续"
-            table.add_row("?", "?", str(loan.remaining), str(loan.rate), remaining_term)
+            table.add_row(loan.debtor.name, loan.creditor.name, str(loan.remaining), str(loan.rate), remaining_term)
 
         return table
 
@@ -187,10 +186,8 @@ class PlayerService(Service):
             table.add_row("", "暂无申请", "")
             return table
 
-        entity_to_name: Dict[Entity, str] = {v: k for k, v in company_names.items()}
         for i, app in enumerate(applications, 1):
-            name = entity_to_name.get(app.applicant, "未知")
-            table.add_row(str(i), name, str(app.amount))
+            table.add_row(str(i), app.applicant.name, str(app.amount))
 
         return table
 
@@ -229,7 +226,7 @@ class PlayerService(Service):
                 price_parts.append(f"{gt.name}:{price}")
 
             result.append({
-                "name": name,
+                "name": company.name,
                 "factory_types": ", ".join(ft_parts) or "-",
                 "factories_active": mc.factories_active,
                 "factories_idle": mc.factories_idle,
@@ -249,7 +246,7 @@ class PlayerService(Service):
     def folk_table_dict(self) -> List[dict]:
         """返回居民概览的 dict 列表。"""
         result: List[dict] = []
-        for i, folk in enumerate(self.game.folks):
+        for folk in self.game.folks:
             ledger = folk.get_component(LedgerComponent)
             storage = folk.get_component(StorageComponent)
 
@@ -261,7 +258,7 @@ class PlayerService(Service):
                         inv_parts.append(f"{gt.name} x{total_qty}")
 
             result.append({
-                "name": f"居民组{i+1}",
+                "name": folk.name,
                 "population": folk.population,
                 "cash": ledger.cash,
                 "w_quality": round(folk.w_quality, 2),
@@ -281,7 +278,7 @@ class PlayerService(Service):
                 for bill in ledger.bills
             )
             result.append({
-                "name": name,
+                "name": bank.name,
                 "cash": ledger.cash,
                 "total_loans": ledger.total_receivables(),
                 "interest_income": interest_income,
