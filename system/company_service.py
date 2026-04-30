@@ -20,6 +20,7 @@ class CompanyService:
 
     def __init__(self) -> None:
         self.companies: Dict[str, Company] = {}
+        self._next_gov_idx: int = 0
 
         config = ConfigManager()
         bankruptcy_cfg = config.section("game").bankruptcy
@@ -276,11 +277,11 @@ class CompanyService:
                 goods_to_factory_type[gt] = ft
 
         # 为不足阈值的商品创建新公司
-        company_idx = len(self.companies)
         for gt, count in producer_count.items():
             while count < self._min_producers:
                 ft = goods_to_factory_type[gt]
-                name = f"gov_company_{company_idx}"
+                name = f"gov_company_{self._next_gov_idx}"
+                self._next_gov_idx += 1
                 self.create_company(
                     name=name,
                     factory_type=ft,
@@ -288,5 +289,4 @@ class CompanyService:
                     decision_component=self._replenish_decision_component,
                     initial_wage=self._replenish_initial_wage,
                 )
-                company_idx += 1
                 count += 1
