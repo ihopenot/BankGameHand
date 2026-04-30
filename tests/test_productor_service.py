@@ -166,7 +166,7 @@ class TestProductorService:
 
         pc = entity.get_component(ProductorComponent)
         pc.hired_labor_points = 100  # 满员
-        batch = pc.produce(ft)
+        batch, _ = pc.produce(ft, remaining_labor=pc.hired_labor_points)
         assert batch.quality == pytest.approx(0.5)
 
     def test_quality_blended_with_material(self) -> None:
@@ -186,7 +186,7 @@ class TestProductorService:
 
         pc = entity.get_component(ProductorComponent)
         pc.hired_labor_points = 100  # 满员
-        batch = pc.produce(ft)
+        batch, _ = pc.produce(ft, remaining_labor=pc.hired_labor_points)
         # quality = 1.0 * 0.6 + 0.8 * 0.4 = 0.92
         assert batch.quality == pytest.approx(0.92)
 
@@ -214,7 +214,7 @@ class TestProductorService:
         storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=500, quality=0.9, brand_value=0))
         storage.add_batch(GoodsBatch(goods_type=gt_in, quantity=10000, quality=0.3, brand_value=0))
 
-        batch = pc.produce(ft)
+        batch, _ = pc.produce(ft, remaining_labor=pc.hired_labor_points)
         assert batch.quantity > 0
         # 品质应介于纯tech(1.0)和纯原料之间
         assert 0.0 < batch.quality < 1.0

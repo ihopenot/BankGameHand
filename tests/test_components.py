@@ -304,7 +304,7 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 2000, quality=0.8, brand_value=0))
         prod.hired_labor_points = 200  # 满员
 
-        result = prod.produce(ft)
+        result, _ = prod.produce(ft, remaining_labor=prod.hired_labor_points)
         # Factory: input_quantity=200, supply=2000, material_ratio=1.0, output=100*1.0=100
         assert result.goods_type is chip
         assert result.quantity == 100
@@ -326,7 +326,7 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 100, quality=0.5, brand_value=0))
         prod.hired_labor_points = 200  # 满员
 
-        result = prod.produce(ft)
+        result, _ = prod.produce(ft, remaining_labor=prod.hired_labor_points)
         # supply=100, input_quantity=200, material_ratio=0.5, output=int(100*0.5)=50
         assert result.quantity == 50
 
@@ -344,7 +344,7 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 300, quality=0.5, brand_value=0))
         prod.hired_labor_points = 200  # 满员（两台各 50）
 
-        result = prod.produce(ft)
+        result, _ = prod.produce(ft, remaining_labor=prod.hired_labor_points)
         # 工厂1: supply=200, material_ratio=1.0, output=100
         # 工厂2: supply=100, material_ratio=100/200=0.5, output=50
         # total=150
@@ -360,7 +360,7 @@ class TestProduce:
         self._set_tech(prod, raw_ft.recipe, 700, 1000)  # ratio=0.7
         prod.hired_labor_points = 200  # 满员
 
-        result = prod.produce(raw_ft)
+        result, _ = prod.produce(raw_ft, remaining_labor=prod.hired_labor_points)
         assert result.quantity == 100  # output_quantity=100
         assert result.quality == pytest.approx(0.7)
 
@@ -375,7 +375,7 @@ class TestProduce:
         self._set_tech(prod, raw_ft.recipe, 1000, 1000)  # ratio=1.0
         prod.hired_labor_points = 200  # 满员
 
-        result = prod.produce(raw_ft)
+        result, _ = prod.produce(raw_ft, remaining_labor=prod.hired_labor_points)
         assert result.brand_value == 42
 
     def test_skip_unbuilt_factory(self):
@@ -392,7 +392,7 @@ class TestProduce:
         prod.storage.add_batch(GoodsBatch(silicon, 4000, quality=0.5, brand_value=0))
         prod.hired_labor_points = 200  # 满员（只有1台建成，50够用）
 
-        result = prod.produce(ft)
+        result, _ = prod.produce(ft, remaining_labor=prod.hired_labor_points)
         # 只有1台已建成工厂，output_quantity=100
         assert result.quantity == 100
 
@@ -407,7 +407,7 @@ class TestProduce:
         self._set_tech(prod, ft.recipe, 500, 1000)
         prod.hired_labor_points = 200  # 满员，但无库存
 
-        result = prod.produce(ft)
+        result, _ = prod.produce(ft, remaining_labor=prod.hired_labor_points)
         assert result.quantity == 0
 
     def test_zero_max_tech_quality_is_zero(self):
@@ -420,7 +420,7 @@ class TestProduce:
         prod.hired_labor_points = 200  # 满员，但 max_tech=0
         # 不设置 max_tech
 
-        result = prod.produce(raw_ft)
+        result, _ = prod.produce(raw_ft, remaining_labor=prod.hired_labor_points)
         assert result.quality == 0.0
 
 

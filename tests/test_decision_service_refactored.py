@@ -49,6 +49,8 @@ def _make_company(cash: int = 100000, last_revenue: int = 10000) -> Company:
     company.get_component(LedgerComponent).cash = cash
     mc = company.get_component(MetricComponent)
     mc.last_revenue = last_revenue
+    company.initial_wage = 10
+    company.wage = 10
     return company
 
 

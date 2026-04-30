@@ -45,6 +45,7 @@ def _make_folk_with_decision(population=6000, w_quality=0.4, w_brand=0.05, w_pri
             GT_FOOD: {"per_capita": 10, "sensitivity": 0.1},
             GT_CLOTH: {"per_capita": 1, "sensitivity": 0.5},
         },
+        labor_participation_rate=0.6, labor_points_per_capita=1.0,
     )
     return folk
 

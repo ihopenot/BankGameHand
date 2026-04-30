@@ -22,14 +22,15 @@ _TEST_CONFIG_DIR = str(Path(__file__).parent / "config_integration")
 _SF = {"tech": 0.5, "brand": 0.3, "maintenance": 0.2}
 
 
-def _make_folk_with_cash(population, w_quality, w_brand, w_price, base_demands, cash=10_000_000_000):
+def _make_folk_with_cash(population, w_quality, w_brand, w_price, base_demands, cash=10_000_000_000, **kwargs):
     """创建 Folk 实体并设置充足现金。"""
     folk = Folk(
         name="test_folk",
         population=population, w_quality=w_quality, w_brand=w_brand, w_price=w_price,
         spending_flow=_SF,
         base_demands=base_demands,
-        labor_participation_rate=0.6, labor_points_per_capita=1.0,
+        labor_participation_rate=kwargs.get("labor_participation_rate", 0.6),
+        labor_points_per_capita=kwargs.get("labor_points_per_capita", 1.0),
     )
     folk.get_component(LedgerComponent).cash = cash
     return folk

@@ -47,6 +47,8 @@ def _make_ai_company(name: str) -> Company:
     company.init_component(AICompanyDecisionComponent)
     from component.ledger_component import LedgerComponent
     company.get_component(LedgerComponent).cash = 100_000
+    company.initial_wage = 10
+    company.wage = 10
     return company
 
 

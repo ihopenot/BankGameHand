@@ -11,10 +11,12 @@ from system.labor_service import LaborService
 
 def _make_folk(population: int, participation_rate: float, points_per_capita: float = 1.0) -> Folk:
     return Folk(
+        name=f"folk_{population}",
         population=population,
         w_quality=0.5,
         w_brand=0.5,
         w_price=0.0,
+        spending_flow={},
         base_demands={},
         labor_participation_rate=participation_rate,
         labor_points_per_capita=points_per_capita,

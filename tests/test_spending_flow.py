@@ -26,6 +26,7 @@ def _make_folk_entities():
             w_price=0.55,
             spending_flow={"tech": 0.6, "brand": 0.4, "maintenance": 0.5},
             base_demands={},
+            labor_participation_rate=0.6, labor_points_per_capita=1.0,
         ),
         Folk(
             name="folk_1",
@@ -35,6 +36,7 @@ def _make_folk_entities():
             w_price=0.3,
             spending_flow={"tech": 0.3, "brand": 0.4, "maintenance": 0.35},
             base_demands={},
+            labor_participation_rate=0.6, labor_points_per_capita=1.0,
         ),
         Folk(
             name="folk_2",
@@ -44,6 +46,7 @@ def _make_folk_entities():
             w_price=0.1,
             spending_flow={"tech": 0.1, "brand": 0.2, "maintenance": 0.15},
             base_demands={},
+            labor_participation_rate=0.6, labor_points_per_capita=1.0,
         ),
     ]
     return folks
