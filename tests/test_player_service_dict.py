@@ -37,7 +37,9 @@ class TestCompanyTableDict:
         entry = result[0]
         assert "name" in entry
         assert "factory_types" in entry
-        assert "factory_count" in entry
+        assert "factories_active" in entry
+        assert "factories_idle" in entry
+        assert "factories_building" in entry
         assert "cash" in entry
         assert "wage" in entry
         assert "hired_workers" in entry
@@ -47,7 +49,9 @@ class TestCompanyTableDict:
         assert "inventory" in entry
         assert "receivables" in entry
         assert "payables" in entry
-        assert isinstance(entry["factory_count"], int)
+        assert isinstance(entry["factories_active"], int)
+        assert isinstance(entry["factories_idle"], int)
+        assert isinstance(entry["factories_building"], int)
         assert isinstance(entry["cash"], int)
         assert isinstance(entry["tech"], (int, float))
         assert isinstance(entry["brand"], (int, float))

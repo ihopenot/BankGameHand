@@ -104,6 +104,7 @@ class Game:
             self.sell_phase()
             self.buy_phase()
             self.plan_phase()
+            self.maintenance_phase()
             self.labor_match_phase()
             self.product_phase()
             self.loan_application_phase()
@@ -149,6 +150,10 @@ class Game:
             economy_index=economy_index,
         )
         self.decision_service.plan_phase(self.companies)
+
+    def maintenance_phase(self) -> None:
+        """维护阶段：扣维护费，标记未维护工厂。"""
+        self.decision_service.maintenance_phase(self.companies, self.folks)
 
     def labor_match_phase(self) -> None:
         """劳动力匹配阶段：匹配岗位与劳动力，生成工资负债。"""

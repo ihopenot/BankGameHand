@@ -111,6 +111,7 @@ class TestActPhase:
         _set_context(svc, company)
         dc.investment_plan = {"expansion": ft.build_cost, "brand": 5000, "tech": 3000}
 
+        svc.maintenance_phase([company])
         svc.act_phase([company])
 
         ledger = company.get_component(LedgerComponent)
@@ -134,6 +135,7 @@ class TestActPhase:
         dc.investment_plan = {"expansion": 50000, "brand": 5000, "tech": 5000}
 
         # reserved = 3000*(1+0*2)=3000, budget = 15000-3000 = 12000
+        svc.maintenance_phase([company])
         svc.act_phase([company])
 
         ledger = company.get_component(LedgerComponent)
@@ -158,6 +160,7 @@ class TestActPhase:
         dc.investment_plan = {"expansion": 50000, "brand": 0, "tech": 0}
 
         # reserved = 3000, budget = 47000 < 50000 → expansion 分配 47000 < build_cost → 回流
+        svc.maintenance_phase([company])
         svc.act_phase([company])
 
         ledger = company.get_component(LedgerComponent)

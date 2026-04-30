@@ -42,7 +42,9 @@ class PlayerService(Service):
         table = Table(title="企业概览", show_lines=True)
         table.add_column("公司名", style="bold")
         table.add_column("工厂类型")
-        table.add_column("工厂数", justify="right")
+        table.add_column("开工", justify="right", style="green")
+        table.add_column("停工", justify="right", style="red")
+        table.add_column("在建", justify="right", style="yellow")
         table.add_column("现金", justify="right", style="green")
         table.add_column("工资", justify="right", style="yellow")
         table.add_column("雇佣人数", justify="right")
@@ -63,12 +65,10 @@ class PlayerService(Service):
             payables = ledger.total_payables()
 
             ft_parts: List[str] = []
-            factory_count = 0
             total_tech = 0
             total_brand = 0
             for ft, factories in pc.factories.items():
                 ft_parts.append(ft.recipe.output_goods_type.name)
-                factory_count += len(factories)
             total_tech = sum(pc.tech_values.values())
             total_brand = sum(pc.brand_values.values())
 
@@ -86,7 +86,9 @@ class PlayerService(Service):
             table.add_row(
                 name,
                 ", ".join(ft_parts) or "-",
-                str(factory_count),
+                str(mc.factories_active),
+                str(mc.factories_idle),
+                str(mc.factories_building),
                 str(cash),
                 str(company.wage),
                 str(mc.last_hired_workers),
@@ -212,10 +214,8 @@ class PlayerService(Service):
             mc = company.get_component(MetricComponent)
 
             ft_parts: List[str] = []
-            factory_count = 0
             for ft, factories in pc.factories.items():
                 ft_parts.append(ft.recipe.output_goods_type.name)
-                factory_count += len(factories)
 
             inv_parts: List[str] = []
             if storage:
@@ -231,7 +231,9 @@ class PlayerService(Service):
             result.append({
                 "name": name,
                 "factory_types": ", ".join(ft_parts) or "-",
-                "factory_count": factory_count,
+                "factories_active": mc.factories_active,
+                "factories_idle": mc.factories_idle,
+                "factories_building": mc.factories_building,
                 "cash": ledger.cash,
                 "wage": company.wage,
                 "hired_workers": mc.last_hired_workers,

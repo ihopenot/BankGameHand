@@ -44,6 +44,11 @@ class MetricComponent(BaseComponent):
         self.cumulative_tech_spend: int = 0
         self.cumulative_expansion_spend: int = 0
 
+        # 工厂统计
+        self.factories_active: int = 0  # 开工（已建成且已维护）
+        self.factories_idle: int = 0    # 停工（已建成但未维护）
+        self.factories_building: int = 0  # 在建
+
         # 历史快照
         self.round_history: List[RoundSnapshot] = []
 
@@ -57,3 +62,6 @@ class MetricComponent(BaseComponent):
         self.last_sold_quantities = {}
         self.last_revenue = 0
         self.last_hired_labor_points = 0
+        self.factories_active = 0
+        self.factories_idle = 0
+        self.factories_building = 0

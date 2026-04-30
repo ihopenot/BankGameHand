@@ -149,6 +149,27 @@ class DecisionService:
         if ai_company_names:
             AICompanyDecisionComponent.prepare_next_sessions(ai_company_names)
 
+    def maintenance_phase(self, companies: List[Company], folks: List | None = None) -> None:
+        """维护阶段：逐个工厂扣维护费，现金不足标记未维护，并记录工厂统计。"""
+        for company in companies:
+            pc = company.get_component(ProductorComponent)
+            mc = company.get_component(MetricComponent)
+
+            maintenance_cost = self._pay_maintenance(company)
+            if maintenance_cost > 0:
+                if folks:
+                    self.distribute_spending_to_folks("maintenance", maintenance_cost, folks)
+
+            # 记录工厂统计
+            for ft, factory_list in pc.factories.items():
+                for f in factory_list:
+                    if not f.is_built:
+                        mc.factories_building += 1
+                    elif f.maintained:
+                        mc.factories_active += 1
+                    else:
+                        mc.factories_idle += 1
+
     def act_phase(self, companies: List[Company], folks: List | None = None) -> None:
         """执行阶段：委托预算分配 + 执行投资 + 支出分流到居民。"""
         for company in companies:
@@ -159,13 +180,6 @@ class DecisionService:
 
             allocation = dc.decide_budget_allocation()
             plan_total = sum(allocation.values())
-
-            # 维护费用实际扣款
-            maintenance_cost = self._calc_maintenance_cost(company)
-            if maintenance_cost > 0:
-                ledger.cash -= maintenance_cost
-                if folks:
-                    self.distribute_spending_to_folks("maintenance", maintenance_cost, folks)
 
             if plan_total == 0:
                 continue
@@ -235,17 +249,24 @@ class DecisionService:
                     ledger = folk.get_component(LedgerComponent)
                     ledger.cash += share
 
-    def _calc_maintenance_cost(self, company: Company) -> int:
-        """计算已建成工厂的维护费用总额。"""
+    def _pay_maintenance(self, company: Company) -> int:
+        """逐个工厂支付维护费，现金不足时标记工厂未维护。返回实际支付总额。"""
         pc = company.get_component(ProductorComponent)
         if pc is None:
             return 0
-        return sum(
-            ft.maintenance_cost
-            for ft, factory_list in pc.factories.items()
-            for f in factory_list
-            if f.is_built
-        )
+        ledger = company.get_component(LedgerComponent)
+        total_paid = 0
+        for ft, factory_list in pc.factories.items():
+            for f in factory_list:
+                if not f.is_built:
+                    continue
+                if ledger.cash >= ft.maintenance_cost:
+                    ledger.cash -= ft.maintenance_cost
+                    total_paid += ft.maintenance_cost
+                    f.maintained = True
+                else:
+                    f.maintained = False
+        return total_paid
 
     def _pick_factory_type(self, company: Company) -> Optional[FactoryType]:
         """选择最便宜的现有工厂类型用于扩产。"""

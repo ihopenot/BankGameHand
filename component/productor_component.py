@@ -68,6 +68,8 @@ class ProductorComponent(BaseComponent):
         for factory in self.factories.get(factory_type, []):
             if not factory.is_built:
                 continue
+            if not factory.maintained:
+                continue
 
             # 取劳动力（先到先得，从局部剩余中扣）
             labor_demand = factory_type.labor_demand

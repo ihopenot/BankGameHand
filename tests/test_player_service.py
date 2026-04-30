@@ -76,8 +76,10 @@ class TestFormatCompanyTable:
         table = svc.format_company_table()
         assert "科技" in table
         assert "品牌" in table
-        assert "工厂数" in table
-        # tech=500, brand=300, factory_count=1
+        assert "开工" in table
+        assert "停工" in table
+        assert "在建" in table
+        # tech=500, brand=300
         assert "500" in table
         assert "300" in table
 

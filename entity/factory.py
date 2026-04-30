@@ -53,6 +53,7 @@ class Factory:
     def __init__(self, factory_type: FactoryType, build_remaining: int) -> None:
         self.factory_type = factory_type
         self.build_remaining = build_remaining
+        self.maintained: bool = True
 
     @property
     def is_built(self) -> bool:
