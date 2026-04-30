@@ -5,7 +5,7 @@ from abc import ABC
 from typing import Callable
 
 from component.base_component import BaseComponent
-from component.base_company_decision import BaseCompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
 from core.entity import Entity
 
 

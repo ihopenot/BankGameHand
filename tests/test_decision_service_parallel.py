@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from component.ai_company_decision import AICompanyDecisionComponent
+from component.decision.company.ai import AICompanyDecisionComponent
 from core.config import ConfigManager
 from core.entity import Entity
 from entity.company.company import Company
@@ -78,7 +78,7 @@ class TestPrepareNextRound:
 
     def test_prepare_next_round_skips_non_ai_companies(self) -> None:
         """prepare_next_round 应跳过非 AI 决策组件的公司。"""
-        from component.classic_company_decision import ClassicCompanyDecisionComponent
+        from component.decision.company.classic import ClassicCompanyDecisionComponent
         ai_company = _make_ai_company("company_A")
         classic_company = Company(name="company_B")
         classic_company.init_component(ClassicCompanyDecisionComponent)

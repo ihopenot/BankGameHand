@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from component.ai_company_decision import AICompanyDecisionComponent
-from component.base_company_decision import BaseCompanyDecisionComponent
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.ai import AICompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from core.config import ConfigManager
 from core.entity import Entity
 
@@ -88,7 +88,7 @@ class TestAISetContext:
         """set_context 应调用 MCPAgentSDK.run_agent。"""
         ctx = _make_context()
 
-        with patch("component.ai_company_decision.MCPAgentSDK") as mock_sdk_cls:
+        with patch("component.decision.company.ai.MCPAgentSDK") as mock_sdk_cls:
             mock_sdk = MagicMock()
             mock_sdk_cls.return_value = mock_sdk
             mock_sdk.init = AsyncMock()
@@ -106,7 +106,7 @@ class TestAISetContext:
         """set_context 应将 AI 结果缓存到 _ai_decisions。"""
         ctx = _make_context()
 
-        with patch("component.ai_company_decision.MCPAgentSDK") as mock_sdk_cls:
+        with patch("component.decision.company.ai.MCPAgentSDK") as mock_sdk_cls:
             mock_sdk = MagicMock()
             mock_sdk_cls.return_value = mock_sdk
             mock_sdk.init = AsyncMock()

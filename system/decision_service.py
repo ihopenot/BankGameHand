@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
-from component.ai_company_decision import AICompanyDecisionComponent
-from component.base_company_decision import BaseCompanyDecisionComponent
+from component.decision.company.ai import AICompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from core.config import ConfigManager
 from core.types import LoanApplication
 from entity.factory import Factory, FactoryType
-from entity.goods import GoodsType
 
 if TYPE_CHECKING:
     from entity.company.company import Company
@@ -136,7 +135,7 @@ class DecisionService:
     @staticmethod
     def _set_context_on_component(dc: BaseCompanyDecisionComponent, ctx: dict) -> None:
         """设置 context 到决策组件，不触发 AI 调用。"""
-        from component.base_company_decision import BaseCompanyDecisionComponent
+        from component.decision.company.base import BaseCompanyDecisionComponent
         # 只调用父类 set_context（Classic），不触发 AICompanyDecisionComponent 的 _query_ai
         BaseCompanyDecisionComponent.set_context(dc, ctx)
 
@@ -150,8 +149,8 @@ class DecisionService:
         if ai_company_names:
             AICompanyDecisionComponent.prepare_next_sessions(ai_company_names)
 
-    def act_phase(self, companies: List[Company]) -> None:
-        """执行阶段：委托预算分配 + 执行投资。"""
+    def act_phase(self, companies: List[Company], folks: List | None = None) -> None:
+        """执行阶段：委托预算分配 + 执行投资 + 支出分流到居民。"""
         for company in companies:
             dc = self._get_decision_component(company)
             pc = company.get_component(ProductorComponent)
@@ -160,6 +159,14 @@ class DecisionService:
 
             allocation = dc.decide_budget_allocation()
             plan_total = sum(allocation.values())
+
+            # 维护费用实际扣款
+            maintenance_cost = self._calc_maintenance_cost(company)
+            if maintenance_cost > 0:
+                ledger.cash -= maintenance_cost
+                if folks:
+                    self.distribute_spending_to_folks("maintenance", maintenance_cost, folks)
+
             if plan_total == 0:
                 continue
 
@@ -178,6 +185,8 @@ class DecisionService:
             brand_budget = allocation.get("brand", 0)
             if brand_budget > 0:
                 self._apply_brand(company, brand_budget)
+                if folks:
+                    self.distribute_spending_to_folks("brand", brand_budget, folks)
                 actual_spent += brand_budget
                 mc.cumulative_brand_spend += brand_budget
 
@@ -185,6 +194,8 @@ class DecisionService:
             tech_budget = allocation.get("tech", 0)
             if tech_budget > 0:
                 self._apply_tech(company, tech_budget)
+                if folks:
+                    self.distribute_spending_to_folks("tech", tech_budget, folks)
                 actual_spent += tech_budget
                 mc.cumulative_tech_spend += tech_budget
 
@@ -211,6 +222,30 @@ class DecisionService:
         return applications
 
     # ── 内部方法 ──
+
+    def distribute_spending_to_folks(self, spending_type: str, amount: int, folks: list) -> None:
+        """将企业支出按 Folk.spending_flow 比例分流到各 Folk 组的 LedgerComponent.cash。"""
+        if amount <= 0:
+            return
+        for folk in folks:
+            ratio = folk.spending_flow[spending_type]
+            if ratio > 0:
+                share = int(amount * ratio)
+                if share > 0:
+                    ledger = folk.get_component(LedgerComponent)
+                    ledger.cash += share
+
+    def _calc_maintenance_cost(self, company: Company) -> int:
+        """计算已建成工厂的维护费用总额。"""
+        pc = company.get_component(ProductorComponent)
+        if pc is None:
+            return 0
+        return sum(
+            ft.maintenance_cost
+            for ft, factory_list in pc.factories.items()
+            for f in factory_list
+            if f.is_built
+        )
 
     def _pick_factory_type(self, company: Company) -> Optional[FactoryType]:
         """选择最便宜的现有工厂类型用于扩产。"""

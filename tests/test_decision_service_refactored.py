@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from component.base_company_decision import BaseCompanyDecisionComponent
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent

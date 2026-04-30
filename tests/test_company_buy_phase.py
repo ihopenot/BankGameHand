@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.entity import Entity

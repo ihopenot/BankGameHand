@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
@@ -115,7 +115,7 @@ class TestActPhase:
 
         ledger = company.get_component(LedgerComponent)
         # 花了 50000 + 5000 + 3000 = 58000
-        assert ledger.cash == 200_000 - 58000
+        assert ledger.cash == 200_000 - 58000 - 3000  # 58000 investment + 3000 maintenance
         assert len(pc.factories[ft]) == 2  # 新建了一个工厂
         assert pc.brand_values.get(gt, 0) == 5000
         assert pc.tech_values.get(recipe, 0) == 3000
@@ -143,7 +143,7 @@ class TestActPhase:
         assert len(pc.factories[ft]) == 1  # 没建成新工厂
         assert pc.brand_values.get(gt, 0) == 1000
         assert pc.tech_values.get(recipe, 0) == 1000
-        assert ledger.cash == 15_000 - 2000  # 只花了 brand + tech
+        assert ledger.cash == 15_000 - 2000 - 3000  # 2000 investment + 3000 maintenance
 
     def test_expansion_insufficient_rolls_back(self) -> None:
         """扩产分配金额不够建厂时回流。"""
@@ -162,7 +162,7 @@ class TestActPhase:
 
         ledger = company.get_component(LedgerComponent)
         assert len(pc.factories[ft]) == 1  # 没建
-        assert ledger.cash == 50_000  # 钱没花
+        assert ledger.cash == 50_000 - 3000  # 3000 maintenance
 
     def test_empty_plan_no_change(self) -> None:
         """空计划不花钱。"""

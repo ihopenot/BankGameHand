@@ -9,6 +9,8 @@ from component.ledger_component import LedgerComponent
 from component.storage_component import StorageComponent
 from entity.goods import GoodsType
 
+_SPENDING_FLOW = {"tech": 1.0, "brand": 0.0, "maintenance": 0.0}
+
 
 class TestFolkInit:
     """Folk 实体初始化测试。"""
@@ -21,10 +23,12 @@ class TestFolkInit:
             gt_food: {"per_capita": 10, "sensitivity": 0.1},
         }
         folk = Folk(
+            name="test_folk",
             population=6000,
             w_quality=0.95,
             w_brand=0.05,
             w_price=0.0,
+            spending_flow=_SPENDING_FLOW,
             base_demands=base_demands,
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
@@ -41,10 +45,12 @@ class TestFolkInit:
         from entity.folk import Folk
 
         folk = Folk(
+            name="test_folk",
             population=6000,
             w_quality=0.95,
             w_brand=0.05,
             w_price=0.0,
+            spending_flow=_SPENDING_FLOW,
             base_demands={},
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
@@ -54,7 +60,8 @@ class TestFolkInit:
     def test_folk_has_ledger_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={},
+        folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
+                     spending_flow=_SPENDING_FLOW, base_demands={},
                      labor_participation_rate=0.5, labor_points_per_capita=1.0)
         ledger = folk.get_component(LedgerComponent)
         assert ledger is not None
@@ -62,7 +69,8 @@ class TestFolkInit:
     def test_folk_has_storage_component(self) -> None:
         from entity.folk import Folk
 
-        folk = Folk(population=100, w_quality=0.5, w_brand=0.5, w_price=0.0, base_demands={},
+        folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
+                     spending_flow=_SPENDING_FLOW, base_demands={},
                      labor_participation_rate=0.5, labor_points_per_capita=1.0)
         storage = folk.get_component(StorageComponent)
         assert storage is not None
@@ -74,10 +82,12 @@ class TestFolkInit:
         gt_phone = GoodsType(name="手机", base_price=20000)
 
         folk_a = Folk(
+            name="test_folk",
             population=6000,
             w_quality=0.95,
             w_brand=0.05,
             w_price=0.0,
+            spending_flow=_SPENDING_FLOW,
             base_demands={
                 gt_food: {"per_capita": 10, "sensitivity": 0.1},
                 gt_phone: {"per_capita": 0, "sensitivity": 0.8},
@@ -86,10 +96,12 @@ class TestFolkInit:
             labor_points_per_capita=1.0,
         )
         folk_b = Folk(
+            name="test_folk",
             population=1000,
             w_quality=0.2,
             w_brand=0.8,
             w_price=0.0,
+            spending_flow=_SPENDING_FLOW,
             base_demands={
                 gt_food: {"per_capita": 10, "sensitivity": 0.05},
                 gt_phone: {"per_capita": 8, "sensitivity": 0.4},
@@ -128,6 +140,7 @@ class TestLoadFolks:
                     "w_price": 0.0,
                     "labor_participation_rate": 0.6,
                     "labor_points_per_capita": 1.0,
+                    "spending_flow": AttrDict({"tech": 0.6, "brand": 0.4, "maintenance": 0.5}),
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.1}),
                     }),
@@ -139,6 +152,7 @@ class TestLoadFolks:
                     "w_price": 0.0,
                     "labor_participation_rate": 0.7,
                     "labor_points_per_capita": 1.5,
+                    "spending_flow": AttrDict({"tech": 0.4, "brand": 0.6, "maintenance": 0.5}),
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 5, "sensitivity": 0.05}),
                     }),
@@ -173,6 +187,7 @@ class TestLoadFolks:
                     "w_price": 0.0,
                     "labor_participation_rate": 0.6,
                     "labor_points_per_capita": 1.0,
+                    "spending_flow": AttrDict({"tech": 1.0, "brand": 1.0, "maintenance": 1.0}),
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.2}),
                         "手机": AttrDict({"per_capita": 3, "sensitivity": 0.7}),

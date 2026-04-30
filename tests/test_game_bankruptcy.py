@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent

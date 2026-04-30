@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from component.base_company_decision import BaseCompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent, RoundSnapshot
 from component.productor_component import ProductorComponent

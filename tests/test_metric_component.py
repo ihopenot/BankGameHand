@@ -138,10 +138,12 @@ class TestEntityMounting:
     def test_folk_has_metric_component(self) -> None:
         from entity.folk import Folk
         folk = Folk(
+            name="test_folk",
             population=100,
             w_quality=0.5,
             w_brand=0.3,
             w_price=0.2,
+            spending_flow={"tech": 0.5, "brand": 0.3, "maintenance": 0.2},
             base_demands={},
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,

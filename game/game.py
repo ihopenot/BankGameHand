@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from component.ai_company_decision import AICompanyDecisionComponent
+from component.decision.company.ai import AICompanyDecisionComponent
 from component.productor_component import ProductorComponent
 from core.config import ConfigManager
 from entity.company.company import Company
@@ -177,7 +177,7 @@ class Game:
         self.companies = list(self.company_service.companies.values())
 
     def act_phase(self) -> None:
-        self.decision_service.act_phase(self.companies)
+        self.decision_service.act_phase(self.companies, self.folks)
 
     def snapshot_phase(self) -> None:
         self.metric_service.snapshot_phase(self.round)

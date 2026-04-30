@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from component.ai_company_decision import AICompanyDecisionComponent
+from component.decision.company.ai import AICompanyDecisionComponent
 from core.config import ConfigManager
 from core.entity import Entity
 from mcp_agent_sdk import AgentResult, AgentRunConfig, AgentSession

@@ -4,7 +4,7 @@ import math
 import random
 from typing import TYPE_CHECKING, Callable, Dict, List, Tuple
 
-from component.base_company_decision import BaseCompanyDecisionComponent, register_decision_component
+from component.decision.company.base import BaseCompanyDecisionComponent, register_decision_component
 from core.config import ConfigManager
 from entity.factory import Factory, FactoryType
 from entity.goods import GoodsType

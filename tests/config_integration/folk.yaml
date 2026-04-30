@@ -6,6 +6,10 @@ folks:
     w_price: 0.55
     labor_participation_rate: 0.7
     labor_points_per_capita: 1.0
+    spending_flow:
+      tech: 0.6
+      brand: 0.4
+      maintenance: 0.5
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.1 }
       服装: { per_capita: 1, sensitivity: 0.5 }
@@ -18,18 +22,26 @@ folks:
     w_price: 0.3
     labor_participation_rate: 0.6
     labor_points_per_capita: 1.0
+    spending_flow:
+      tech: 0.3
+      brand: 0.4
+      maintenance: 0.35
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.2 }
       服装: { per_capita: 5, sensitivity: 0.5 }
       手机: { per_capita: 3, sensitivity: 0.7 }
 
-  # 高收入群体：品牌偏好强，全品类消费
+  # 高收入群体：品牌偏好强，全品类消费，劳动力参与率低
   - population: 1000
     w_quality: 0.15
     w_brand: 0.75
     w_price: 0.1
     labor_participation_rate: 0.4
     labor_points_per_capita: 1.0
+    spending_flow:
+      tech: 0.1
+      brand: 0.2
+      maintenance: 0.15
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.05 }
       服装: { per_capita: 8, sensitivity: 0.3 }
