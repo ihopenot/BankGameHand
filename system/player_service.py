@@ -41,6 +41,7 @@ class PlayerService(Service):
     def render_company_table(self) -> Table:
         table = Table(title="企业概览", show_lines=True)
         table.add_column("公司名", style="bold")
+        table.add_column("地块")
         table.add_column("工厂类型")
         table.add_column("开工", justify="right", style="green")
         table.add_column("停工", justify="right", style="red")
@@ -85,6 +86,7 @@ class PlayerService(Service):
 
             table.add_row(
                 company.name,
+                company.plot.name if company.plot else "-",
                 ", ".join(ft_parts) or "-",
                 str(mc.factories_active),
                 str(mc.factories_idle),
@@ -227,6 +229,8 @@ class PlayerService(Service):
 
             result.append({
                 "name": company.name,
+                "plot": company.plot.name if company.plot else None,
+                "country": company.plot.country.name if company.plot else None,
                 "factory_types": ", ".join(ft_parts) or "-",
                 "factories_active": mc.factories_active,
                 "factories_idle": mc.factories_idle,

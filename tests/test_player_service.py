@@ -101,6 +101,18 @@ class TestFormatCompanyTable:
         assert "1200" in table
         assert "5500" in table
 
+    def test_includes_plot_column(self):
+        svc = _make_player_service()
+        company, gt, _ = _make_company_with_price()
+        from entity.map import Country, Plot
+        country = Country(name="华夏", description="")
+        plot = Plot(name="硅谷工业区", country=country, description="")
+        company.plot = plot
+        svc.game.company_service.companies = {"company_0": company}
+        table = svc.format_company_table()
+        assert "地块" in table
+        assert "硅谷工业区" in table
+
 
 class TestFormatBankSummary:
     def test_basic(self):
