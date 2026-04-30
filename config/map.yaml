@@ -1,0 +1,25 @@
+# 地图配置：国家与地块定义
+
+countries:
+  - name: "华夏"
+    description: "东方大国"
+  - name: "西洋联邦"
+    description: "工业强国"
+
+plots:
+  - name: "硅谷工业区"
+    country: "华夏"
+    description: "电子产业聚集地"
+    neighbors: ["江南纺织区", "北方粮仓"]
+  - name: "江南纺织区"
+    country: "华夏"
+    description: "传统纺织业重镇"
+    neighbors: ["硅谷工业区", "北方粮仓"]
+  - name: "北方粮仓"
+    country: "华夏"
+    description: "粮食主产区"
+    neighbors: ["硅谷工业区", "江南纺织区", "新大陆科技园"]
+  - name: "新大陆科技园"
+    country: "西洋联邦"
+    description: "高科技产业基地"
+    neighbors: ["北方粮仓"]

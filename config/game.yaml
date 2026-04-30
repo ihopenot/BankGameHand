@@ -8,48 +8,57 @@ companies:
     count: 2
     initial_cash: 100000
     initial_wage: 10
+    plot: "硅谷工业区"
     decision_component: "classic"
   - factory_type: "芯片工厂"
     count: 2
     initial_cash: 200000
     initial_wage: 15
+    plot: "硅谷工业区"
     decision_component: "classic"
   - factory_type: "手机工厂"
     count: 2
     initial_cash: 150000
     initial_wage: 12
+    plot: "硅谷工业区"
     decision_component: "classic"
   # 纺织产业链
   - factory_type: "棉花农场"
     count: 2
     initial_cash: 80000
     initial_wage: 8
+    plot: "江南纺织区"
     decision_component: "classic"
   - factory_type: "纺织厂"
     count: 2
     initial_cash: 120000
     initial_wage: 12
+    plot: "江南纺织区"
     decision_component: "classic"
   - factory_type: "服装厂"
     count: 2
     initial_cash: 100000
     initial_wage: 10
+    plot: "江南纺织区"
     decision_component: "classic"
   # 食品产业链
   - factory_type: "麦田"
     count: 3
     initial_cash: 60000
     initial_wage: 8
+    plot: "北方粮仓"
     decision_component: "classic"
   - factory_type: "面粉厂"
     count: 2
     initial_cash: 80000
     initial_wage: 10
+    plot: "北方粮仓"
     decision_component: "classic"
   - factory_type: "食品厂"
     count: 2
     initial_cash: 90000
     initial_wage: 10
+    plot: "北方粮仓"
     decision_component: "classic"
 
 # 银行（玩家控制）
