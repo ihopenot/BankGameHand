@@ -99,3 +99,58 @@ class TestMapServiceLoad:
         svc = MapService()
         with pytest.raises(ValueError, match="不存在"):
             svc.load_map(config)
+
+
+from entity.company.company import Company
+
+
+class TestMapServiceQueries:
+    def _setup(self):
+        svc = MapService()
+        config = {
+            "countries": [
+                {"name": "华夏", "description": ""},
+                {"name": "西洋联邦", "description": ""},
+            ],
+            "plots": [
+                {"name": "A区", "country": "华夏", "description": "", "neighbors": ["B区"]},
+                {"name": "B区", "country": "华夏", "description": "", "neighbors": ["A区"]},
+                {"name": "C区", "country": "西洋联邦", "description": "", "neighbors": []},
+            ],
+        }
+        svc.load_map(config)
+        return svc
+
+    def test_get_plots_by_country(self):
+        svc = self._setup()
+        plots = svc.get_plots_by_country("华夏")
+        names = [p.name for p in plots]
+        assert "A区" in names
+        assert "B区" in names
+        assert "C区" not in names
+
+    def test_get_companies_in_plot(self):
+        svc = self._setup()
+        c1 = Company(name="c1")
+        c1.plot = svc.get_plot("A区")
+        c2 = Company(name="c2")
+        c2.plot = svc.get_plot("B区")
+        companies = [c1, c2]
+        result = svc.get_companies_in_plot("A区", companies)
+        assert result == [c1]
+
+    def test_get_companies_in_country(self):
+        svc = self._setup()
+        c1 = Company(name="c1")
+        c1.plot = svc.get_plot("A区")
+        c2 = Company(name="c2")
+        c2.plot = svc.get_plot("C区")
+        companies = [c1, c2]
+        result = svc.get_companies_in_country("华夏", companies)
+        assert result == [c1]
+
+    def test_get_neighbors(self):
+        svc = self._setup()
+        neighbors = svc.get_neighbors("A区")
+        assert len(neighbors) == 1
+        assert neighbors[0].name == "B区"

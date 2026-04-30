@@ -76,3 +76,13 @@ class MapService:
     def get_neighbors(self, plot_name: str) -> List[Plot]:
         """获取地块的相邻地块列表。"""
         return self.get_plot(plot_name).neighbors
+
+    def get_companies_in_plot(self, plot_name: str, companies: list) -> list:
+        """获取某地块中所有公司。"""
+        plot = self.get_plot(plot_name)
+        return [c for c in companies if getattr(c, 'plot', None) is plot]
+
+    def get_companies_in_country(self, country_name: str, companies: list) -> list:
+        """获取某国家中所有公司。"""
+        country_plots = self.get_plots_by_country(country_name)
+        return [c for c in companies if getattr(c, 'plot', None) in country_plots]
