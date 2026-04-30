@@ -8,7 +8,7 @@ from core.types import Loan, LoanType, RepaymentType
 
 def _make_entity(cash: int = 0) -> Entity:
     """创建带 LedgerComponent 的测试实体。"""
-    e = Entity()
+    e = Entity("test")
     e.init_component(LedgerComponent)
     e.get_component(LedgerComponent).cash = cash
     return e

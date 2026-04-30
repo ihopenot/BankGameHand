@@ -15,61 +15,61 @@ class TestMetricComponentInit:
     def test_inherits_base_component(self) -> None:
         from component.base_component import BaseComponent
 
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert isinstance(mc, BaseComponent)
 
     def test_last_sell_orders_init_empty(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.last_sell_orders == {}
 
     def test_last_sold_quantities_init_empty(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.last_sold_quantities == {}
 
     def test_last_revenue_init_zero(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.last_revenue == 0
 
     def test_last_avg_buy_prices_init_empty(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.last_avg_buy_prices == {}
 
     def test_cumulative_revenue_init_zero(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.cumulative_revenue == 0
 
     def test_cumulative_brand_spend_init_zero(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.cumulative_brand_spend == 0
 
     def test_cumulative_tech_spend_init_zero(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.cumulative_tech_spend == 0
 
     def test_cumulative_expansion_spend_init_zero(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.cumulative_expansion_spend == 0
 
     def test_round_history_init_empty(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         assert mc.round_history == []
@@ -105,7 +105,7 @@ class TestRoundSnapshot:
         assert snap.revenue == 500
 
     def test_add_snapshot(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         snap = RoundSnapshot(round_number=1, cash=100)
@@ -115,7 +115,7 @@ class TestRoundSnapshot:
         assert mc.round_history[0].cash == 100
 
     def test_add_multiple_snapshots(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.add_snapshot(RoundSnapshot(round_number=1))
@@ -154,7 +154,7 @@ class TestEntityMounting:
 
     def test_bank_has_metric_component(self) -> None:
         from entity.bank import Bank
-        bank = Bank()
+        bank = Bank("test_bank")
         mc = bank.get_component(MetricComponent)
         assert mc is not None
         assert isinstance(mc, MetricComponent)
@@ -165,7 +165,7 @@ class TestResetRound:
 
     def test_reset_round_clears_sell_orders(self) -> None:
         gt = GoodsType(name="test", base_price=100)
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.last_sell_orders[gt] = 50
@@ -174,7 +174,7 @@ class TestResetRound:
 
     def test_reset_round_clears_sold_quantities(self) -> None:
         gt = GoodsType(name="test", base_price=100)
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.last_sold_quantities[gt] = 30
@@ -182,7 +182,7 @@ class TestResetRound:
         assert mc.last_sold_quantities == {}
 
     def test_reset_round_clears_revenue(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.last_revenue = 5000
@@ -190,7 +190,7 @@ class TestResetRound:
         assert mc.last_revenue == 0
 
     def test_reset_round_preserves_history(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.add_snapshot(RoundSnapshot(round_number=1))
@@ -199,7 +199,7 @@ class TestResetRound:
         assert len(mc.round_history) == 1
 
     def test_reset_round_preserves_cumulative(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         entity.init_component(MetricComponent)
         mc = entity.get_component(MetricComponent)
         mc.cumulative_revenue = 10000

@@ -42,7 +42,7 @@ class TestBaseCompanyDecisionComponentAbstract:
 
     def test_cannot_instantiate_base_class(self) -> None:
         """基类不能直接实例化。"""
-        entity = Entity()
+        entity = Entity("test")
         with pytest.raises(TypeError):
             BaseCompanyDecisionComponent(entity)
 
@@ -57,13 +57,13 @@ class TestBaseCompanyDecisionComponentAbstract:
         class IncompleteSub(BaseCompanyDecisionComponent):
             pass
 
-        entity = Entity()
+        entity = Entity("test")
         with pytest.raises(TypeError):
             IncompleteSub(entity)
 
     def test_complete_subclass_can_instantiate(self) -> None:
         """实现了所有抽象方法的子类可以实例化。"""
-        entity = Entity()
+        entity = Entity("test")
         comp = _StubDecisionComponent(entity)
         assert isinstance(comp, BaseCompanyDecisionComponent)
         assert comp.outer is entity
@@ -80,7 +80,7 @@ class TestBaseCompanyDecisionComponentTraits:
 
     @pytest.fixture()
     def comp(self):
-        entity = Entity()
+        entity = Entity("test")
         return _StubDecisionComponent(entity)
 
     def test_has_six_traits(self, comp) -> None:
@@ -136,13 +136,13 @@ class TestBaseCompanyDecisionComponentLifecycle:
 
     def test_component_tracking(self) -> None:
         """创建后应注册到 components 列表。"""
-        entity = Entity()
+        entity = Entity("test")
         comp = entity.init_component(_StubDecisionComponent)
         assert comp in _StubDecisionComponent.components
 
     def test_destroy_cleanup(self) -> None:
         """entity.destroy() 应从 components 列表移除。"""
-        entity = Entity()
+        entity = Entity("test")
         comp = entity.init_component(_StubDecisionComponent)
         entity.destroy()
         assert comp not in _StubDecisionComponent.components

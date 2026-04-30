@@ -6,8 +6,7 @@ from core.entity import Entity
 
 class Company(Entity):
     def __init__(self, name: str) -> None:
-        super().__init__()
-        self.name = name
+        super().__init__(name)
         self.init_component(ProductorComponent)
         self.init_component(LedgerComponent)
         self.init_component(MetricComponent)

@@ -192,7 +192,7 @@ class TestMakePurchaseSortKey:
         gt = GoodsType(name="硅", base_price=100)
         batch = GoodsBatch(goods_type=gt, quantity=100, quality=0.7, brand_value=5)
         from system.market_service import SellOrder
-        order = SellOrder(seller=Entity(), batch=batch, price=80)
+        order = SellOrder(seller=Entity("test"), batch=batch, price=80)
         assert isinstance(sort_fn(order), float)
 
 

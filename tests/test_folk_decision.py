@@ -11,7 +11,7 @@ class TestBaseFolkDecisionComponentAbstract:
     def test_cannot_instantiate_abstract(self) -> None:
         """抽象类不能直接实例化。"""
         from component.decision.folk.base import BaseFolkDecisionComponent
-        entity = Entity()
+        entity = Entity("test")
         with pytest.raises(TypeError):
             entity.init_component(BaseFolkDecisionComponent)
 
@@ -31,7 +31,7 @@ class TestBaseFolkDecisionComponentAbstract:
             def decide_spending(self):
                 return {}
 
-        entity = Entity()
+        entity = Entity("test")
         comp = entity.init_component(ConcreteFolkDecision)
         ctx = {"economy_index": 1.0, "reference_prices": {}}
         comp.set_context(ctx)

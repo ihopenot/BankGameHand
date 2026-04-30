@@ -38,7 +38,7 @@ class BankService:
         self._offers: List[LoanOffer] = []
 
     def create_bank(self, name: str, initial_cash: int) -> Bank:
-        bank = Bank()
+        bank = Bank(name)
         ledger = bank.get_component(LedgerComponent)
         ledger.cash = initial_cash
         self.banks[name] = bank

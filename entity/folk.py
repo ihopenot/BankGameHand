@@ -26,8 +26,7 @@ class Folk(Entity):
         labor_participation_rate: float,
         labor_points_per_capita: float,
     ) -> None:
-        super().__init__()
-        self.name = name
+        super().__init__(name)
         self.population = population
         self.w_quality = w_quality
         self.w_brand = w_brand

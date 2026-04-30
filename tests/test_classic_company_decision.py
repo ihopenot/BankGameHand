@@ -41,7 +41,7 @@ def _load_config():
 @pytest.fixture()
 def comp() -> ClassicCompanyDecisionComponent:
     """创建一个挂载在 Entity 上的 ClassicCompanyDecisionComponent。"""
-    entity = Entity()
+    entity = Entity("test")
     return entity.init_component(ClassicCompanyDecisionComponent)
 
 
@@ -342,7 +342,7 @@ class TestClassicPurchaseSortKey:
         sort_key = comp.make_purchase_sort_key()
 
         batch = GoodsBatch(goods_type=gt, quantity=10, quality=0.5, brand_value=10)
-        order = SellOrder(seller=Entity(), batch=batch, price=50)
+        order = SellOrder(seller=Entity("test"), batch=batch, price=50)
         score = sort_key(order)
         assert isinstance(score, float)
 
@@ -358,8 +358,8 @@ class TestClassicPurchaseSortKey:
 
         batch_low_brand = GoodsBatch(goods_type=gt, quantity=10, quality=0.5, brand_value=5)
         batch_high_brand = GoodsBatch(goods_type=gt, quantity=10, quality=0.5, brand_value=50)
-        order_low = SellOrder(seller=Entity(), batch=batch_low_brand, price=50)
-        order_high = SellOrder(seller=Entity(), batch=batch_high_brand, price=50)
+        order_low = SellOrder(seller=Entity("test"), batch=batch_low_brand, price=50)
+        order_high = SellOrder(seller=Entity("test"), batch=batch_high_brand, price=50)
 
         assert sort_key(order_high) > sort_key(order_low)
 

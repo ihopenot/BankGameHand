@@ -65,7 +65,7 @@ class _CompanyPlanStub:
 class TestMarketRegressionCoverage:
     def test_proportional_match_does_not_drop_remainder_supply(self) -> None:
         goods_type = GoodsType(name='silicon', base_price=100)
-        seller = Entity()
+        seller = Entity("test")
         seller.init_component(StorageComponent)
         batch = GoodsBatch(goods_type=goods_type, quantity=1, quality=0.5, brand_value=0)
         seller.get_component(StorageComponent).add_batch(batch)
@@ -74,8 +74,8 @@ class TestMarketRegressionCoverage:
         order = SellOrder(seller=seller, batch=batch, price=100)
         market.add_sell_order(order)
 
-        buyer_a = Entity()
-        buyer_b = Entity()
+        buyer_a = Entity("test")
+        buyer_b = Entity("test")
         intents = [
             BuyIntent(buyer=buyer_a, goods_type=goods_type, quantity=1, sort_key=lambda o: o.price),
             BuyIntent(buyer=buyer_b, goods_type=goods_type, quantity=1, sort_key=lambda o: o.price),
@@ -164,9 +164,9 @@ class TestTradeSettlementRegressionCoverage:
 
 class TestLedgerRegressionCoverage:
     def test_unpaid_trade_payable_does_not_advance_term(self) -> None:
-        creditor = Entity()
+        creditor = Entity("test")
         creditor_ledger = creditor.init_component(LedgerComponent)
-        debtor = Entity()
+        debtor = Entity("test")
         debtor_ledger = debtor.init_component(LedgerComponent)
         creditor_ledger.cash = 5000
 
@@ -190,9 +190,9 @@ class TestLedgerRegressionCoverage:
         assert loan.elapsed == 1
 
     def test_unpaid_trade_payable_stays_due_next_round(self) -> None:
-        creditor = Entity()
+        creditor = Entity("test")
         creditor_ledger = creditor.init_component(LedgerComponent)
-        debtor = Entity()
+        debtor = Entity("test")
         debtor_ledger = debtor.init_component(LedgerComponent)
         creditor_ledger.cash = 5000
 
@@ -235,12 +235,12 @@ class TestProductorRegressionCoverage:
             build_time=0,
         )
 
-        low_entity = Entity()
+        low_entity = Entity("test")
         low_productor = low_entity.init_component(ProductorComponent)
         low_productor.tech_values[recipe] = 100
         low_productor.factories[factory_type].append(Factory(factory_type=factory_type, build_remaining=0))
 
-        high_entity = Entity()
+        high_entity = Entity("test")
         high_productor = high_entity.init_component(ProductorComponent)
         high_productor.tech_values[recipe] = 200
         high_productor.factories[factory_type].append(Factory(factory_type=factory_type, build_remaining=0))

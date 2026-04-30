@@ -28,19 +28,19 @@ class TestProductorPrices:
             maintenance_cost=50,
             build_time=1,
         )
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         pc.factories[ft] = [Factory(ft, build_remaining=0)]
         return entity, gt, ft
 
     def test_prices_attribute_exists(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         assert hasattr(pc, "prices")
         assert isinstance(pc.prices, dict)
 
     def test_prices_empty_when_no_factories(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         assert pc.prices == {}
 
@@ -61,7 +61,7 @@ class TestProductorPrices:
         ft_a = FactoryType(recipe=recipe_a, labor_demand=50, build_cost=500, maintenance_cost=20, build_time=1)
         ft_b = FactoryType(recipe=recipe_b, labor_demand=50, build_cost=2000, maintenance_cost=100, build_time=2)
 
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         pc.factories[ft_a] = [Factory(ft_a, build_remaining=0)]
         pc.factories[ft_b] = [Factory(ft_b, build_remaining=0)]

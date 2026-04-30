@@ -50,8 +50,8 @@ class TestRepaymentType:
 
 class TestLoanConstruction:
     def test_defaults(self) -> None:
-        creditor = Entity()
-        debtor = Entity()
+        creditor = Entity("test")
+        debtor = Entity("test")
         loan = Loan(
             creditor=creditor,
             debtor=debtor,
@@ -71,8 +71,8 @@ class TestLoanConstruction:
 
 class TestLoanBill:
     def test_fields(self) -> None:
-        creditor = Entity()
-        debtor = Entity()
+        creditor = Entity("test")
+        debtor = Entity("test")
         loan = Loan(
             creditor=creditor,
             debtor=debtor,
@@ -101,8 +101,8 @@ class TestLoanBill:
 class TestSettleEqualPrincipal:
     def _make_loan(self, remaining: int = 10000, elapsed: int = 0) -> Loan:
         return Loan(
-            creditor=Entity(),
-            debtor=Entity(),
+            creditor=Entity("test"),
+            debtor=Entity("test"),
             principal=10000,
             rate=500,
             term=5,
@@ -143,8 +143,8 @@ class TestSettleEqualPrincipal:
 class TestSettleInterestFirst:
     def _make_loan(self, elapsed: int = 0) -> Loan:
         return Loan(
-            creditor=Entity(),
-            debtor=Entity(),
+            creditor=Entity("test"),
+            debtor=Entity("test"),
             principal=10000,
             rate=500,
             term=5,
@@ -177,8 +177,8 @@ class TestSettleInterestFirst:
 class TestSettleBullet:
     def _make_loan(self, elapsed: int = 0, accrued: int = 0) -> Loan:
         return Loan(
-            creditor=Entity(),
-            debtor=Entity(),
+            creditor=Entity("test"),
+            debtor=Entity("test"),
             principal=10000,
             rate=500,
             term=5,
@@ -212,8 +212,8 @@ class TestSettleBullet:
 class TestSettleDemandDeposit:
     def test_demand_deposit_generates_accrued_delta(self) -> None:
         loan = Loan(
-            creditor=Entity(),
-            debtor=Entity(),
+            creditor=Entity("test"),
+            debtor=Entity("test"),
             principal=10000,
             rate=500,
             term=0,

@@ -34,7 +34,7 @@ class TestCompanyUsesClassicCompanyDecision:
 
     def test_has_six_traits(self) -> None:
         """ClassicCompanyDecisionComponent 应有 6 维 CEO 特质。"""
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         assert hasattr(dc, "business_acumen")
         assert hasattr(dc, "risk_appetite")
@@ -44,7 +44,7 @@ class TestCompanyUsesClassicCompanyDecision:
         assert hasattr(dc, "price_sensitivity")
 
     def test_traits_are_float(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         for attr in [
             "business_acumen",
@@ -58,7 +58,7 @@ class TestCompanyUsesClassicCompanyDecision:
 
     def test_traits_in_range(self) -> None:
         """CEO 特质应在 [0, 1] 范围。"""
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         for attr in [
             "business_acumen",
@@ -85,19 +85,19 @@ class TestCompanyUsesClassicCompanyDecision:
         assert len(set(acumen_values)) > 1
 
     def test_has_investment_plan(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         assert hasattr(dc, "investment_plan")
         assert isinstance(dc.investment_plan, dict)
         assert dc.investment_plan == {}
 
     def test_component_tracking(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         assert dc in ClassicCompanyDecisionComponent.components
 
     def test_destroy_cleanup(self) -> None:
-        entity = Entity()
+        entity = Entity("test")
         dc = entity.init_component(ClassicCompanyDecisionComponent)
         entity.destroy()
         assert dc not in ClassicCompanyDecisionComponent.components

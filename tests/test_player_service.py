@@ -105,7 +105,7 @@ class TestFormatCompanyTable:
 class TestFormatBankSummary:
     def test_basic(self):
         svc = _make_player_service()
-        bank = Bank()
+        bank = Bank("test_bank")
         bank.get_component(LedgerComponent).cash = 500_000
         output = svc.format_bank_summary({"银行A": bank})
         assert "银行A" in output
@@ -113,7 +113,7 @@ class TestFormatBankSummary:
 
     def test_with_loans(self):
         svc = _make_player_service()
-        bank = Bank()
+        bank = Bank("test_bank")
         bank.get_component(LedgerComponent).cash = 400_000
         company = Company(name="debtor")
         loan = Loan(
@@ -129,7 +129,7 @@ class TestFormatBankSummary:
 class TestFormatActiveLoans:
     def test_display(self):
         svc = _make_player_service()
-        bank = Bank()
+        bank = Bank("test_bank")
         company = Company(name="debtor")
         loan = Loan(
             creditor=bank, debtor=company, principal=100_000,

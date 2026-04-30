@@ -55,7 +55,7 @@ def _make_entity_with_productor(
     recipe: Recipe, factory_type: FactoryType, tech: int = 100
 ) -> Entity:
     """创建持有 ProductorComponent 的 Entity，含一个已建成工厂。"""
-    entity = Entity()
+    entity = Entity("test")
     prod = entity.init_component(ProductorComponent)
     prod.tech_values[recipe] = tech
     factory = Factory(factory_type=factory_type, build_remaining=0)
@@ -143,7 +143,7 @@ class TestProductorService:
         ft2 = _make_factory_type(r2)
 
         e1 = _make_entity_with_productor(r1, ft1, tech=150)
-        e2 = Entity()
+        e2 = Entity("test")
         prod2 = e2.init_component(ProductorComponent)
         prod2.tech_values[r2] = 300
         prod2.factories[ft2].append(Factory(factory_type=ft2, build_remaining=0))
@@ -197,7 +197,7 @@ class TestProductorService:
         recipe = _make_intermediate_recipe(gt_in, gt_out, tech_quality_weight=0.5)
         ft = _make_factory_type(recipe)
 
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         pc.tech_values[recipe] = 100
         ProductorComponent.max_tech[recipe] = 100  # tech_rank_ratio = 1.0

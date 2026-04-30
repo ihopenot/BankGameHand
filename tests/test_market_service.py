@@ -25,7 +25,7 @@ def goods_type_chip() -> GoodsType:
 
 @pytest.fixture()
 def seller(goods_type_silicon: GoodsType) -> Entity:
-    e = Entity()
+    e = Entity("test")
     e.init_component(StorageComponent)
     storage = e.get_component(StorageComponent)
     batch = GoodsBatch(goods_type=goods_type_silicon, quantity=100, quality=0.8, brand_value=10)
@@ -97,13 +97,13 @@ class TestMarketServiceBasic:
     def test_multiple_orders_same_goods(
         self, market: MarketService, goods_type_silicon: GoodsType
     ) -> None:
-        seller1 = Entity()
+        seller1 = Entity("test")
         seller1.init_component(StorageComponent)
         s1 = seller1.get_component(StorageComponent)
         b1 = GoodsBatch(goods_type=goods_type_silicon, quantity=50, quality=0.9, brand_value=5)
         s1.add_batch(b1)
 
-        seller2 = Entity()
+        seller2 = Entity("test")
         seller2.init_component(StorageComponent)
         s2 = seller2.get_component(StorageComponent)
         b2 = GoodsBatch(goods_type=goods_type_silicon, quantity=80, quality=0.6, brand_value=3)
@@ -125,7 +125,7 @@ def _price_key(o: SellOrder) -> float:
 
 class TestBuyIntent:
     def test_create_buy_intent(self, goods_type_silicon: GoodsType) -> None:
-        buyer = Entity()
+        buyer = Entity("test")
         intent = BuyIntent(
             buyer=buyer,
             goods_type=goods_type_silicon,
@@ -144,8 +144,8 @@ class TestBuyIntent:
 
 class TestTradeRecord:
     def test_create_trade_record(self, goods_type_silicon: GoodsType) -> None:
-        seller = Entity()
-        buyer = Entity()
+        seller = Entity("test")
+        buyer = Entity("test")
         record = TradeRecord(
             seller=seller,
             buyer=buyer,

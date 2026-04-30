@@ -85,7 +85,7 @@ class TestFolkServiceDecisionComponent:
         folk.get_component(LedgerComponent).cash = 1000
 
         # 创建卖方
-        seller = Entity()
+        seller = Entity("test")
         seller.init_component(StorageComponent)
         seller.init_component(LedgerComponent)
         batch = GoodsBatch(goods_type=GT_FOOD, quantity=5000, quality=0.5, brand_value=5)

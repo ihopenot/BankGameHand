@@ -34,7 +34,7 @@ def _clear_ai_class_state():
 
 @pytest.fixture()
 def comp() -> AICompanyDecisionComponent:
-    entity = Entity()
+    entity = Entity("test")
     return entity.init_component(AICompanyDecisionComponent)
 
 

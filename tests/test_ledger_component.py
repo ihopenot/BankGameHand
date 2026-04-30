@@ -14,7 +14,7 @@ from core.types import Loan, LoanBill, LoanType, RepaymentType
 
 
 def _make_entity() -> tuple[Entity, LedgerComponent]:
-    entity = Entity()
+    entity = Entity("test")
     ledger = entity.init_component(LedgerComponent)
     return entity, ledger
 

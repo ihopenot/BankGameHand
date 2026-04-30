@@ -13,19 +13,19 @@ class TestStorageComponent:
         assert issubclass(StorageComponent, BaseComponent)
 
     def test_init_via_entity(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         assert isinstance(storage, StorageComponent)
         assert storage.outer is entity
 
     def test_empty_inventory(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         gt = GoodsType(name="芯片", base_price=5000)
         assert storage.get_batches(gt) == []
 
     def test_add_batch(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         gt = GoodsType(name="芯片", base_price=5000)
         batch = GoodsBatch(goods_type=gt, quantity=100, quality=0.7, brand_value=10)
@@ -35,7 +35,7 @@ class TestStorageComponent:
         assert batches[0] is batch
 
     def test_add_multiple_batches(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         gt = GoodsType(name="芯片", base_price=5000)
         b1 = GoodsBatch(goods_type=gt, quantity=50, quality=0.6, brand_value=0)
@@ -45,7 +45,7 @@ class TestStorageComponent:
         assert len(storage.get_batches(gt)) == 2
 
     def test_different_goods_types(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         gt1 = GoodsType(name="芯片", base_price=5000)
         gt2 = GoodsType(name="硅", base_price=1000)
@@ -59,7 +59,7 @@ class TestStorageComponent:
 
 class TestRequireGoods:
     def _make_storage(self) -> tuple[Entity, StorageComponent, GoodsType]:
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         gt = GoodsType(name="硅", base_price=1000)
         return entity, storage, gt
@@ -163,14 +163,14 @@ class TestProductorComponent:
         assert issubclass(ProductorComponent, BaseComponent)
 
     def test_auto_init_storage(self):
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         storage = entity.get_component(StorageComponent)
         assert isinstance(storage, StorageComponent)
         assert prod.storage is storage
 
     def test_storage_already_exists(self):
-        entity = Entity()
+        entity = Entity("test")
         storage = entity.init_component(StorageComponent)
         prod = entity.init_component(ProductorComponent)
         assert prod.storage is storage
@@ -180,7 +180,7 @@ class TestProductorComponent:
         chip = GoodsType(name="芯片", base_price=5000)
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
                         output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         assert prod.tech_values == {}
         prod.tech_values[recipe] = 500
@@ -188,14 +188,14 @@ class TestProductorComponent:
 
     def test_brand_values(self):
         gt = GoodsType(name="芯片", base_price=5000)
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         assert prod.brand_values == {}
         prod.brand_values[gt] = 100
         assert prod.brand_values[gt] == 100
 
     def test_factories_is_dict(self):
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         assert isinstance(prod.factories, dict)
         assert len(prod.factories) == 0
@@ -234,7 +234,7 @@ class TestUpdateMaxTech:
         silicon, chip = _make_goods()
         recipe = Recipe(input_goods_type=silicon, input_quantity=200,
                         output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.tech_values[recipe] = 500
         prod.update_max_tech()
@@ -247,7 +247,7 @@ class TestUpdateMaxTech:
                         output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         ProductorComponent.max_tech[recipe] = 300
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.tech_values[recipe] = 500
         prod.update_max_tech()
@@ -260,7 +260,7 @@ class TestUpdateMaxTech:
                         output_goods_type=chip, output_quantity=100, tech_quality_weight=0.6)
         ProductorComponent.max_tech[recipe] = 800
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.tech_values[recipe] = 500
         prod.update_max_tech()
@@ -274,7 +274,7 @@ class TestUpdateMaxTech:
         r2 = Recipe(input_goods_type=None, input_quantity=0,
                     output_goods_type=silicon, output_quantity=100, tech_quality_weight=1.0)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.tech_values[r1] = 600
         prod.tech_values[r2] = 400
@@ -296,7 +296,7 @@ class TestProduce:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         self._set_tech(prod, ft.recipe, 600, 1000)  # ratio=0.6
@@ -318,7 +318,7 @@ class TestProduce:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         self._set_tech(prod, ft.recipe, 500, 1000)  # ratio=0.5
@@ -335,7 +335,7 @@ class TestProduce:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         prod.factories[ft].append(Factory(ft, build_remaining=0))
@@ -354,7 +354,7 @@ class TestProduce:
         """原料层工厂无需取料。"""
         silicon, raw_ft = _make_raw_factory_type()
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[raw_ft].append(Factory(raw_ft, build_remaining=0))
         self._set_tech(prod, raw_ft.recipe, 700, 1000)  # ratio=0.7
@@ -368,7 +368,7 @@ class TestProduce:
         """品牌值正确贴到产出。"""
         silicon, raw_ft = _make_raw_factory_type()
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[raw_ft].append(Factory(raw_ft, build_remaining=0))
         prod.brand_values[silicon] = 42
@@ -383,7 +383,7 @@ class TestProduce:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         prod.factories[ft].append(Factory(ft, build_remaining=2))  # 未建成
@@ -401,7 +401,7 @@ class TestProduce:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         self._set_tech(prod, ft.recipe, 500, 1000)
@@ -414,7 +414,7 @@ class TestProduce:
         """max_tech 为 0 时品质为 0。"""
         silicon, raw_ft = _make_raw_factory_type()
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[raw_ft].append(Factory(raw_ft, build_remaining=0))
         prod.hired_labor_points = 200  # 满员，但 max_tech=0
@@ -437,7 +437,7 @@ class TestProduceAll:
         chip_ft = FactoryType(recipe=chip_recipe, labor_demand=50,
                               build_cost=100000, maintenance_cost=5000, build_time=3)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[raw_ft].append(Factory(raw_ft, build_remaining=0))
         prod.factories[chip_ft].append(Factory(chip_ft, build_remaining=0))
@@ -465,7 +465,7 @@ class TestProduceAll:
         silicon, chip = _make_goods()
         ft = _make_factory_type(silicon, chip)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = entity.init_component(ProductorComponent)
         prod.factories[ft].append(Factory(ft, build_remaining=0))
         ProductorComponent.max_tech[ft.recipe] = 1000

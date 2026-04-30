@@ -10,7 +10,8 @@ T = TypeVar("T", bound=BaseComponent)
 class Entity:
     """实体基类，维护组件字典，提供组件挂载和获取。"""
 
-    def __init__(self) -> None:
+    def __init__(self, name: str) -> None:
+        self.name = name
         self._components: Dict[Type[BaseComponent], BaseComponent] = {}
 
     def init_component(self, comp_type: Type[T]) -> T:

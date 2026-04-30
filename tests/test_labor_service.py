@@ -33,7 +33,7 @@ def _make_company(name: str, wage: int, labor_demand: int):
     ft = FactoryType(recipe=recipe, labor_demand=labor_demand,
                      build_cost=10000, maintenance_cost=500, build_time=0)
     from component.metric_component import MetricComponent
-    company = Entity()
+    company = Entity("test")
     company.name = name
     company.wage = wage
     pc = company.init_component(ProductorComponent)

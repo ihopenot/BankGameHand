@@ -15,7 +15,7 @@ from system.market_service import BuyIntent, MarketService, SellOrder, TradeReco
 
 def _make_seller(goods_type: GoodsType, quantity: int, quality: float, brand: int = 0) -> tuple:
     """创建卖方 Entity + GoodsBatch，返回 (entity, batch)。"""
-    e = Entity()
+    e = Entity("test")
     e.init_component(StorageComponent)
     batch = GoodsBatch(goods_type=goods_type, quantity=quantity, quality=quality, brand_value=brand)
     e.get_component(StorageComponent).add_batch(batch)
@@ -58,7 +58,7 @@ class TestSupplyExceedsDemand:
         order = _make_order(seller, batch, 1000)
         market.add_sell_order(order)
 
-        buyer = Entity()
+        buyer = Entity("test")
         intent = BuyIntent(buyer=buyer, goods_type=gt, quantity=50, sort_key=_price_key)
 
         records = market.match([intent])
@@ -77,8 +77,8 @@ class TestSupplyExceedsDemand:
         order = _make_order(seller, batch, 1000)
         market.add_sell_order(order)
 
-        buyer1 = Entity()
-        buyer2 = Entity()
+        buyer1 = Entity("test")
+        buyer2 = Entity("test")
         intent1 = BuyIntent(buyer=buyer1, goods_type=gt, quantity=80, sort_key=_price_key)
         intent2 = BuyIntent(buyer=buyer2, goods_type=gt, quantity=60, sort_key=_price_key)
 
@@ -98,8 +98,8 @@ class TestDemandExceedsSupply:
         order = _make_order(seller, batch, 1000)
         market.add_sell_order(order)
 
-        buyer1 = Entity()
-        buyer2 = Entity()
+        buyer1 = Entity("test")
+        buyer2 = Entity("test")
         intent1 = BuyIntent(buyer=buyer1, goods_type=gt, quantity=120, sort_key=_price_key)
         intent2 = BuyIntent(buyer=buyer2, goods_type=gt, quantity=80, sort_key=_price_key)
 
@@ -128,7 +128,7 @@ class TestMultiRoundFallback:
         market.add_sell_order(order_a)
         market.add_sell_order(order_b)
 
-        buyer = Entity()
+        buyer = Entity("test")
         # sort_key: 按品质降序 → A(0.9) > B(0.6)
         intent = BuyIntent(buyer=buyer, goods_type=gt, quantity=100, sort_key=_quality_key)
 
@@ -156,8 +156,8 @@ class TestMultiRoundFallback:
         market.add_sell_order(order_b)
         market.add_sell_order(order_c)
 
-        buyer_jia = Entity()
-        buyer_yi = Entity()
+        buyer_jia = Entity("test")
+        buyer_yi = Entity("test")
         # 甲: 价格低优先 (A=800 > B=1000 > C=1200) → sort_key = -price
         intent_jia = BuyIntent(
             buyer=buyer_jia, goods_type=gt, quantity=90,
@@ -199,7 +199,7 @@ class TestTermination:
         assert records == []
 
     def test_no_sellers(self, gt: GoodsType, market: MarketService) -> None:
-        buyer = Entity()
+        buyer = Entity("test")
         intent = BuyIntent(buyer=buyer, goods_type=gt, quantity=50, sort_key=_price_key)
 
         records = market.match([intent])
@@ -208,7 +208,7 @@ class TestTermination:
 
     def test_no_matching_goods(self, gt: GoodsType, market: MarketService) -> None:
         """买方偏好列表中无可用卖方。"""
-        buyer = Entity()
+        buyer = Entity("test")
         intent = BuyIntent(buyer=buyer, goods_type=gt, quantity=50, sort_key=_price_key)
 
         records = market.match([intent])
@@ -219,7 +219,7 @@ class TestTermination:
         order = _make_order(seller, batch, 1000)
         market.add_sell_order(order)
 
-        buyer = Entity()
+        buyer = Entity("test")
         intent = BuyIntent(buyer=buyer, goods_type=gt, quantity=100, sort_key=_price_key)
 
         records = market.match([intent])

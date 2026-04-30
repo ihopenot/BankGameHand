@@ -191,12 +191,12 @@ class TestGameLoopIntegration:
         ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
-        e1 = Entity()
+        e1 = Entity("test")
         p1 = e1.init_component(ProductorComponent)
         p1.tech_values[recipe] = 80
         p1.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
 
-        e2 = Entity()
+        e2 = Entity("test")
         p2 = e2.init_component(ProductorComponent)
         p2.tech_values[recipe] = 200
         p2.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
@@ -221,7 +221,7 @@ class TestGameLoopIntegration:
 
         entities: list[Entity] = []
         for tech in (100, 150):
-            e = Entity()
+            e = Entity("test")
             p = e.init_component(ProductorComponent)
             p.tech_values[recipe] = tech
             p.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
@@ -251,12 +251,12 @@ class TestGameLoopIntegration:
         ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=0)
 
-        e1 = Entity()
+        e1 = Entity("test")
         p1 = e1.init_component(ProductorComponent)
         p1.tech_values[recipe] = 100
         p1.factories[ft].append(Factory(factory_type=ft, build_remaining=0))
 
-        e2 = Entity()
+        e2 = Entity("test")
         p2 = e2.init_component(ProductorComponent)
         p2.tech_values[recipe] = 200
         p2.factories[ft].append(Factory(factory_type=ft, build_remaining=0))

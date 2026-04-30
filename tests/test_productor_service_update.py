@@ -36,7 +36,7 @@ class TestProductorServiceUpdatePhase:
                         output_goods_type=gt, output_quantity=10, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, labor_demand=50,
                          build_cost=10000, maintenance_cost=500, build_time=2)
-        entity = Entity()
+        entity = Entity("test")
         pc = entity.init_component(ProductorComponent)
         factory = Factory(ft, build_remaining=build_remaining)
         pc.factories[ft].append(factory)

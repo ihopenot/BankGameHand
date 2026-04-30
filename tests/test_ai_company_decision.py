@@ -34,7 +34,7 @@ def _load_config():
 
 @pytest.fixture()
 def comp() -> AICompanyDecisionComponent:
-    entity = Entity()
+    entity = Entity("test")
     return entity.init_component(AICompanyDecisionComponent)
 
 

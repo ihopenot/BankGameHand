@@ -21,7 +21,7 @@ def _make_chip_productor(labor_demand: int = 50) -> ProductorComponent:
     )
     ft = FactoryType(recipe=recipe, labor_demand=labor_demand, build_cost=100000, maintenance_cost=5000, build_time=3)
 
-    entity = Entity()
+    entity = Entity("test")
     prod = ProductorComponent(entity)
     factory = Factory(factory_type=ft, build_remaining=0)
     prod.factories[ft] = [factory]
@@ -37,7 +37,7 @@ def _make_raw_productor(labor_demand: int = 30) -> ProductorComponent:
     recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=silicon, output_quantity=100, tech_quality_weight=1.0)
     ft = FactoryType(recipe=recipe, labor_demand=labor_demand, build_cost=50000, maintenance_cost=3000, build_time=2)
 
-    entity = Entity()
+    entity = Entity("test")
     prod = ProductorComponent(entity)
     factory = Factory(factory_type=ft, build_remaining=0)
     prod.factories[ft] = [factory]
@@ -84,7 +84,7 @@ class TestProductorComponentProduceAll:
         recipe = Recipe(input_goods_type=None, input_quantity=0, output_goods_type=silicon, output_quantity=100, tech_quality_weight=1.0)
         ft = FactoryType(recipe=recipe, labor_demand=50, build_cost=50000, maintenance_cost=3000, build_time=2)
 
-        entity = Entity()
+        entity = Entity("test")
         prod = ProductorComponent(entity)
         prod.factories[ft] = [
             Factory(factory_type=ft, build_remaining=0),  # 第一台

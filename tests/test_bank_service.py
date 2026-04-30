@@ -36,7 +36,7 @@ class TestBankServiceCreate:
 class TestBankServiceApplications:
     def _make_service_with_app(self):
         service = BankService()
-        applicant = Entity()
+        applicant = Entity("test")
         app = LoanApplication(applicant=applicant, amount=50_000)
         return service, app
 
@@ -48,8 +48,8 @@ class TestBankServiceApplications:
 
     def test_collect_multiple_applications(self):
         service = BankService()
-        app1 = LoanApplication(applicant=Entity(), amount=50_000)
-        app2 = LoanApplication(applicant=Entity(), amount=80_000)
+        app1 = LoanApplication(applicant=Entity("test"), amount=50_000)
+        app2 = LoanApplication(applicant=Entity("test"), amount=80_000)
         service.collect_applications([app1, app2])
         assert len(service.get_applications()) == 2
 

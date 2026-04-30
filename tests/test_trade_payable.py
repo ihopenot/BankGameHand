@@ -23,9 +23,9 @@ class TestTradePayableType:
 
 class TestTradePayableLoan:
     def test_create_trade_payable_loan(self) -> None:
-        creditor = Entity()
+        creditor = Entity("test")
         creditor.init_component(LedgerComponent)
-        debtor = Entity()
+        debtor = Entity("test")
         debtor.init_component(LedgerComponent)
 
         loan = Loan(
@@ -42,12 +42,12 @@ class TestTradePayableLoan:
 
     def test_trade_payable_settles_before_others(self) -> None:
         """生成账单时，TRADE_PAYABLE 排在其他类型之前。"""
-        creditor = Entity()
+        creditor = Entity("test")
         creditor.init_component(LedgerComponent)
         creditor_ledger = creditor.get_component(LedgerComponent)
         creditor_ledger.cash = 100000
 
-        debtor = Entity()
+        debtor = Entity("test")
         debtor.init_component(LedgerComponent)
         debtor_ledger = debtor.get_component(LedgerComponent)
         debtor_ledger.cash = 10000

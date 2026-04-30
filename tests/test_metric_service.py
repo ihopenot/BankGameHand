@@ -78,7 +78,7 @@ class TestSnapshotPhase:
         assert mc.round_history[0].cash == 8000
 
     def test_bank_snapshot_created(self) -> None:
-        bank = Bank()
+        bank = Bank("test_bank")
         bank.get_component(LedgerComponent).cash = 200000
 
         service = MetricService()

@@ -25,7 +25,7 @@ def _clear_components():
 
 def _make_folk_entity(population=6000, w_quality=0.4, w_brand=0.05, w_price=0.55):
     """创建一个带 ClassicFolkDecisionComponent 的模拟 Folk 实体。"""
-    entity = Entity()
+    entity = Entity("test")
     entity.population = population
     entity.w_quality = w_quality
     entity.w_brand = w_brand

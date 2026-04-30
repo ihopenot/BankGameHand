@@ -147,7 +147,7 @@ class TestComputeDemands:
 
 def _make_seller(goods_type: GoodsType, quantity: int, quality: float, brand: int, price: int) -> tuple[Entity, SellOrder]:
     """辅助函数：创建卖方实体和 SellOrder。"""
-    seller = Entity()
+    seller = Entity("test")
     seller.init_component(StorageComponent)
     seller.init_component(LedgerComponent)
     batch = GoodsBatch(goods_type=goods_type, quantity=quantity, quality=quality, brand_value=brand)
@@ -323,7 +323,7 @@ class TestSettleTrades:
         """商品从卖方扣减并入库到 Folk。"""
         gt_food = GoodsType(name="食品", base_price=8000)
 
-        seller = Entity()
+        seller = Entity("test")
         seller.init_component(StorageComponent)
         seller.init_component(LedgerComponent)
         batch = GoodsBatch(goods_type=gt_food, quantity=100, quality=0.5, brand_value=10)
@@ -354,7 +354,7 @@ class TestSettleTrades:
         """现金从 Folk 支付到卖方。"""
         gt_food = GoodsType(name="食品", base_price=8000)
 
-        seller = Entity()
+        seller = Entity("test")
         seller.init_component(StorageComponent)
         seller.init_component(LedgerComponent)
         batch = GoodsBatch(goods_type=gt_food, quantity=100, quality=0.5, brand_value=10)

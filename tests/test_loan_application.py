@@ -6,12 +6,12 @@ from core.types import LoanApplication
 
 class TestLoanApplication:
     def test_create_loan_application(self):
-        applicant = Entity()
+        applicant = Entity("test")
         app = LoanApplication(applicant=applicant, amount=100_000)
         assert app.applicant is applicant
         assert app.amount == 100_000
 
     def test_loan_application_zero_amount(self):
-        applicant = Entity()
+        applicant = Entity("test")
         app = LoanApplication(applicant=applicant, amount=0)
         assert app.amount == 0
