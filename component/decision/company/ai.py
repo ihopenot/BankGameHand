@@ -7,8 +7,8 @@ import logging
 import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple
 
-from component.base_company_decision import BaseCompanyDecisionComponent, register_decision_component
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent, register_decision_component
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from mcp_agent_sdk import AgentResult, AgentRunConfig, AgentSession, AssistantMessage, MCPAgentSDK
 
 if TYPE_CHECKING:

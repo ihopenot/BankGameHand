@@ -3,8 +3,8 @@
 import pytest
 
 from component.base_component import BaseComponent
-from component.base_company_decision import BaseCompanyDecisionComponent
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.base import BaseCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from core.entity import Entity
 from entity.company.company import Company
 

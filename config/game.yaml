@@ -7,7 +7,7 @@ companies:
   - factory_type: "硅矿场"
     count: 2
     initial_cash: 100000
-    decision_component: "ai"
+    decision_component: "classic"
   - factory_type: "芯片工厂"
     count: 2
     initial_cash: 200000

@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List
 
+from component.decision.folk.base import BaseFolkDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
@@ -26,23 +27,50 @@ class FolkService:
             folk_ledger.cash = folk_initial_cash
         return self.folks
 
-    def compute_demands(self, economy_cycle_index: float) -> Dict[Folk, Dict[GoodsType, int]]:
+    def compute_demands(self, economy_cycle_index: float, reference_prices: Dict[str, int] | None = None) -> Dict[Folk, Dict[GoodsType, int]]:
         """计算每个 Folk 对每种终端消费品的需求量。
 
-        公式：population * per_capita * (1 + economy_cycle_index * sensitivity)
+        优先使用决策组件计算；无决策组件时回退到硬编码公式。
+        返回原始需求量，预算约束在 allocate_and_trade 中实时执行。
         """
+        spending_plans = self._compute_spending_plans(economy_cycle_index, reference_prices)
         result: Dict[Folk, Dict[GoodsType, int]] = {}
-        for folk in self.folks:
+        for folk, plan in spending_plans.items():
             folk_demands: Dict[GoodsType, int] = {}
-            for goods_type, params in folk.base_demands.items():
-                per_capita = params["per_capita"]
-                sensitivity = params["sensitivity"]
-                if per_capita == 0:
-                    folk_demands[goods_type] = 0
-                    continue
-                raw = folk.population * per_capita * (1 + economy_cycle_index * sensitivity)
-                folk_demands[goods_type] = int(raw)
+            for gt in folk.base_demands:
+                gt_name = gt.name
+                if gt_name in plan:
+                    folk_demands[gt] = plan[gt_name]["demand"]
+                else:
+                    folk_demands[gt] = 0
             result[folk] = folk_demands
+        return result
+
+    def _compute_spending_plans(self, economy_cycle_index: float, reference_prices: Dict[str, int] | None = None) -> Dict[Folk, Dict[str, Dict]]:
+        """通过决策组件获取每个 Folk 的完整支出计划。"""
+        result: Dict[Folk, Dict[str, Dict]] = {}
+        for folk in self.folks:
+            dc = folk.get_component(BaseFolkDecisionComponent)
+            if dc is not None:
+                dc.set_context({
+                    "economy_cycle_index": economy_cycle_index,
+                    "reference_prices": reference_prices or {},
+                })
+                result[folk] = dc.decide_spending()
+            else:
+                # 回退：构建与 decide_spending 相同格式的 plan
+                plan = {}
+                for goods_type, params in folk.base_demands.items():
+                    per_capita = params["per_capita"]
+                    sensitivity = params["sensitivity"]
+                    if per_capita == 0:
+                        plan[goods_type.name] = {"budget": 0, "demand": 0}
+                        continue
+                    demand = int(folk.population * per_capita * (1 + economy_cycle_index * sensitivity))
+                    ref_price = (reference_prices or {}).get(goods_type.name, goods_type.base_price)
+                    budget = int(demand * ref_price * (folk.w_quality + folk.w_brand + folk.w_price))
+                    plan[goods_type.name] = {"budget": budget, "demand": demand}
+                result[folk] = plan
         return result
 
     @staticmethod
@@ -93,6 +121,7 @@ class FolkService:
         goods_type: GoodsType,
         demand: int,
         market: MarketService,
+        budget: int | None = None,
     ) -> List[TradeRecord]:
         """对单个 Folk 的单种商品执行加权均分采购。
 
@@ -100,6 +129,7 @@ class FolkService:
         2. 计算评分 → softmax 归一化
         3. 按权重分配需求量
         4. 库存不足时迭代重分配
+        5. 预算耗尽时停止采购
         """
         if demand <= 0:
             return []
@@ -108,6 +138,7 @@ class FolkService:
         if not orders:
             return []
 
+        remaining_budget = budget
         trades: List[TradeRecord] = []
         remaining_demand = demand
 
@@ -137,21 +168,32 @@ class FolkService:
                     next_orders.append(order)
                     continue
                 actual = min(alloc, order.remaining)
-                if actual > 0:
-                    trades.append(TradeRecord(
-                        seller=order.seller,
-                        buyer=folk,
-                        goods_type=goods_type,
-                        quantity=actual,
-                        price=order.price,
-                    ))
-                    order.remaining -= actual
-                    round_traded += actual
+                # 预算约束：按实际价格计算能买多少
+                if remaining_budget is not None and order.price > 0:
+                    max_affordable = remaining_budget // order.price
+                    actual = min(actual, max_affordable)
+                if actual <= 0:
+                    next_orders.append(order)
+                    continue
+                trades.append(TradeRecord(
+                    seller=order.seller,
+                    buyer=folk,
+                    goods_type=goods_type,
+                    quantity=actual,
+                    price=order.price,
+                ))
+                order.remaining -= actual
+                round_traded += actual
+                if remaining_budget is not None:
+                    remaining_budget -= actual * order.price
                 if order.remaining > 0:
                     next_orders.append(order)
 
             remaining_demand -= round_traded
 
+            # 预算耗尽则停止
+            if remaining_budget is not None and remaining_budget <= 0:
+                break
             if round_traded == 0 or not next_orders:
                 break
             orders = next_orders
@@ -171,7 +213,7 @@ class FolkService:
             if transferred.quantity > 0:
                 buyer_storage.add_batch(transferred)
 
-            # 现金支付（居民目前无限现金，不做赊账）
+            # 现金支付
             total_cost = transferred.quantity * trade.price
             buyer_ledger = buyer.get_component(LedgerComponent)
             seller_ledger = seller.get_component(LedgerComponent)
@@ -192,7 +234,9 @@ class FolkService:
         按商品类型遍历，对每种商品将所有居民组的需求汇总后按比例公平分配供给，
         避免因迭代顺序导致后面的居民组买不到商品。
         """
-        demands = self.compute_demands(economy_cycle_index)
+        reference_prices = self._build_reference_prices(market)
+        spending_plans = self._compute_spending_plans(economy_cycle_index, reference_prices)
+        demands = self.compute_demands(economy_cycle_index, reference_prices)
 
         # 收集所有商品类型
         all_goods_types: set[GoodsType] = set()
@@ -200,31 +244,45 @@ class FolkService:
             all_goods_types.update(folk_demands.keys())
 
         all_trades: List[TradeRecord] = []
+        # 跟踪每个folk的剩余现金，避免跨商品类型重复使用同一笔现金
+        remaining_cash: Dict[Folk, int] = {
+            folk: folk.get_component(LedgerComponent).cash for folk in self.folks
+        }
+
         for goods_type in all_goods_types:
             # 收集对该商品有正需求的居民组
-            folk_demands_for_good: List[tuple[Folk, int]] = []
+            folk_demands_for_good: List[tuple[Folk, int, int | None]] = []
             for folk in self.folks:
                 d = demands[folk].get(goods_type, 0)
                 if d > 0:
-                    folk_demands_for_good.append((folk, d))
+                    # 预算取 min(意愿预算, 剩余现金)
+                    plan = spending_plans.get(folk, {})
+                    budget = plan.get(goods_type.name, {}).get("budget") if plan else None
+                    cash = remaining_cash[folk]
+                    if budget is not None:
+                        budget = min(budget, cash)
+                    else:
+                        budget = cash
+                    folk_demands_for_good.append((folk, d, budget))
             if not folk_demands_for_good:
                 continue
 
-            total_demand = sum(d for _, d in folk_demands_for_good)
+            total_demand = sum(d for _, d, _ in folk_demands_for_good)
             total_supply = sum(
                 o.remaining for o in market.get_sell_orders(goods_type) if o.remaining > 0
             )
             if total_supply <= 0:
                 continue
 
+            goods_trades: List[TradeRecord] = []
             if total_supply >= total_demand:
                 # 供给充足：每个居民组按原始需求购买
-                for folk, demand in folk_demands_for_good:
-                    trades = self.allocate_and_trade(folk, goods_type, demand, market)
-                    all_trades.extend(trades)
+                for folk, demand, budget in folk_demands_for_good:
+                    trades = self.allocate_and_trade(folk, goods_type, demand, market, budget)
+                    goods_trades.extend(trades)
             else:
                 # 供不应求：按需求比例公平分配供给（最大余数法）
-                raw_allocs = [total_supply * d / total_demand for _, d in folk_demands_for_good]
+                raw_allocs = [total_supply * d / total_demand for _, d, _ in folk_demands_for_good]
                 floor_allocs = [int(a) for a in raw_allocs]
                 remainders = [a - f for a, f in zip(raw_allocs, floor_allocs)]
                 deficit = total_supply - sum(floor_allocs)
@@ -232,14 +290,29 @@ class FolkService:
                 for i in indices[:deficit]:
                     floor_allocs[i] += 1
 
-                for (folk, _demand), alloc in zip(folk_demands_for_good, floor_allocs):
+                for (folk, _demand, budget), alloc in zip(folk_demands_for_good, floor_allocs):
                     if alloc > 0:
-                        trades = self.allocate_and_trade(folk, goods_type, alloc, market)
-                        all_trades.extend(trades)
+                        trades = self.allocate_and_trade(folk, goods_type, alloc, market, budget)
+                        goods_trades.extend(trades)
 
-        self.settle_trades(all_trades)
+            # 立即结算该商品类型的交易并扣减剩余现金
+            self.settle_trades(goods_trades)
+            for trade in goods_trades:
+                remaining_cash[trade.buyer] -= trade.quantity * trade.price
+            all_trades.extend(goods_trades)
+
         self._update_avg_buy_prices(all_trades)
         return all_trades
+
+    @staticmethod
+    def _build_reference_prices(market: MarketService) -> Dict[str, int]:
+        """从市场卖单构建参考价格字典（每种商品取最低卖价）。"""
+        result: Dict[str, int] = {}
+        for goods_type, orders in market._orders.items():
+            prices = [o.price for o in orders if o.remaining > 0]
+            if prices:
+                result[goods_type.name] = min(prices)
+        return result
 
     @staticmethod
     def _update_avg_buy_prices(trades: List[TradeRecord]) -> None:

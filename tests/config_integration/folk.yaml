@@ -4,6 +4,10 @@ folks:
     w_quality: 0.4
     w_brand: 0.05
     w_price: 0.55
+    spending_flow:
+      tech: 0.6
+      brand: 0.4
+      maintenance: 0.5
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.1 }
       服装: { per_capita: 1, sensitivity: 0.5 }
@@ -14,6 +18,10 @@ folks:
     w_quality: 0.35
     w_brand: 0.35
     w_price: 0.3
+    spending_flow:
+      tech: 0.3
+      brand: 0.4
+      maintenance: 0.35
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.2 }
       服装: { per_capita: 5, sensitivity: 0.5 }
@@ -24,6 +32,10 @@ folks:
     w_quality: 0.15
     w_brand: 0.75
     w_price: 0.1
+    spending_flow:
+      tech: 0.1
+      brand: 0.2
+      maintenance: 0.15
     base_demands:
       食品: { per_capita: 10, sensitivity: 0.05 }
       服装: { per_capita: 8, sensitivity: 0.3 }

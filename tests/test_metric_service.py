@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from component.classic_company_decision import ClassicCompanyDecisionComponent
+from component.decision.company.classic import ClassicCompanyDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
@@ -63,7 +63,8 @@ class TestSnapshotPhase:
         assert snap.prices[gt] == 600
 
     def test_folk_snapshot_created(self) -> None:
-        folk = Folk(population=100, w_quality=0.5, w_brand=0.3, w_price=0.2,
+        folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.3, w_price=0.2,
+                    spending_flow={"tech": 0.5, "brand": 0.3, "maintenance": 0.2},
                     base_demands={})
         folk.get_component(LedgerComponent).cash = 8000
 

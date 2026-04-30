@@ -25,8 +25,8 @@ def register_decision_component(name: str):
 def get_decision_component_class(name: str) -> Type[BaseCompanyDecisionComponent]:
     """根据名称获取决策组件类。首次查询时自动导入子模块以触发注册。"""
     if not _DECISION_COMPONENT_REGISTRY:
-        import component.classic_company_decision  # noqa: F401 — 触发 @register_decision_component
-        import component.ai_company_decision  # noqa: F401
+        import component.decision.company.classic  # noqa: F401 — 触发 @register_decision_component
+        import component.decision.company.ai  # noqa: F401
     return _DECISION_COMPONENT_REGISTRY[name]
 
 

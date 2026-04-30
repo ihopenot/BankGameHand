@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from component.base_company_decision import get_decision_component_class
+from component.decision.company.base import get_decision_component_class
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
