@@ -104,6 +104,25 @@ class PlayerService(Service):
 
         return table
 
+    def render_map_panel(self) -> Panel:
+        """渲染地图面板：按国家分组显示地块、公司数量和相邻关系。"""
+        map_service = self.game.map_service
+        companies = list(self.game.company_service.companies.values())
+
+        lines: List[str] = []
+        for country_name, country in map_service.countries.items():
+            lines.append(f"[bold]{country.name}[/]")
+            plots = map_service.get_plots_by_country(country_name)
+            for plot in plots:
+                company_count = len(map_service.get_companies_in_plot(plot.name, companies))
+                neighbor_names = ", ".join(n.name for n in plot.neighbors)
+                neighbor_str = f"  相邻: {neighbor_names}" if neighbor_names else ""
+                lines.append(f"  {plot.name}  [{company_count}家]{neighbor_str}")
+            lines.append("")
+
+        text = "\n".join(lines).rstrip()
+        return Panel(text, title="地图", border_style="green")
+
     def render_folk_table(self) -> Table:
         table = Table(title="居民概览", show_lines=True)
         table.add_column("群体", style="bold")
@@ -457,6 +476,7 @@ class PlayerService(Service):
     def player_act_phase(self, bank_service: BankService) -> None:
         """执行玩家操作阶段：展示数据，获取一次 PlayerAction 并处理。"""
         console.print(self.render_economy_summary())
+        console.print(self.render_map_panel())
         console.print(self.render_company_table())
         console.print(self.render_folk_table())
         console.print(self.render_bank_summary(bank_service.banks))

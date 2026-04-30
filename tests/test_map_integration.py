@@ -1,5 +1,7 @@
 """地图系统集成测试：Game 初始化后公司正确持有 Plot 引用。"""
 
+from rich.console import Console
+
 from game.game import Game
 
 
@@ -35,3 +37,47 @@ class TestMapIntegration:
         companies_in_china = game.map_service.get_companies_in_country("华夏", game.companies)
         # 硅谷工业区(6) + 江南纺织区(6) + 北方粮仓(7) = 19
         assert len(companies_in_china) == 19
+
+
+class TestMapPanel:
+    def test_render_map_panel_contains_countries(self):
+        game = Game()
+        svc = game.player_service
+        c = Console(width=200)
+        with c.capture() as capture:
+            c.print(svc.render_map_panel())
+        output = capture.get()
+        assert "华夏" in output
+        assert "西洋联邦" in output
+
+    def test_render_map_panel_contains_plots(self):
+        game = Game()
+        svc = game.player_service
+        c = Console(width=200)
+        with c.capture() as capture:
+            c.print(svc.render_map_panel())
+        output = capture.get()
+        assert "硅谷工业区" in output
+        assert "江南纺织区" in output
+        assert "北方粮仓" in output
+        assert "新大陆科技园" in output
+
+    def test_render_map_panel_contains_company_counts(self):
+        game = Game()
+        svc = game.player_service
+        c = Console(width=200)
+        with c.capture() as capture:
+            c.print(svc.render_map_panel())
+        output = capture.get()
+        # 硅谷工业区有6家公司
+        assert "6家" in output
+
+    def test_render_map_panel_contains_neighbors(self):
+        game = Game()
+        svc = game.player_service
+        c = Console(width=200)
+        with c.capture() as capture:
+            c.print(svc.render_map_panel())
+        output = capture.get()
+        # 硅谷工业区的相邻应显示江南纺织区
+        assert "相邻" in output
