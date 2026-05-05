@@ -126,3 +126,43 @@ class TestDemandMultiplierUpdate:
         dc = folk.get_component(ClassicFolkDecisionComponent)
         dc.update_demand_multiplier(savings_target_ratio=5.0, max_adjustment=0.15, sensitivity=1.0, min_multiplier=0.3, max_multiplier=2.0)
         assert folk.demand_multiplier == pytest.approx(1.0, abs=1e-10)
+
+
+class TestEconomyCycleDecoupled:
+    """经济周期不再直接影响居民需求。"""
+
+    def _make_folk(self):
+        from entity.folk import Folk
+        from component.ledger_component import LedgerComponent
+        gt = list(GoodsType.types.values())[0]
+        folk = Folk(
+            name="test_folk",
+            population=1000,
+            w_quality=0.3,
+            w_brand=0.3,
+            w_price=0.4,
+            spending_flow={"tech": 1.0},
+            base_demands={gt: {"per_capita": 1.0, "sensitivity": 0.8}},
+            labor_participation_rate=0.5,
+            labor_points_per_capita=1.0,
+        )
+        ledger = folk.get_component(LedgerComponent)
+        ledger.cash = 100000
+        return folk
+
+    def test_demand_same_regardless_of_economy_index(self) -> None:
+        """不同经济周期值应产生相同需求（因为 demand_multiplier 不受 economy_index 影响）。"""
+        from component.decision.folk.classic import ClassicFolkDecisionComponent
+
+        folk1 = self._make_folk()
+        dc1 = folk1.get_component(ClassicFolkDecisionComponent)
+        dc1.set_context({"economy_cycle_index": 0.5, "reference_prices": {}})
+        plan1 = dc1.decide_spending()
+
+        folk2 = self._make_folk()
+        dc2 = folk2.get_component(ClassicFolkDecisionComponent)
+        dc2.set_context({"economy_cycle_index": -0.5, "reference_prices": {}})
+        plan2 = dc2.decide_spending()
+
+        gt_name = list(GoodsType.types.values())[0].name
+        assert plan1[gt_name]["demand"] == plan2[gt_name]["demand"]

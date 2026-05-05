@@ -98,11 +98,10 @@ class FolkService:
                 plan = {}
                 for goods_type, params in folk.base_demands.items():
                     per_capita = params["per_capita"]
-                    sensitivity = params["sensitivity"]
                     if per_capita == 0:
                         plan[goods_type.name] = {"budget": 0, "demand": 0}
                         continue
-                    demand = int(folk.population * per_capita * (1 + economy_cycle_index * sensitivity))
+                    demand = int(folk.population * per_capita * folk.demand_multiplier)
                     ref_price = (reference_prices or {}).get(goods_type.name, goods_type.base_price)
                     budget = int(demand * ref_price * (folk.w_quality + folk.w_brand + folk.w_price))
                     plan[goods_type.name] = {"budget": budget, "demand": demand}
