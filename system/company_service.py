@@ -48,6 +48,7 @@ class CompanyService:
         company.plot = plot
         company.initial_wage = initial_wage
         company.wage = initial_wage
+        company.last_operating_expense = 0
         ledger = company.get_component(LedgerComponent)
         ledger.cash = initial_cash
         pc = company.get_component(ProductorComponent)
