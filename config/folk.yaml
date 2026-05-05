@@ -19,6 +19,12 @@ folks:
     手机:
       per_capita: 0.1
       sensitivity: 0.8
+  demand_feedback:
+    savings_target_ratio: 3.0
+    max_adjustment: 0.20
+    sensitivity: 1.2
+    min_multiplier: 0.4
+    max_multiplier: 1.8
 - population: 3000
   w_quality: 0.35
   w_brand: 0.35
@@ -39,6 +45,12 @@ folks:
     手机:
       per_capita: 0.4
       sensitivity: 0.7
+  demand_feedback:
+    savings_target_ratio: 5.0
+    max_adjustment: 0.15
+    sensitivity: 1.0
+    min_multiplier: 0.3
+    max_multiplier: 2.0
 - population: 1000
   w_quality: 0.15
   w_brand: 0.75
@@ -59,3 +71,9 @@ folks:
     手机:
       per_capita: 0.7
       sensitivity: 0.4
+  demand_feedback:
+    savings_target_ratio: 8.0
+    max_adjustment: 0.10
+    sensitivity: 0.8
+    min_multiplier: 0.5
+    max_multiplier: 1.5
