@@ -62,6 +62,8 @@ class DecisionService:
                 "name": company.name,
                 "ceo_traits": ceo_traits,
                 "initial_wage": company.initial_wage,
+                "current_wage": company.wage,
+                "last_operating_expense": getattr(company, 'last_operating_expense', 0),
             },
             "ledger": {
                 "cash": ledger.cash,
@@ -128,6 +130,9 @@ class DecisionService:
 
             # 决策：工资定价
             company.wage = dc.decide_wage()
+
+            # 记录本回合运营支出供下轮工资决策参考
+            company.last_operating_expense = dc._calc_operating_expense()
 
         # plan_phase 完成后立即 prepare 下一轮 session
         self.prepare_next_round(companies)

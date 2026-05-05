@@ -222,10 +222,81 @@ class ClassicCompanyDecisionComponent(BaseCompanyDecisionComponent):
     # ── 决策：工资定价 ──
 
     def decide_wage(self) -> int:
-        """返回固定 initial_wage（来自 context）。"""
+        """动态工资决策：利润优先 + 现金调节 + 增量逼近。
+
+        1. 计算目标工资 = (售价 - 非工资单位成本 - 目标利润) × 产量 / 劳动力需求
+        2. 现金调节因子 = clamp(企业现金 / 运营支出 / target_cash_ratio, min, max)
+        3. new_wage = current + step_rate × (target × cash_factor - current)
+        """
         ctx = self._context
-        company = ctx.get("company", {})
-        return company.get("initial_wage", 10)
+        company_ctx = ctx.get("company", {})
+        ledger = ctx.get("ledger", {})
+        productor = ctx.get("productor", {})
+        metric = ctx.get("metric", {})
+
+        cfg = self.config.wage
+        current_wage = company_ctx.get("current_wage", company_ctx.get("initial_wage", 10))
+        cash = ledger.get("cash", 0)
+        last_op_expense = company_ctx.get("last_operating_expense", 0)
+
+        # 获取工厂信息计算目标工资
+        factories = productor.get("factories", {})
+        current_prices = productor.get("current_prices", {})
+        avg_buy_prices = metric.get("my_avg_buy_prices", {})
+
+        # 计算总劳动力需求和总产能
+        total_labor_demand = 0
+        total_output_capacity = 0
+        total_maintenance = 0
+        total_material_cost = 0
+
+        for ft, factory_list in factories.items():
+            built_count = sum(1 for f in factory_list if f.is_built)
+            if built_count == 0:
+                continue
+            total_labor_demand += ft.labor_demand * built_count
+            total_output_capacity += ft.recipe.output_quantity * built_count
+            total_maintenance += ft.maintenance_cost * built_count
+
+            # 原材料成本（基于上回合采购均价）
+            if ft.recipe.input_goods_type is not None:
+                input_price = avg_buy_prices.get(ft.recipe.input_goods_type, 0.0)
+                if input_price <= 0:
+                    input_price = ft.recipe.input_goods_type.base_price
+                total_material_cost += input_price * ft.recipe.input_quantity * built_count
+
+        if total_labor_demand <= 0 or total_output_capacity <= 0:
+            return max(1, current_wage)
+
+        # 加权平均售价计算总收入容量
+        total_revenue_capacity = 0
+        for ft, factory_list in factories.items():
+            built_count = sum(1 for f in factory_list if f.is_built)
+            if built_count == 0:
+                continue
+            gt = ft.recipe.output_goods_type
+            price = current_prices.get(gt, gt.base_price)
+            total_revenue_capacity += price * ft.recipe.output_quantity * built_count
+
+        # target_profit_margin = profit_focus × base_profit_margin
+        target_profit_margin = self.profit_focus * cfg.base_profit_margin
+
+        # 总利润空间 = 总收入 - 总非工资成本 - 目标利润
+        wage_budget = total_revenue_capacity - total_material_cost - total_maintenance - target_profit_margin * total_revenue_capacity
+        target_wage = wage_budget / total_labor_demand if total_labor_demand > 0 else current_wage
+
+        # 现金调节因子
+        if last_op_expense > 0:
+            cash_ratio = cash / last_op_expense
+            cash_factor = max(cfg.cash_factor_min, min(cfg.cash_factor_max, cash_ratio / cfg.target_cash_ratio))
+        else:
+            cash_factor = 1.0  # 中性
+
+        # 增量逼近
+        adjusted_target = target_wage * cash_factor
+        new_wage = current_wage + cfg.step_rate * (adjusted_target - current_wage)
+
+        return max(1, int(round(new_wage)))
 
     # ── 内部方法 ──
 

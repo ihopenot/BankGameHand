@@ -29,3 +29,11 @@ brand:
 tech:
   base_ratio: 0.05
   tech_coeff: 1.0
+
+# ── 工资决策 ──
+wage:
+  step_rate: 0.2
+  base_profit_margin: 0.15
+  target_cash_ratio: 3.0
+  cash_factor_min: 0.5
+  cash_factor_max: 1.5
