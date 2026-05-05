@@ -7,6 +7,7 @@ from component.decision.folk.base import BaseFolkDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
+from core.config import ConfigManager
 from entity.folk import Folk
 from entity.goods import GoodsType
 from system.market_service import MarketService, SellOrder, TradeRecord
@@ -26,6 +27,41 @@ class FolkService:
             folk_ledger = folk.get_component(LedgerComponent)
             folk_ledger.cash = folk_initial_cash
         return self.folks
+
+    def _update_demand_multipliers(self) -> None:
+        """在计算需求前，根据上回合开销更新各居民组的 demand_multiplier。"""
+        from component.decision.folk.classic import ClassicFolkDecisionComponent
+        config = ConfigManager().section("folk")
+
+        for idx, folk in enumerate(self.folks):
+            dc = folk.get_component(ClassicFolkDecisionComponent)
+            if dc is None:
+                continue
+
+            # 从配置获取 demand_feedback 参数
+            if idx >= len(config.folks):
+                continue
+            folk_cfg = config.folks[idx]
+            if not hasattr(folk_cfg, "demand_feedback"):
+                continue
+            fb = folk_cfg.demand_feedback
+            dc.update_demand_multiplier(
+                savings_target_ratio=fb.savings_target_ratio,
+                max_adjustment=fb.max_adjustment,
+                sensitivity=fb.sensitivity,
+                min_multiplier=fb.min_multiplier,
+                max_multiplier=fb.max_multiplier,
+            )
+
+    def _record_spending(self, trades: List[TradeRecord]) -> None:
+        """记录每个 Folk 本回合的实际总开销到 last_spending。"""
+        from collections import defaultdict
+        folk_spending: Dict[Folk, int] = defaultdict(int)
+        for trade in trades:
+            if isinstance(trade.buyer, Folk):
+                folk_spending[trade.buyer] += trade.quantity * trade.price
+        for folk in self.folks:
+            folk.last_spending = folk_spending.get(folk, 0)
 
     def compute_demands(self, economy_cycle_index: float, reference_prices: Dict[str, int] | None = None) -> Dict[Folk, Dict[GoodsType, int]]:
         """计算每个 Folk 对每种终端消费品的需求量。
@@ -229,11 +265,14 @@ class FolkService:
                 seller_mc.last_revenue += total_cost
 
     def buy_phase(self, market: MarketService, economy_cycle_index: float) -> List[TradeRecord]:
-        """居民采购阶段：计算需求 → 按商品类型公平分配 → 结算 → 更新购买均价。
+        """居民采购阶段：更新需求乘数 → 计算需求 → 按商品类型公平分配 → 结算 → 记录开销 → 更新购买均价。
 
         按商品类型遍历，对每种商品将所有居民组的需求汇总后按比例公平分配供给，
         避免因迭代顺序导致后面的居民组买不到商品。
         """
+        # 在计算需求前更新 demand_multiplier
+        self._update_demand_multipliers()
+
         reference_prices = self._build_reference_prices(market)
         spending_plans = self._compute_spending_plans(economy_cycle_index, reference_prices)
         demands = self.compute_demands(economy_cycle_index, reference_prices)
@@ -300,6 +339,9 @@ class FolkService:
             for trade in goods_trades:
                 remaining_cash[trade.buyer] -= trade.quantity * trade.price
             all_trades.extend(goods_trades)
+
+        # 记录各居民组本回合总开销
+        self._record_spending(all_trades)
 
         self._update_avg_buy_prices(all_trades)
         return all_trades
