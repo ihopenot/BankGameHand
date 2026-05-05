@@ -1,137 +1,129 @@
 goods_types:
-  - name: "硅"
-    base_price: 10
-  - name: "芯片"
-    base_price: 50
-  - name: "手机"
-    base_price: 200
-  - name: "棉花"
-    base_price: 8
-  - name: "布料"
-    base_price: 30
-  - name: "服装"
-    base_price: 150
-  - name: "小麦"
-    base_price: 5
-  - name: "面粉"
-    base_price: 20
-  - name: "食品"
-    base_price: 80
-
+- name: 硅
+  base_price: 25
+- name: 芯片
+  base_price: 75
+- name: 手机
+  base_price: 700
+- name: 棉花
+  base_price: 42
+- name: 布料
+  base_price: 140
+- name: 服装
+  base_price: 330
+- name: 小麦
+  base_price: 10
+- name: 面粉
+  base_price: 70
+- name: 食品
+  base_price: 120
 recipes:
-  # 电子产业链
-  - name: "硅矿开采"
-    input: null
-    input_quantity: 0
-    output: "硅"
-    output_quantity: 100
-    tech_quality_weight: 1.0
-  - name: "芯片制造"
-    input: "硅"
-    input_quantity: 200
-    output: "芯片"
-    output_quantity: 100
-    tech_quality_weight: 0.6
-  - name: "手机组装"
-    input: "芯片"
-    input_quantity: 150
-    output: "手机"
-    output_quantity: 80
-    tech_quality_weight: 0.5
-  # 纺织产业链
-  - name: "棉花种植"
-    input: null
-    input_quantity: 0
-    output: "棉花"
-    output_quantity: 120
-    tech_quality_weight: 1.0
-  - name: "布料加工"
-    input: "棉花"
-    input_quantity: 180
-    output: "布料"
-    output_quantity: 100
-    tech_quality_weight: 0.6
-  - name: "服装生产"
-    input: "布料"
-    input_quantity: 120
-    output: "服装"
-    output_quantity: 90
-    tech_quality_weight: 0.5
-  # 食品产业链
-  - name: "小麦种植"
-    input: null
-    input_quantity: 0
-    output: "小麦"
-    output_quantity: 150
-    tech_quality_weight: 1.0
-  - name: "面粉加工"
-    input: "小麦"
-    input_quantity: 200
-    output: "面粉"
-    output_quantity: 120
-    tech_quality_weight: 0.6
-  - name: "食品生产"
-    input: "面粉"
-    input_quantity: 150
-    output: "食品"
-    output_quantity: 100
-    tech_quality_weight: 0.5
-
+- name: 硅矿开采
+  input: null
+  input_quantity: 0
+  output: 硅
+  output_quantity: 4000
+  tech_quality_weight: 1.0
+- name: 芯片制造
+  input: 硅
+  input_quantity: 2000
+  output: 芯片
+  output_quantity: 1200
+  tech_quality_weight: 0.6
+- name: 手机组装
+  input: 芯片
+  input_quantity: 600
+  output: 手机
+  output_quantity: 125
+  tech_quality_weight: 0.5
+- name: 棉花种植
+  input: null
+  input_quantity: 0
+  output: 棉花
+  output_quantity: 700
+  tech_quality_weight: 1.0
+- name: 布料加工
+  input: 棉花
+  input_quantity: 500
+  output: 布料
+  output_quantity: 340
+  tech_quality_weight: 0.6
+- name: 服装生产
+  input: 布料
+  input_quantity: 300
+  output: 服装
+  output_quantity: 200
+  tech_quality_weight: 0.5
+- name: 小麦种植
+  input: null
+  input_quantity: 0
+  output: 小麦
+  output_quantity: 3000
+  tech_quality_weight: 1.0
+- name: 面粉加工
+  input: 小麦
+  input_quantity: 2000
+  output: 面粉
+  output_quantity: 1000
+  tech_quality_weight: 0.6
+- name: 食品生产
+  input: 面粉
+  input_quantity: 1000
+  output: 食品
+  output_quantity: 800
+  tech_quality_weight: 0.5
 factory_types:
-  # 电子产业链
-  - name: "硅矿场"
-    recipe: "硅矿开采"
-    labor_demand: 30
-    build_cost: 50000
-    maintenance_cost: 3000
-    build_time: 2
-  - name: "芯片工厂"
-    recipe: "芯片制造"
-    labor_demand: 50
-    build_cost: 100000
-    maintenance_cost: 5000
-    build_time: 3
-  - name: "手机工厂"
-    recipe: "手机组装"
-    labor_demand: 40
-    build_cost: 80000
-    maintenance_cost: 4000
-    build_time: 3
-  # 纺织产业链
-  - name: "棉花农场"
-    recipe: "棉花种植"
-    labor_demand: 25
-    build_cost: 30000
-    maintenance_cost: 2000
-    build_time: 1
-  - name: "纺织厂"
-    recipe: "布料加工"
-    labor_demand: 35
-    build_cost: 60000
-    maintenance_cost: 3500
-    build_time: 2
-  - name: "服装厂"
-    recipe: "服装生产"
-    labor_demand: 30
-    build_cost: 50000
-    maintenance_cost: 3000
-    build_time: 2
-  # 食品产业链
-  - name: "麦田"
-    recipe: "小麦种植"
-    labor_demand: 20
-    build_cost: 20000
-    maintenance_cost: 1500
-    build_time: 1
-  - name: "面粉厂"
-    recipe: "面粉加工"
-    labor_demand: 25
-    build_cost: 40000
-    maintenance_cost: 2500
-    build_time: 2
-  - name: "食品厂"
-    recipe: "食品生产"
-    labor_demand: 30
-    build_cost: 45000
-    maintenance_cost: 2800
-    build_time: 2
+- name: 硅矿场
+  recipe: 硅矿开采
+  labor_demand: 200
+  build_cost: 80000
+  maintenance_cost: 10000
+  build_time: 2
+- name: 芯片工厂
+  recipe: 芯片制造
+  labor_demand: 60
+  build_cost: 50000
+  maintenance_cost: 7000
+  build_time: 2
+- name: 手机工厂
+  recipe: 手机组装
+  labor_demand: 40
+  build_cost: 70000
+  maintenance_cost: 8000
+  build_time: 2
+- name: 棉花农场
+  recipe: 棉花种植
+  labor_demand: 60
+  build_cost: 30000
+  maintenance_cost: 2000
+  build_time: 2
+- name: 纺织厂
+  recipe: 布料加工
+  labor_demand: 40
+  build_cost: 60000
+  maintenance_cost: 3000
+  build_time: 2
+- name: 服装厂
+  recipe: 服装生产
+  labor_demand: 40
+  build_cost: 50000
+  maintenance_cost: 2000
+  build_time: 2
+- name: 麦田
+  recipe: 小麦种植
+  labor_demand: 60
+  build_cost: 40000
+  maintenance_cost: 1000
+  build_time: 2
+- name: 面粉厂
+  recipe: 面粉加工
+  labor_demand: 100
+  build_cost: 40000
+  maintenance_cost: 2500
+  build_time: 2
+- name: 食品厂
+  recipe: 食品生产
+  labor_demand: 40
+  build_cost: 45000
+  maintenance_cost: 2800
+  build_time: 2
