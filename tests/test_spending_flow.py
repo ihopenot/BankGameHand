@@ -4,7 +4,7 @@ import pytest
 
 from component.ledger_component import LedgerComponent
 from core.config import ConfigManager
-from entity.folk import Folk
+from entity.folk import DemandFeedbackParams, Folk
 
 
 @pytest.fixture(autouse=True)
@@ -13,6 +13,14 @@ def _load_config():
     ConfigManager().load()
     yield
     ConfigManager._instance = None
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 def _make_folk_entities():
@@ -27,6 +35,7 @@ def _make_folk_entities():
             spending_flow={"tech": 0.6, "brand": 0.4, "maintenance": 0.5},
             base_demands={},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         ),
         Folk(
             name="folk_1",
@@ -37,6 +46,7 @@ def _make_folk_entities():
             spending_flow={"tech": 0.3, "brand": 0.4, "maintenance": 0.35},
             base_demands={},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         ),
         Folk(
             name="folk_2",
@@ -47,6 +57,7 @@ def _make_folk_entities():
             spending_flow={"tech": 0.1, "brand": 0.2, "maintenance": 0.15},
             base_demands={},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         ),
     ]
     return folks

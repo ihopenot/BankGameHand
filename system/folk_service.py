@@ -7,7 +7,6 @@ from component.decision.folk.base import BaseFolkDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
-from core.config import ConfigManager
 from entity.folk import Folk
 from entity.goods import GoodsType
 from system.market_service import MarketService, SellOrder, TradeRecord
@@ -31,20 +30,13 @@ class FolkService:
     def _update_demand_multipliers(self) -> None:
         """在计算需求前，根据上回合开销更新各居民组的 demand_multiplier。"""
         from component.decision.folk.classic import ClassicFolkDecisionComponent
-        config = ConfigManager().section("folk")
 
-        for idx, folk in enumerate(self.folks):
+        for folk in self.folks:
             dc = folk.get_component(ClassicFolkDecisionComponent)
             if dc is None:
                 continue
 
-            # 从配置获取 demand_feedback 参数
-            if idx >= len(config.folks):
-                continue
-            folk_cfg = config.folks[idx]
-            if not hasattr(folk_cfg, "demand_feedback"):
-                continue
-            fb = folk_cfg.demand_feedback
+            fb = folk.demand_feedback
             dc.update_demand_multiplier(
                 savings_target_ratio=fb.savings_target_ratio,
                 max_adjustment=fb.max_adjustment,

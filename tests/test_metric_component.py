@@ -6,7 +6,16 @@ import pytest
 
 from component.metric_component import MetricComponent, RoundSnapshot
 from core.entity import Entity
+from entity.folk import DemandFeedbackParams
 from entity.goods import GoodsType
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 class TestMetricComponentInit:
@@ -147,6 +156,7 @@ class TestEntityMounting:
             base_demands={},
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         mc = folk.get_component(MetricComponent)
         assert mc is not None

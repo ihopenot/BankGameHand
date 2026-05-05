@@ -4,9 +4,25 @@ from __future__ import annotations
 import pytest
 
 from entity.factory import Factory, FactoryType, Recipe
-from entity.folk import Folk
+from entity.folk import DemandFeedbackParams, Folk
 from entity.goods import GoodsType
 from system.labor_service import LaborService
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 def _make_folk(population: int, participation_rate: float, points_per_capita: float = 1.0) -> Folk:
@@ -20,6 +36,7 @@ def _make_folk(population: int, participation_rate: float, points_per_capita: fl
         base_demands={},
         labor_participation_rate=participation_rate,
         labor_points_per_capita=points_per_capita,
+        demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
     )
 
 

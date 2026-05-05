@@ -8,13 +8,29 @@ from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
 from core.config import ConfigManager
 from core.entity import Entity
-from entity.folk import Folk
+from entity.folk import DemandFeedbackParams, Folk
 from entity.goods import GoodsBatch, GoodsType
 from system.market_service import MarketService, SellOrder
 
 
 GT_FOOD = GoodsType(name="食品", base_price=50)
 GT_CLOTH = GoodsType(name="服装", base_price=200)
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -46,6 +62,7 @@ def _make_folk_with_decision(population=6000, w_quality=0.4, w_brand=0.05, w_pri
             GT_CLOTH: {"per_capita": 1, "sensitivity": 0.5},
         },
         labor_participation_rate=0.6, labor_points_per_capita=1.0,
+        demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
     )
     return folk
 

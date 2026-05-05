@@ -9,9 +9,25 @@ from component.productor_component import ProductorComponent
 from entity.bank import Bank
 from entity.company.company import Company
 from entity.factory import Factory, FactoryType, Recipe
-from entity.folk import Folk
+from entity.folk import DemandFeedbackParams, Folk
 from entity.goods import GoodsType
 from system.metric_service import MetricService
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 def _make_company(gt: GoodsType, cash: int = 10000) -> Company:
@@ -66,7 +82,8 @@ class TestSnapshotPhase:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.3, w_price=0.2,
                     spending_flow={"tech": 0.5, "brand": 0.3, "maintenance": 0.2},
                     base_demands={},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 8000
 
         service = MetricService()

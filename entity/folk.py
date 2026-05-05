@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Dict, List
 
 from component.decision.folk.classic import ClassicFolkDecisionComponent
@@ -9,6 +10,16 @@ from component.storage_component import StorageComponent
 from core.config import ConfigManager
 from core.entity import Entity
 from entity.goods import GoodsType
+
+
+@dataclass
+class DemandFeedbackParams:
+    """居民需求反馈参数。"""
+    savings_target_ratio: float
+    max_adjustment: float
+    sensitivity: float
+    min_multiplier: float
+    max_multiplier: float
 
 
 class Folk(Entity):
@@ -25,6 +36,7 @@ class Folk(Entity):
         base_demands: Dict[GoodsType, Dict[str, float]],
         labor_participation_rate: float,
         labor_points_per_capita: float,
+        demand_feedback: DemandFeedbackParams,
     ) -> None:
         super().__init__(name)
         self.population = population
@@ -35,6 +47,7 @@ class Folk(Entity):
         self.base_demands = base_demands
         self.labor_participation_rate = labor_participation_rate
         self.labor_points_per_capita = labor_points_per_capita
+        self.demand_feedback = demand_feedback
         self.last_spending: int = 0
         self.demand_multiplier: float = 1.0
         self.init_component(LedgerComponent)
@@ -89,6 +102,13 @@ def load_folks() -> List[Folk]:
             base_demands=base_demands,
             labor_participation_rate=item.labor_participation_rate,
             labor_points_per_capita=item.labor_points_per_capita,
+            demand_feedback=DemandFeedbackParams(
+                savings_target_ratio=item.demand_feedback.savings_target_ratio,
+                max_adjustment=item.demand_feedback.max_adjustment,
+                sensitivity=item.demand_feedback.sensitivity,
+                min_multiplier=item.demand_feedback.min_multiplier,
+                max_multiplier=item.demand_feedback.max_multiplier,
+            ),
         ))
     _validate_spending_flow(folks)
     return folks

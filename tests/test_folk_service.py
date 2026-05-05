@@ -12,7 +12,7 @@ from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
 from core.config import ConfigManager
 from core.entity import Entity
-from entity.folk import Folk
+from entity.folk import DemandFeedbackParams, Folk
 from entity.goods import GoodsBatch, GoodsType
 from system.folk_service import FolkService
 from system.market_service import MarketService, SellOrder, TradeRecord
@@ -20,6 +20,14 @@ from system.market_service import MarketService, SellOrder, TradeRecord
 _TEST_CONFIG_DIR = str(Path(__file__).parent / "config_integration")
 
 _SF = {"tech": 0.5, "brand": 0.3, "maintenance": 0.2}
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 def _make_folk_with_cash(population, w_quality, w_brand, w_price, base_demands, cash=10_000_000_000, **kwargs):
@@ -31,6 +39,7 @@ def _make_folk_with_cash(population, w_quality, w_brand, w_price, base_demands, 
         base_demands=base_demands,
         labor_participation_rate=kwargs.get("labor_participation_rate", 0.6),
         labor_points_per_capita=kwargs.get("labor_points_per_capita", 1.0),
+        demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
     )
     folk.get_component(LedgerComponent).cash = cash
     return folk
@@ -55,6 +64,7 @@ class TestFolkServiceInit:
             spending_flow=_SF,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.1}},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         folk_b = Folk(
             name="test_folk",
@@ -62,6 +72,7 @@ class TestFolkServiceInit:
             spending_flow=_SF,
             base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.2}},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         service = FolkService(folks=[folk_a, folk_b])
         assert len(service.folks) == 2
@@ -169,7 +180,8 @@ class TestWeightedAllocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
 
@@ -191,7 +203,8 @@ class TestWeightedAllocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.9, w_brand=0.1, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
 
@@ -213,7 +226,8 @@ class TestWeightedAllocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=1000, market=market)
 
@@ -235,7 +249,8 @@ class TestWeightedAllocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=400, market=market)
 
@@ -260,7 +275,8 @@ class TestIterativeReallocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
 
@@ -284,7 +300,8 @@ class TestIterativeReallocation:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 5, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=500, market=market)
 
@@ -308,7 +325,8 @@ class TestIterativeReallocation:
         folk = Folk(name="test_folk", population=300, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 3, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         service = FolkService(folks=[folk])
         trades = service.allocate_and_trade(folk, gt_food, demand=900, market=market)
 
@@ -332,7 +350,8 @@ class TestSettleTrades:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 1, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 1_000_000  # 充足现金
 
         trade = TradeRecord(seller=seller, buyer=folk, goods_type=gt_food, quantity=50, price=100)
@@ -364,7 +383,8 @@ class TestSettleTrades:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 1, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 100_000
 
         trade = TradeRecord(seller=seller, buyer=folk, goods_type=gt_food, quantity=50, price=100)
@@ -399,14 +419,16 @@ class TestBuyPhase:
         folk_1 = Folk(name="test_folk", population=100, w_quality=0.95, w_brand=0.05, w_price=0.0,
                       spending_flow=_SF,
                       base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}},
-                      labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                      labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                      demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk_1.get_component(LedgerComponent).cash = 10_000_000
 
         # Folk 2: 品牌敏感（高 w_brand），50人，per_capita=10
         folk_2 = Folk(name="test_folk", population=50, w_quality=0.1, w_brand=0.9, w_price=0.0,
                       spending_flow=_SF,
                       base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}},
-                      labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                      labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                      demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk_2.get_component(LedgerComponent).cash = 10_000_000
 
         service = FolkService(folks=[folk_1, folk_2])
@@ -450,7 +472,8 @@ class TestBuyPhase:
         folk = Folk(name="test_folk", population=200, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 2, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 10_000_000
 
         service = FolkService(folks=[folk])
@@ -477,7 +500,8 @@ class TestBuyPhase:
                         gt_food: {"per_capita": 10, "sensitivity": 0.0},
                         gt_cloth: {"per_capita": 5, "sensitivity": 0.0},
                     },
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 10_000_000
 
         service = FolkService(folks=[folk])
@@ -502,7 +526,8 @@ class TestBuyPhase:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 10_000_000
 
         service = FolkService(folks=[folk])
@@ -544,7 +569,8 @@ class TestBuyPhase:
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                     spending_flow=_SF,
                     base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.0}},
-                    labor_participation_rate=0.6, labor_points_per_capita=1.0)
+                    labor_participation_rate=0.6, labor_points_per_capita=1.0,
+                    demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         folk.get_component(LedgerComponent).cash = 10_000_000
 
         service = FolkService(folks=[folk])

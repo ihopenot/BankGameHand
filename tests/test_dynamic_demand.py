@@ -7,7 +7,16 @@ from unittest.mock import patch
 import pytest
 
 from core.config import ConfigManager
+from entity.folk import DemandFeedbackParams
 from entity.goods import GoodsType, load_goods_types
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -36,6 +45,7 @@ class TestFolkDemandAttributes:
             base_demands={},
             labor_participation_rate=0.5,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         assert folk.last_spending == 0
 
@@ -51,6 +61,7 @@ class TestFolkDemandAttributes:
             base_demands={},
             labor_participation_rate=0.5,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         assert folk.demand_multiplier == 1.0
 
@@ -72,6 +83,7 @@ class TestDemandMultiplierUpdate:
             base_demands={gt: {"per_capita": 1.0, "sensitivity": 0.5}},
             labor_participation_rate=0.5,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         folk.last_spending = last_spending
         folk.demand_multiplier = demand_multiplier
@@ -145,6 +157,7 @@ class TestEconomyCycleDecoupled:
             base_demands={gt: {"per_capita": 1.0, "sensitivity": 0.8}},
             labor_participation_rate=0.5,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         ledger = folk.get_component(LedgerComponent)
         ledger.cash = 100000

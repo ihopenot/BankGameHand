@@ -7,7 +7,16 @@ import pytest
 
 from component.ledger_component import LedgerComponent
 from component.storage_component import StorageComponent
+from entity.folk import DemandFeedbackParams
 from entity.goods import GoodsType
+
+_DEFAULT_DEMAND_FEEDBACK = DemandFeedbackParams(
+    savings_target_ratio=5.0,
+    max_adjustment=0.15,
+    sensitivity=1.0,
+    min_multiplier=0.3,
+    max_multiplier=2.0,
+)
 
 _SPENDING_FLOW = {"tech": 1.0, "brand": 0.0, "maintenance": 0.0}
 
@@ -32,6 +41,7 @@ class TestFolkInit:
             base_demands=base_demands,
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         assert folk.population == 6000
         assert folk.w_quality == 0.95
@@ -54,6 +64,7 @@ class TestFolkInit:
             base_demands={},
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         assert folk.labor_supply == int(6000 * 0.6 * 1.0)
 
@@ -62,7 +73,8 @@ class TestFolkInit:
 
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                      spending_flow=_SPENDING_FLOW, base_demands={},
-                     labor_participation_rate=0.5, labor_points_per_capita=1.0)
+                     labor_participation_rate=0.5, labor_points_per_capita=1.0,
+                     demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         ledger = folk.get_component(LedgerComponent)
         assert ledger is not None
 
@@ -71,7 +83,8 @@ class TestFolkInit:
 
         folk = Folk(name="test_folk", population=100, w_quality=0.5, w_brand=0.5, w_price=0.0,
                      spending_flow=_SPENDING_FLOW, base_demands={},
-                     labor_participation_rate=0.5, labor_points_per_capita=1.0)
+                     labor_participation_rate=0.5, labor_points_per_capita=1.0,
+                     demand_feedback=_DEFAULT_DEMAND_FEEDBACK)
         storage = folk.get_component(StorageComponent)
         assert storage is not None
 
@@ -94,6 +107,7 @@ class TestFolkInit:
             },
             labor_participation_rate=0.6,
             labor_points_per_capita=1.0,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         folk_b = Folk(
             name="test_folk",
@@ -108,6 +122,7 @@ class TestFolkInit:
             },
             labor_participation_rate=0.7,
             labor_points_per_capita=1.5,
+            demand_feedback=_DEFAULT_DEMAND_FEEDBACK,
         )
         # folk_a 不需要手机
         assert folk_a.base_demands[gt_phone]["per_capita"] == 0
@@ -144,6 +159,13 @@ class TestLoadFolks:
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.1}),
                     }),
+                    "demand_feedback": AttrDict({
+                        "savings_target_ratio": 5.0,
+                        "max_adjustment": 0.15,
+                        "sensitivity": 1.0,
+                        "min_multiplier": 0.3,
+                        "max_multiplier": 2.0,
+                    }),
                 }),
                 AttrDict({
                     "population": 1000,
@@ -155,6 +177,13 @@ class TestLoadFolks:
                     "spending_flow": AttrDict({"tech": 0.4, "brand": 0.6, "maintenance": 0.5}),
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 5, "sensitivity": 0.05}),
+                    }),
+                    "demand_feedback": AttrDict({
+                        "savings_target_ratio": 5.0,
+                        "max_adjustment": 0.15,
+                        "sensitivity": 1.0,
+                        "min_multiplier": 0.3,
+                        "max_multiplier": 2.0,
                     }),
                 }),
             ],
@@ -191,6 +220,13 @@ class TestLoadFolks:
                     "base_demands": AttrDict({
                         "食品": AttrDict({"per_capita": 10, "sensitivity": 0.2}),
                         "手机": AttrDict({"per_capita": 3, "sensitivity": 0.7}),
+                    }),
+                    "demand_feedback": AttrDict({
+                        "savings_target_ratio": 5.0,
+                        "max_adjustment": 0.15,
+                        "sensitivity": 1.0,
+                        "min_multiplier": 0.3,
+                        "max_multiplier": 2.0,
                     }),
                 }),
             ],
