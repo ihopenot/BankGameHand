@@ -35,6 +35,8 @@ class Folk(Entity):
         self.base_demands = base_demands
         self.labor_participation_rate = labor_participation_rate
         self.labor_points_per_capita = labor_points_per_capita
+        self.last_spending: int = 0
+        self.demand_multiplier: float = 1.0
         self.init_component(LedgerComponent)
         self.init_component(StorageComponent)
         self.init_component(MetricComponent)
