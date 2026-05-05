@@ -68,7 +68,7 @@ class TestClassicFolkDecisionDecideSpending:
             assert isinstance(result[gt_name]["demand"], int)
 
     def test_demand_formula(self) -> None:
-        """demand = population * per_capita * (1 + economy_cycle_index * sensitivity)。"""
+        """demand = population * per_capita * demand_multiplier（默认1.0）。"""
         entity, comp = _make_folk_entity(population=6000)
         context = {
             "economy_cycle_index": 1.0,
@@ -77,13 +77,13 @@ class TestClassicFolkDecisionDecideSpending:
         comp.set_context(context)
         result = comp.decide_spending()
 
-        # 食品: population=6000, per_capita=10, economy_cycle_index=1.0, sensitivity=0.1
-        # demand = 6000 * 10 * (1 + 1.0 * 0.1) = 6000 * 10 * 1.1 = 66000
-        assert result["食品"]["demand"] == 66000
+        # 食品: population=6000, per_capita=10, demand_multiplier=1.0
+        # demand = 6000 * 10 * 1.0 = 60000
+        assert result["食品"]["demand"] == 60000
 
-        # 服装: per_capita=1, sensitivity=0.5
-        # demand = 6000 * 1 * (1 + 1.0 * 0.5) = 6000 * 1.5 = 9000
-        assert result["服装"]["demand"] == 9000
+        # 服装: per_capita=1, demand_multiplier=1.0
+        # demand = 6000 * 1 * 1.0 = 6000
+        assert result["服装"]["demand"] == 6000
 
     def test_zero_per_capita_means_zero_budget_and_demand(self) -> None:
         """per_capita=0 时 budget=0, demand=0。"""
@@ -110,13 +110,13 @@ class TestClassicFolkDecisionDecideSpending:
         comp.set_context(context)
         result = comp.decide_spending()
 
-        # 食品: demand=66000, reference_price=50, spending_tendency=1.0
-        # budget = int(66000 * 50 * 1.0) = 3300000
-        assert result["食品"]["budget"] == 3300000
+        # 食品: demand=60000, reference_price=50, spending_tendency=1.0
+        # budget = int(60000 * 50 * 1.0) = 3000000
+        assert result["食品"]["budget"] == 3000000
 
-        # 服装: demand=9000, reference_price=200, spending_tendency=1.0
-        # budget = int(9000 * 200 * 1.0) = 1800000
-        assert result["服装"]["budget"] == 1800000
+        # 服装: demand=6000, reference_price=200, spending_tendency=1.0
+        # budget = int(6000 * 200 * 1.0) = 1200000
+        assert result["服装"]["budget"] == 1200000
 
     def test_budget_with_non_unit_spending_tendency(self) -> None:
         """非单位 spending_tendency 正确乘入 budget。"""
@@ -131,9 +131,9 @@ class TestClassicFolkDecisionDecideSpending:
         comp.set_context(context)
         result = comp.decide_spending()
 
-        # 食品: demand=66000, reference_price=50, spending_tendency=0.6
-        # budget = int(66000 * 50 * 0.6) = 1980000
-        assert result["食品"]["budget"] == 1980000
+        # 食品: demand=60000, reference_price=50, spending_tendency=0.6
+        # budget = int(60000 * 50 * 0.6) = 1800000
+        assert result["食品"]["budget"] == 1800000
 
     def test_folk_w_attributes_used(self) -> None:
         """Folk 的 w_* 属性影响 spending_tendency。"""

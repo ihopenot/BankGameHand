@@ -265,7 +265,7 @@ class TestDecideWage:
     """DecisionService plan_phase 后企业有 wage 属性。"""
 
     def test_plan_phase_sets_wage(self) -> None:
-        """plan_phase 后企业应有 wage 属性。"""
+        """plan_phase 后企业应有 wage 属性（动态计算，不再固定）。"""
         random.seed(42)
         gt, recipe, ft = _make_factory_setup()
         company = _make_company()
@@ -274,9 +274,13 @@ class TestDecideWage:
 
         # 设置 initial_wage
         company.initial_wage = 15
+        company.wage = 15
+        company.last_operating_expense = 0
 
         svc = _service()
         svc.plan_phase([company])
 
         assert hasattr(company, "wage")
-        assert company.wage == 15
+        # 动态工资：不再固定为 initial_wage，但应为正整数
+        assert isinstance(company.wage, int)
+        assert company.wage >= 1

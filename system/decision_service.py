@@ -61,8 +61,8 @@ class DecisionService:
             "company": {
                 "name": company.name,
                 "ceo_traits": ceo_traits,
-                "initial_wage": company.initial_wage,
-                "current_wage": company.wage,
+                "initial_wage": getattr(company, 'initial_wage', 10),
+                "current_wage": getattr(company, 'wage', getattr(company, 'initial_wage', 10)),
                 "last_operating_expense": getattr(company, 'last_operating_expense', 0),
             },
             "ledger": {
