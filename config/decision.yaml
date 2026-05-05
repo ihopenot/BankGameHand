@@ -29,3 +29,11 @@ brand:
 tech:
   base_ratio: 0.05              # 科技投入基础比例
   tech_coeff: 1.0               # 科技系数（影响科技投入比例）
+
+# ── 工资决策 ──
+wage:
+  step_rate: 0.2                # 每回合向目标逼近的速率
+  base_profit_margin: 0.15      # 基础目标利润率
+  target_cash_ratio: 3.0        # 目标现金/运营支出比值
+  cash_factor_min: 0.5          # 现金因子下限
+  cash_factor_max: 1.5          # 现金因子上限
