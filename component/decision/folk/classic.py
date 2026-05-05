@@ -77,7 +77,7 @@ class ClassicFolkDecisionComponent(BaseFolkDecisionComponent):
                 result[gt_name] = {"budget": 0, "demand": 0}
                 continue
 
-            demand = int(folk.population * per_capita * getattr(folk, 'demand_multiplier', 1.0))
+            demand = int(folk.population * per_capita * folk.demand_multiplier)
             ref_price = reference_prices.get(gt_name, gt.base_price)
             budget = int(demand * ref_price * spending_tendency)
 

@@ -150,12 +150,14 @@ class TestDynamicWage:
         """profit_focus 高的 CEO 设定更低的工资（保利润）。"""
         entity1 = Entity("test1")
         comp1 = entity1.init_component(ClassicCompanyDecisionComponent)
+        comp1.profit_focus = 0.9
         ctx1 = _make_context(cash=100000, initial_wage=400, last_operating_expense=10000, profit_focus=0.9)
         comp1.set_context(ctx1)
         wage_high_pf = comp1.decide_wage()
 
         entity2 = Entity("test2")
         comp2 = entity2.init_component(ClassicCompanyDecisionComponent)
+        comp2.profit_focus = 0.1
         ctx2 = _make_context(cash=100000, initial_wage=400, last_operating_expense=10000, profit_focus=0.1)
         comp2.set_context(ctx2)
         wage_low_pf = comp2.decide_wage()

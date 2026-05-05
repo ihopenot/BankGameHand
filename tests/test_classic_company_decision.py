@@ -432,20 +432,24 @@ class TestClassicLoanNeeds:
 
 
 class TestClassicDecideWage:
-    """3.2: decide_wage 返回 initial_wage 配置值。"""
+    """3.2: decide_wage 动态计算（利润优先 + 现金调节 + 增量逼近）。"""
 
     def test_decide_wage_returns_int(self, comp) -> None:
         """decide_wage 应返回 int。"""
         ctx = _make_context()
         ctx["company"]["initial_wage"] = 10
+        ctx["company"]["current_wage"] = 10
+        ctx["company"]["last_operating_expense"] = 0
         comp.set_context(ctx)
         result = comp.decide_wage()
         assert isinstance(result, int)
 
-    def test_decide_wage_returns_initial_wage(self, comp) -> None:
-        """decide_wage 应返回 context 中的 initial_wage。"""
+    def test_decide_wage_returns_positive(self, comp) -> None:
+        """decide_wage 应返回正值（动态计算，不再固定为 initial_wage）。"""
         ctx = _make_context()
         ctx["company"]["initial_wage"] = 15
+        ctx["company"]["current_wage"] = 15
+        ctx["company"]["last_operating_expense"] = 0
         comp.set_context(ctx)
         result = comp.decide_wage()
-        assert result == 15
+        assert result >= 1

@@ -15,6 +15,9 @@ class Company(Entity):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.plot: Optional[Plot] = None
+        self.initial_wage: int = 0
+        self.wage: int = 0
+        self.last_operating_expense: int = 0
         self.init_component(ProductorComponent)
         self.init_component(LedgerComponent)
         self.init_component(MetricComponent)

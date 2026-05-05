@@ -235,9 +235,9 @@ class ClassicCompanyDecisionComponent(BaseCompanyDecisionComponent):
         metric = ctx.get("metric", {})
 
         cfg = self.config.wage
-        current_wage = company_ctx.get("current_wage", company_ctx.get("initial_wage", 10))
+        current_wage = company_ctx["current_wage"]
         cash = ledger.get("cash", 0)
-        last_op_expense = company_ctx.get("last_operating_expense", 0)
+        last_op_expense = company_ctx["last_operating_expense"]
 
         # 获取工厂信息计算目标工资
         factories = productor.get("factories", {})

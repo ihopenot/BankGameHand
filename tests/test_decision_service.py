@@ -49,6 +49,8 @@ def _make_company(
     ledger = company.get_component(LedgerComponent)
     ledger.cash = cash
     company.initial_wage = 10
+    company.wage = 10
+    company.last_operating_expense = 0
     return company
 
 

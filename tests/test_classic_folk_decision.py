@@ -30,6 +30,8 @@ def _make_folk_entity(population=6000, w_quality=0.4, w_brand=0.05, w_price=0.55
     entity.w_quality = w_quality
     entity.w_brand = w_brand
     entity.w_price = w_price
+    entity.demand_multiplier = 1.0
+    entity.last_spending = 0
     entity.base_demands = {
         GT_FOOD: {"per_capita": 10, "sensitivity": 0.1},
         GT_CLOTH: {"per_capita": 1, "sensitivity": 0.5},
