@@ -73,7 +73,7 @@ class TestComputeDemands:
     """需求计算测试。"""
 
     def test_basic_demand_calculation(self) -> None:
-        """验证公式：population * per_capita * (1 + economy_cycle_index * sensitivity)"""
+        """验证公式：population * per_capita * demand_multiplier（默认1.0）"""
         gt_food = GoodsType(name="食品", base_price=8000)
         folk = _make_folk_with_cash(
             population=1000, w_quality=0.5, w_brand=0.5, w_price=0.0,
@@ -82,8 +82,8 @@ class TestComputeDemands:
         )
         service = FolkService(folks=[folk])
         demands = service.compute_demands(economy_cycle_index=0.5)
-        # 1000 * 10 * (1 + 0.5 * 0.2) = 1000 * 10 * 1.1 = 11000
-        assert demands[folk][gt_food] == 11000
+        # demand_multiplier=1.0: 1000 * 10 * 1.0 = 10000
+        assert demands[folk][gt_food] == 10000
 
     def test_zero_per_capita_returns_zero(self) -> None:
         """per_capita=0 的商品需求为 0."""
@@ -112,22 +112,22 @@ class TestComputeDemands:
         )
         service = FolkService(folks=[folk_a, folk_b])
         demands = service.compute_demands(economy_cycle_index=1.0)
-        # folk_a: 6000 * 10 * (1 + 1.0 * 0.1) = 66000
-        # folk_b: 1000 * 10 * (1 + 1.0 * 0.05) = 10500
-        assert demands[folk_a][gt_food] == 66000
-        assert demands[folk_b][gt_food] == 10500
+        # demand_multiplier=1.0: folk_a: 6000 * 10 = 60000, folk_b: 1000 * 10 = 10000
+        assert demands[folk_a][gt_food] == 60000
+        assert demands[folk_b][gt_food] == 10000
 
     def test_negative_cycle_reduces_demand(self) -> None:
-        """经济衰退（负周期指数）减少需求."""
+        """demand_multiplier < 1 时减少需求（不再依赖 economy_cycle_index）."""
         gt_food = GoodsType(name="食品", base_price=8000)
         folk = _make_folk_with_cash(
             population=1000, w_quality=0.5, w_brand=0.5, w_price=0.0,
             base_demands={gt_food: {"per_capita": 10, "sensitivity": 0.5}},
             labor_participation_rate=0.6, labor_points_per_capita=1.0,
         )
+        folk.demand_multiplier = 0.8  # 模拟现金紧张导致需求下降
         service = FolkService(folks=[folk])
         demands = service.compute_demands(economy_cycle_index=-0.4)
-        # 1000 * 10 * (1 + (-0.4) * 0.5) = 1000 * 10 * 0.8 = 8000
+        # 1000 * 10 * 0.8 = 8000
         assert demands[folk][gt_food] == 8000
 
     def test_unconfigured_goods_not_in_demands(self) -> None:
