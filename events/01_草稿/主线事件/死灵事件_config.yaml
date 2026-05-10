@@ -1,0 +1,454 @@
+# 死灵事件网 - 可配置数值参数
+# 对应文件：events/01_草稿/主线事件/死灵事件.md
+# 所有数值均可由用户调整，事件文本中引用参数名
+# v2.0 — 贷款审批机制 + 网状多结局 + 工资替代失业率
+
+# ============================================================
+# 主干事件
+# ============================================================
+
+N01_soul_extraction:
+  # 触发条件
+  triggers:
+    min_turn: 10
+    requires: null
+    requires_company_control: "沉眠仪式社"    # 玩家需控股此公司才能触发N-01
+    requires_market_share: 0.30              # 沉眠仪式社仪式标签产品占区域市场比例阈值
+    company_control_type: "controlling_stake" # 控股方式：controlling_stake（持股控股）/ acquisition（全资收购）
+  # 前置叙事——沉眠仪式社
+  prequel:
+    company_name: "沉眠仪式社"
+    company_race: dark_elf                   # 暗精灵经营
+    company_region: "银叶诸领"
+    company_business: "安魂/超度仪式"          # 仪式标签产品
+    return_visit_rate: 0.80                  # 回访率（80%家属3个月内回访）
+    return_visit_question: "能不能让他回来"     # 核心需求信号
+    ritual_market_threshold: 0.30           # 仪式标签产品占区域市场比例阈值
+    hidden_data_years: 3                    # 数据被高等精灵股东压了几年
+    player_loan_hint: "仪式设备升级贷款"       # 玩家之前可能批过的贷款
+  # 机制影响
+  effects:
+    ritual_demand_multiplier: 1.5           # 仪式标签产品需求倍率
+    rate_volatility: 0.02                   # 元老院魔导利率波动幅度
+    new_tech_unlocked: soul_extraction
+  duration: 3                               # 效果持续回合
+
+N02_first_awakening:
+  triggers:
+    requires: N01_soul_extraction
+  # 贷款申请
+  loan:
+    applicant: "深炉矿业集团"
+    loan_name: "产能升级贷款"
+    amount: 12000                           # 辉币
+    purpose: "采购灵魂提取设备及首批唤醒服务（37名死灵矿工激活费）"
+    collateral: "矿场设备"
+    collateral_value: 18000                 # 辉币
+    rate: 0.08                              # 利率8%
+  # 批准后效果
+  effects_approve:
+    initial_undead_pop: 50                  # 死灵初始人口
+    undead_labor_cost_ratio: 0.1            # 死灵劳动力成本（相对活体工人）
+    dwarf_wage_cut: -0.30                   # 矮人工资降幅（-30%）
+    beast_wage_cut: -0.25                   # 兽族工资降幅（-25%）
+    ethics_debate_chance: 0.20              # 伦理争议事件概率
+    mine_productivity_boost: 0.40           # 矿业产能提升（+40%）
+  # 拒绝后效果（N-02'路径）
+  effects_reject:
+    underground_undead_pop: 15             # 灰市小规模采用，死灵初始人口
+    grey_market_rate: 0.22                 # 灰市融资利率（22%）
+    dwarf_wage_cut_minor: -0.15            # 矮人工资降幅（减半版）
+    beast_wage_cut_minor: -0.12            # 兽族工资降幅（减半版）
+    grey_adoption_increase: 0.20           # 哥布林灰色物流量增幅
+  duration: 0                               # 永久效果
+
+N03_soul_economy:
+  triggers:
+    requires: N02_first_awakening
+  loan:
+    applicant: "灵魂产品公司联盟"
+    loan_name: "产线扩张贷款"
+    amount: 25000
+    purpose: "灵魄萃取液量产线扩建 + 魂纹刻印网点铺设 + 灵债契约会社注册资本"
+    collateral: "灵魂产品专利授权费"
+    collateral_value: 35000                 # 辉币/年
+    rate: 0.10
+  # 批准后效果（泡沫路径）
+  effects_approve:
+    soul_market_share: 0.18                 # 灵魂产品占市场交易额比例
+    financial_volatility: 1.8               # 金融市场波动性倍率
+    soul_product_premium: 2.0              # 灵魂产品溢价倍率
+    credit_expansion: 1.3                   # 信贷扩张倍率
+    futures_first_day_volume: 50000         # 灵魂期货首日成交量（辉币）
+    infernal_lending_volume: 2.0            # 提夫林影子银行放贷量倍率
+    bubble_growth_rate: 0.08                # 泡沫膨胀指数每回合增速（+8%）
+  # 拒绝后效果（受控路径 N-03'）
+  effects_reject:
+    soul_market_share_controlled: 0.08     # 受控规模灵魂产品占比
+    financial_volatility_controlled: 1.2    # 温和波动
+    credit_expansion_controlled: 1.05       # 微幅信贷扩张
+    soul_product_growth_slow: 0.03          # 灵魂产品增速（+3%/回合）
+  duration: 0
+
+N04_dead_underbid:
+  triggers:
+    requires: N03_soul_economy
+  # 双重贷款——选边站
+  loan_corp:
+    applicant: "炉心矿业公司联盟"
+    loan_name: "劳动力替换贷款"
+    amount: 20000
+    purpose: "大规模采购死灵矿工，替换现有活体工人"
+    collateral: "矿场产能"
+    collateral_value: 30000
+    rate: 0.09
+  loan_guild:
+    applicant: "矿工兄弟会"
+    loan_name: "劳工权益贷款"
+    amount: 15000
+    purpose: "组织罢工行动、建立劳工互助基金、法律诉讼"
+    collateral: "会员会费收入"
+    collateral_value: 8000                  # 辉币/年
+    rate: 0.12
+  # 批准资方贷款后效果
+  effects_approve_corp:
+    corp_undead_ratio: 0.75                 # 矿场死灵占比
+    dwarf_wage_trough: 0.40                 # 矮人工资触底（原工资40%）
+    beast_wage_trough: 0.50                 # 兽族工资触底（原工资50%）
+    demand_shrink_ratio: 0.6                # 低收入层消费需求倍率
+    undead_growth_rate: 0.15                # 死灵人口每回合增长率
+    labor_action_chance: 0.30              # 工会行动触发概率
+    miners_guild_influence: 1.5            # 矿工兄弟会声望倍率
+  # 批准工会贷款后效果（N-04'路径）
+  effects_approve_guild:
+    strike_active: true
+    strike_duration: 5
+    strike_output_ratio: 0.55              # 罢工期间矿场产出率
+    undead_cap_by_law: 0.30                # 法律暂缓死灵占比上限
+    dwarf_wage_recovery: 0.70              # 矮人工资恢复至原工资70%
+    negotiation_chance: 0.40               # 每回合谈判进展概率
+  # 都不批
+  effects_reject_both:
+    grey_increase_no_loan: 0.15            # 灰市经济占比增幅
+  duration: 0
+
+N05_abyss_founded:
+  triggers:
+    requires: N04_dead_underbid
+  # 双重贷款——建国 vs 备战
+  loan_abyss:
+    applicant: "冥渊执委会"
+    loan_name: "建国基建贷款"
+    amount: 50000
+    purpose: "冥铁精炼厂、防御工事、行政基础设施"
+    collateral: "冥铁未来5年产出"
+    collateral_value: 120000
+    rate: 0.11
+  loan_hearth:
+    applicant: "炉心王国"
+    loan_name: "军备采购贷款"
+    amount: 60000
+    purpose: "魂纹兵装采购、边境要塞、征召预备役"
+    collateral: "矿晶储备+国家信用"
+    collateral_value: 150000
+    rate: 0.07
+  # 批准冥渊贷款后效果
+  effects_approve_abyss:
+    undead_state_pop: 680                   # 冥渊自治区人口
+    nether_iron_premium: 1.3                # 冥铁温和溢价
+    hearth_abyss_relations: -40             # 冷战级别关系
+    cold_war_level: -40
+    nether_iron_supply_stable: true        # 精炼厂正常运转
+  # 批准炉心贷款后效果（N-05'军事对峙路径）
+  effects_approve_hearth:
+    mobilization_supply_ratio: 0.60        # 冥铁供应率（60%）
+    hearth_military_readiness: 0.90        # 炉心军事准备度
+    war_threshold: 0.90
+    nether_iron_blockade: true              # 冥铁出口被封锁
+    nether_iron_premium_war: 3.0           # 封锁后冥铁价格溢价
+    military_cost_increase: 0.45           # 军工链成本增幅
+    war_tension_rate: 0.12                 # 战争风险每回合增幅
+  # 都不批
+  effects_reject_both:
+    nether_iron_supply_unstable: true      # 冥铁产出随机波动
+    hearth_military_readiness_slow: 0.50   # 炉心军事准备增速减半
+    senate_mediation_chance: 0.30          # 元老院斡旋概率
+  duration: 0
+
+N06_living_war:
+  triggers:
+    requires: N05_abyss_founded
+  # 终局贷款——战争与和平
+  loan_war:
+    applicant: "炉心-原野联军"
+    loan_name: "战争公债承销"
+    amount: 100000
+    purpose: "全面战争军费、军工产能扩张、战后重建预支"
+    collateral: "联军各国税收权"
+    collateral_value: 200000
+    rate: 0.06                              # 国债级低利率
+  loan_defense:
+    applicant: "冥渊执委会"
+    loan_name: "防御贷款"
+    amount: 40000
+    purpose: "冥铁产能维持、防线加固、民生保障"
+    collateral: "冥铁未来10年产出"
+    collateral_value: 300000
+    rate: 0.14                              # 高风险高利率
+  # 战争机制影响（不论选哪边都会触发）
+  effects:
+    war_demand_surge: 4.0                   # 军工需求暴涨倍率
+    war_supply_ratio: 0.40                  # 冥铁供应率
+    war_miner_loss: 0.70                    # 原力矿晶产出率
+    war_silk_ratio: 0.50                    # 灵蛛丝供应率
+    financial_volatility_war: 3.0          # 战时金融波动性倍率
+    credit_freeze_add: 0.40                # 信贷冻结增幅
+    dragon_reserve_release: 0.60            # 龙裔晶力释放概率
+  duration: 0
+
+# ============================================================
+# 分支事件
+# ============================================================
+
+B01_bone_labor_act:
+  triggers:
+    requires: N02_first_awakening
+    trigger_condition: "N-02贷款批准 + 死灵经济规模判定"
+  # 法案通过条件
+  bill_pass_condition:
+    small_undead_economy: "N-02批准但N-03未批准"
+    result: pass
+  bill_fail_condition:
+    large_undead_economy: "N-02批准且N-03批准"
+    result: fail
+  # 法案未通过效果
+  effects_bill_fail:
+    actual_undead_cap: 1.0                  # 死灵占比无上限
+    undead_tax_rate: 0                     # 无亡者税（未生效）
+    undead_cap_ratio: 0.40                 # 法定上限（未生效）
+    post_vote_debate_chance: 0.35          # 法案失败后伦理争议概率
+    ending_tendency: "C"                    # 导向死灵霸权
+  # 法案通过效果
+  effects_bill_pass:
+    actual_undead_cap: 0.40                # 死灵占比上限生效
+    undead_tax_rate: 0.15                  # 亡者税率生效
+    wage_recovery_rate: 0.10               # 矮人/兽族工资回升
+    ending_tendency: "B"                    # 导向冥渊共治
+  duration: 0
+
+B02_soul_futures_crash:
+  triggers:
+    requires: N03_soul_economy
+    trigger_condition: "N-03贷款批准 + 泡沫达burst_threshold"
+  # 泡沫触发参数
+  bubble:
+    bubble_burst_threshold: 2.0            # 泡沫膨胀达200%时崩盘
+    futures_bubble_multiplier: 4.0         # 期货泡沫倍率
+    player_loan_accelerate: 1.5            # 持续批准灵魂产品贷款→泡沫增速×1.5
+  effects:
+    post_crash_credit: 0.40                # 崩盘后信贷水平
+    crash_npl_increase: 0.12              # 不良贷款率增幅
+    shadow_bank_default: 0.55             # 提夫林影子银行坏账率
+    lizard_fund_loss: -0.30                # 蜥蜴人量化基金净值变动
+    post_crash_ritual_demand: 0.3          # 崩盘后仪式产品需求倍率
+    senate_bailout: 50000                  # 元老院救市金额（辉币）
+    ending_tendency: "D"                   # 导向灵魂崩盘
+  duration: 5
+
+B03_miners_strike:
+  triggers:
+    requires: N04_dead_underbid
+    trigger_condition: "N-04双重贷款选择资方"
+  # 罢工期间贷款
+  loan_strike:
+    applicant: "矿工兄弟会"
+    loan_name: "罢工维持贷款"
+    amount: 8000
+    purpose: "罢工维持、工人生活补贴"
+    collateral: "工会储备金"
+    rate: 0.15
+  loan_replacement:
+    applicant: "矿业公司联盟"
+    loan_name: "罢工替换贷款"
+    amount: 12000
+    purpose: "用更多死灵替换罢工者"
+    collateral: "矿场设备"
+    rate: 0.10
+  # 批准罢工维持贷款
+  effects_approve_strike:
+    ending_tendency: "B"                    # 导向冥渊共治
+    dwarf_unity_peak: true
+    government_mediation: true
+  # 批准罢工替换贷款
+  effects_approve_replacement:
+    ending_tendency: "A"                    # 导向活体之战
+    union_collapsed: true
+    radicalization: true
+  # 罢工基础效果
+  effects:
+    strike_duration: 5
+    strike_output_ratio: 0.15              # 罢工期间矿场产出率
+    strike_premium: 3.0                    # 消费品价格溢价倍率
+    hearth_tax_loss: -0.60                 # 炉心王国税收变动
+    dwarf_unity: 1.8                        # 矮人种族凝聚力倍率
+    strike_grey_increase: 0.40             # 灰市物流量增幅
+  duration: 5
+
+B04_artificer_awakening:
+  triggers:
+    requires: N05_abyss_founded
+    trigger_condition: "N-05双重贷款选择冥渊方"
+  # 冥匠/保守派贷款
+  loan_reform:
+    applicant: "冥匠派"
+    loan_name: "参政改革贷款"
+    amount: 5000
+    purpose: "建立冥匠议会、起草冥渊宪法"
+    collateral: "冥匠技术专利"
+    rate: 0.13
+  loan_conservative:
+    applicant: "保守派"
+    loan_name: "秩序维持贷款"
+    amount: 8000
+    purpose: "维持现有管理体系、镇压冥匠运动"
+    collateral: "冥渊行政资产"
+    rate: 0.10
+  # 批准冥匠改革贷款
+  effects_approve_reform:
+    nether_iron_refine_efficiency_boost: 0.15   # 冥铁精炼效率提升
+    ending_tendency: "C"                    # 导向死灵霸权
+  # 批准保守派贷款
+  effects_approve_conservative:
+    abyss_stability: 0.40                  # 冥渊稳定度
+    iron_supply_min: 0.60                  # 冥铁供应下限
+    iron_supply_max: 1.00                  # 冥铁供应上限
+    ending_tendency: "B"                    # 导向冥渊共治
+  # 共同效果
+  effects:
+    artificer_ratio: 0.02                  # 冥匠占死灵比例
+    debate_trigger_chance: 0.25            # 参政权争议触发概率
+    nether_iron_price_volatility: 2.0      # 冥铁价格波动性倍率
+  duration: 0
+
+B05_grey_market_riot:
+  triggers:
+    requires: "多次拒绝贷款"
+    trigger_condition: "累计拒绝正规贷款≥grey_trigger_rejections"
+  # 灰市收编贷款
+  loan_integration:
+    applicant: "灰爪回收联邦"
+    loan_name: "灰市收编贷款"
+    amount: 30000
+    purpose: "将灰市纳入正规金融体系"
+    collateral: "灰市税收权"
+    rate: 0.18
+    conditions:
+      - "灰市利率合法化"
+      - "废弃残片交易正规化"
+  effects:
+    grey_trigger_rejections: 3             # 触发灰市暴动的拒绝次数阈值
+    formal_economy_shrink: 0.35            # 正规经济萎缩幅度
+    grey_economy_expansion: 0.50           # 灰市扩张幅度
+    wartime_grey_share: 0.45               # 灰市占经济比重
+    war_salvage_multiplier: 3.0            # 废弃残片产量倍率
+    grey_lending_rate: 0.45                # 灰市贷款利率
+    wartime_info_premium: 2.5              # 信息成本溢价倍率
+    wartime_regulation: 0.20               # 战时监管效力
+    post_war_grey_floor: 0.25              # 战后灰市新常态占比
+    grey_market_tipping_point: 0.40        # 灰市失控临界点
+    ending_tendency: "E"                    # 导向灰市永续
+  duration: 0
+
+# ============================================================
+# 结局参数
+# ============================================================
+
+endings:
+  A_living_war:
+    condition: "N02批准 + N03批准 + N04批资方 + N05批炉心 + N06批联军"
+    alt_condition: "N04批资方 + B03批替换 + N05批炉心"
+    effects:
+      post_war_industrial_output: 0.35      # 战后工业产出率
+      dwarf_wage_post_war: 0.60            # 矮人工资（战前60%）
+      gdp_loss_war: -0.40                   # GDP萎缩幅度
+      post_war_grey_floor: 0.25           # 战后灰市新常态
+
+  B_co_governance:
+    condition: "贷款选择平衡 或 B01法案通过 或 N04批工会 或 N05都不批"
+    alt_conditions:
+      - "B-01法案通过 + N-04批工会 + N-05都不批"
+      - "B-03批罢工维持 + B-04批保守派"
+      - "N-03拒绝（受控增长）"
+    effects:
+      actual_undead_cap: 0.40
+      undead_tax_rate: 0.15
+      dwarf_wage_coexist: 0.75            # 矮人工资（战前75%）
+      soul_futures_banned: true
+      gdp_gain_coexist: 0.05              # GDP小幅增长
+
+  C_undead_dominion:
+    condition: "N02批准 + N03批准 + N04批资方 + N05批冥渊 + B01未通过 + B04批冥匠改革"
+    alt_condition: "B-01未通过 + N-05批冥渊 + B-04批冥匠改革"
+    effects:
+      undead_labor_dominance: 0.70         # 死灵劳动占比
+      dwarf_unemployment_post: 0.45        # 矮人战后失业率
+      beast_unemployment_post: 0.50        # 兽族战后失业率
+      gdp_gain_dominance: 0.25            # GDP增长
+      artificer_council_ruling: true
+
+  D_soul_crash:
+    condition: "N03批准 + B02崩盘触发 + 泡沫达burst_threshold"
+    effects:
+      credit_system_integrity: 0.15        # 信用体系完整度
+      npl_post_crash: 0.35                 # 战后不良贷款率
+      infernal_bankruptcy: true
+      ritual_market_frozen: true
+      gdp_loss_crash: -0.55               # GDP暴跌
+
+  E_grey_perpetuity:
+    condition: "累计拒绝正规贷款≥3次 或 N02拒绝+N03拒绝+N04都不批"
+    effects:
+      grey_market_dominance: 0.55          # 灰市经济占比
+      grey_lending_rate: 0.45              # 灰市贷款利率
+      formal_credit_share: 0.30            # 正规信贷占比
+      regulation_collapse: true
+      gdp_stagnation: 0.00                 # GDP零增长
+
+# ============================================================
+# 全局参数
+# ============================================================
+
+global:
+  # 死灵劳动力
+  undead_maintenance_cost: 0.05            # 死灵每回合维护成本（相对活体工资）
+  undead_lifespan_min: 3                   # 死灵最短"保质期"（年/回合）
+  undead_lifespan_max: 20                  # 死灵最长"保质期"（年/回合）
+
+  # 工资体系（替代原失业率）
+  wage_pressure_threshold: 0.50           # 工资低于原工资50%时触发社会危机
+  wage_recovery_speed: 0.03               # 工资每回合自然恢复速率
+  wage_floor: 0.30                         # 工资最低下限（原工资30%）
+
+  # 市场敏感度
+  price_elasticity_of_war: 0.8             # 战争对价格的传导弹性
+  credit_sensitivity_to_npl: 1.5           # 信贷对不良贷款率的敏感度
+  grey_market_decay_rate: 0.10             # 灰市自然衰减率（每回合）
+
+  # 元老院干预
+  senate_intervention_threshold: 0.35     # 失业率超过此值时元老院干预
+  senate_bailout_cap: 100000               # 救市金额上限（辉币）
+  dragon_reserve_release_cost: 0.05        # 龙裔晶力释放代价
+
+  # 贷款系统
+  loan_default_threshold: 0.25            # 不良贷款率超25%触发信贷紧缩
+  grey_market_loan_rate_premium: 0.15      # 灰市贷款利率溢价（加在正规利率上）
+  dual_loan_exclusive: true                 # 双重贷款是否互斥（只能批一个）
+
+  # 结局判定
+  ending_score_weights:
+    approve_corp: 1                         # 批准资方贷款 +1分（倾向战争/霸权）
+    approve_guild: -1                       # 批准工会贷款 -1分（倾向共治）
+    approve_abyss: 1                        # 批准冥渊贷款 +1分（倾向霸权/共治）
+    approve_hearth: 1                       # 批准炉心贷款 +1分（倾向战争）
+    reject_formal: 1                        # 拒绝正规贷款 +1分（倾向灰市）
+    bubble_burst: 10                        # 泡沫崩盘 直接导向结局D
