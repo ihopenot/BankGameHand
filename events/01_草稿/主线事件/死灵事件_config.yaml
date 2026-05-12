@@ -32,6 +32,13 @@ N01_soul_extraction:
     rate_volatility: 0.02                   # 元老院魔导利率波动幅度
     new_tech_unlocked: soul_extraction
   duration: 3                               # 效果持续回合
+  # 政治影响
+  political_effects:
+    dark_elf_radicalism: -10                # 银叶·暗精灵·强脉 激进度
+    dark_elf_voice: +8                      # 银叶·暗精灵·强脉 话语权
+    high_elf_loyalty: -5                    # 银叶·高等精灵 忠诚度
+    asimar_loyalty: -3                      # 晨辉·阿斯莫 忠诚度
+    silverleaf_social_stability: -5         # 银叶诸领 社会稳定度
 
 N02_first_awakening:
   triggers:
@@ -60,6 +67,20 @@ N02_first_awakening:
     dwarf_wage_cut_minor: -0.15            # 矮人工资降幅（减半版）
     beast_wage_cut_minor: -0.12            # 兽族工资降幅（减半版）
     grey_adoption_increase: 0.20           # 哥布林灰色物流量增幅
+  # 政治影响（批准路径）
+  political_effects_approve:
+    dwarf_grievance: +15                    # 炉心·矮人·无脉 怨气值
+    dwarf_loyalty: -10                      # 炉心·矮人·无脉 忠诚度
+    beast_grievance: +12                    # 原野·兽族·无脉 怨气值
+    deepforge_labor_conflict: +20           # 深炉矿业 劳资冲突程度
+    deepforge_political_bind: +10           # 深炉矿业 政治捆绑度
+    infernal_bank_bargaining: +5            # 暗渊钱庄 议价权
+  # 政治影响（拒绝路径 N-02'）
+  political_effects_reject:
+    dwarf_grievance_minor: +8               # 炉心·矮人·无脉 怨气值（减半）
+    goblin_voice: +5                        # 灰爪·哥布林·无脉 话语权
+    greyfang_bargaining: +5                 # 灰爪联邦 议价权
+    deepforge_labor_conflict_minor: +8      # 深炉矿业 劳资冲突程度（减半）
   duration: 0                               # 永久效果
 
 N03_soul_economy:
@@ -88,6 +109,19 @@ N03_soul_economy:
     financial_volatility_controlled: 1.2    # 温和波动
     credit_expansion_controlled: 1.05       # 微幅信贷扩张
     soul_product_growth_slow: 0.03          # 灵魂产品增速（+3%/回合）
+  # 政治影响（批准路径/泡沫）
+  political_effects_approve:
+    tiefling_voice: +15                     # 暗渊·提夫林·强脉 话语权
+    lizardman_voice: +10                    # 赤沙·蜥蜴人·强脉 话语权
+    tiefling_political_bind: -15            # 暗渊·提夫林·强脉 政治捆绑度（反建制）
+    redsand_bargaining: +15                 # 赤沙商盟 议价权
+    soul_alliance_political_bind: +15       # 灵魂产品联盟 政治捆绑度
+    dwarf_grievance_extra: +10              # 炉心·矮人·无脉 怨气值（进一步被压）
+  # 政治影响（拒绝路径/受控 N-03'）
+  political_effects_reject:
+    tiefling_voice_minor: +5                # 暗渊·提夫林 话语权（温和）
+    redsand_bargaining_minor: +5            # 赤沙商盟 议价权（微升）
+    # 矮人怨气值不进一步上升
   duration: 0
 
 N04_dead_underbid:
@@ -130,6 +164,22 @@ N04_dead_underbid:
   # 都不批
   effects_reject_both:
     grey_increase_no_loan: 0.15            # 灰市经济占比增幅
+  # 政治影响（批准资方）
+  political_effects_approve_corp:
+    dwarf_grievance_surge: +25              # 炉心·矮人·无脉 怨气值（爆炸性累积）
+    dwarf_loyalty_drop: -15                 # 炉心·矮人·无脉 忠诚度
+    dwarf_belligerence: +20                 # 炉心·矮人·无脉 好战度（转向对资方开战）
+    dwarf_mobilization: +10                 # 炉心·矮人·无脉 行动力
+    deepforge_labor_conflict_surge: +30     # 深炉矿业 劳资冲突程度（临界）
+    dwarf_company_base: +15                 # 矮人公司 票仓
+    dwarf_company_cohesion: -10             # 矮人公司 凝聚力（内部分裂）
+  # 政治影响（批准工会 N-04'）
+  political_effects_approve_guild:
+    dwarf_mobilization_strike: +20          # 炉心·矮人·无脉 行动力（罢工峰值）
+    dwarf_voice_strike: +10                 # 炉心·矮人·无脉 话语权
+    deepforge_stability_drop: -25           # 深炉矿业 生产稳定度
+    deepforge_labor_conflict_strike: +15    # 深炉矿业 劳资冲突程度
+    dwarf_company_base_strike: +10          # 矮人公司 票仓
   duration: 0
 
 N05_abyss_founded:
@@ -173,6 +223,22 @@ N05_abyss_founded:
     nether_iron_supply_unstable: true      # 冥铁产出随机波动
     hearth_military_readiness_slow: 0.50   # 炉心军事准备增速减半
     senate_mediation_chance: 0.30          # 元老院斡旋概率
+  # 政治影响（批准冥渊）
+  political_effects_approve_abyss:
+    abyss_base_surge: +30                   # 冥渊·死灵·冥匠 票仓
+    abyss_cohesion: +20                     # 冥渊·死灵·冥匠 凝聚力
+    abyss_line_econ: -30                    # 冥渊党派 路线·经济轴（左威权）
+    abyss_line_auth: +20                    # 冥渊党派 路线·威权轴
+    hearth_social_stability: -15            # 炉心王国 社会稳定度
+    hearth_diplomacy: -10                   # 炉心王国 外交实力
+    military_downstream_economy: -8         # 全大陆军工链下游国家 经济自给度
+  # 政治影响（批准炉心 N-05'）
+  political_effects_approve_hearth:
+    hearth_military: +20                    # 炉心王国 军力
+    hearth_regime_stability: -10            # 炉心王国 政治稳定度
+    abyss_cohesion_threat: +15              # 冥渊·死灵·冥匠 凝聚力（被威胁团结）
+    hearth_diplomacy_mixed: +5              # 炉心王国 外交实力（军力增强但冥铁封锁反噬）
+    military_downstream_economy_war: -15    # 全大陆军工链下游国家 经济自给度
   duration: 0
 
 N06_living_war:
@@ -204,6 +270,15 @@ N06_living_war:
     financial_volatility_war: 3.0          # 战时金融波动性倍率
     credit_freeze_add: 0.40                # 信贷冻结增幅
     dragon_reserve_release: 0.60            # 龙裔晶力释放概率
+  # 政治影响
+  political_effects:
+    dwarf_belligerence_war: +30             # 炉心·矮人 好战度
+    beast_belligerence_war: +25             # 原野·兽族 好战度
+    abyss_cohesion_siege: +20               # 冥渊·死灵·冥匠 凝聚力
+    hearth_military_deplete: -10            # 炉心王国 军力（征兵减产反噬）
+    hearth_economy_war: -20                 # 炉心王国 经济自给度
+    hearth_social_stability_war: -20        # 炉心王国 社会稳定度
+    global_grievance_war: +15               # 全大陆 怨气值
   duration: 0
 
 # ============================================================
@@ -228,12 +303,24 @@ B01_bone_labor_act:
     undead_cap_ratio: 0.40                 # 法定上限（未生效）
     post_vote_debate_chance: 0.35          # 法案失败后伦理争议概率
     ending_tendency: "C"                    # 导向死灵霸权
+  # 政治影响（法案未通过）
+  political_effects_bill_fail:
+    asimar_loyalty: -15                     # 晨辉·阿斯莫 忠诚度
+    tiefling_bargaining: +10                # 暗渊·提夫林 议价权
+    dwarf_grievance_bill_fail: +20          # 炉心·矮人 怨气值
+    senate_social_stability: -8             # 元老院 社会稳定度
   # 法案通过效果
   effects_bill_pass:
     actual_undead_cap: 0.40                # 死灵占比上限生效
     undead_tax_rate: 0.15                  # 亡者税率生效
     wage_recovery_rate: 0.10               # 矮人/兽族工资回升
     ending_tendency: "B"                    # 导向冥渊共治
+  # 政治影响（法案通过）
+  political_effects_bill_pass:
+    asimar_voice: +10                       # 晨辉·阿斯莫 话语权
+    dwarf_grievance_release: -5             # 炉心·矮人 怨气值（微弱释放）
+    tiefling_political_bind: +10            # 暗渊·提夫林 政治捆绑度（被约束的不满）
+    senate_social_stability_pass: +5        # 元老院 社会稳定度
   duration: 0
 
 B02_soul_futures_crash:
@@ -253,6 +340,14 @@ B02_soul_futures_crash:
     post_crash_ritual_demand: 0.3          # 崩盘后仪式产品需求倍率
     senate_bailout: 50000                  # 元老院救市金额（辉币）
     ending_tendency: "D"                   # 导向灵魂崩盘
+  # 政治影响
+  political_effects:
+    redsand_bargaining_crash: -20           # 赤沙商盟 议价权
+    tiefling_voice_crash: -15               # 暗渊·提夫林 话语权
+    global_grievance_crash: +25             # 全大陆 怨气值
+    global_loyalty_crash: -15               # 全大陆 忠诚度
+    global_economy_crash: -20               # 赤沙 经济自给度
+    global_social_stability_crash: -25      # 全大陆 社会稳定度
   duration: 5
 
 B03_miners_strike:
@@ -292,6 +387,14 @@ B03_miners_strike:
     hearth_tax_loss: -0.60                 # 炉心王国税收变动
     dwarf_unity: 1.8                        # 矮人种族凝聚力倍率
     strike_grey_increase: 0.40             # 灰市物流量增幅
+  # 政治影响
+  political_effects:
+    dwarf_mobilization_strike: +15          # 炉心·矮人·无脉 行动力
+    dwarf_grievance_release: -10            # 炉心·矮人·无脉 怨气值（罢工释放）
+    deepforge_stability_strike: -40         # 深炉矿业 生产稳定度
+    hearth_social_stability_strike: -15     # 炉心王国 社会稳定度
+    hearth_economy_strike: -15              # 炉心王国 经济自给度
+    dwarf_company_base_strike: +10          # 矮人公司 票仓
   duration: 5
 
 B04_artificer_awakening:
@@ -317,12 +420,24 @@ B04_artificer_awakening:
   effects_approve_reform:
     nether_iron_refine_efficiency_boost: 0.15   # 冥铁精炼效率提升
     ending_tendency: "C"                    # 导向死灵霸权
+  # 政治影响（批准冥匠改革）
+  political_effects_approve_reform:
+    artificer_voice: +20                    # 冥渊·死灵·冥匠 话语权
+    artificer_cohesion: +15                 # 冥渊·死灵·冥匠 凝聚力
+    abyss_line_econ_reform: -40             # 冥渊党派 路线·经济轴
+    abyss_line_auth_reform: +30             # 冥渊党派 路线·威权轴
+    abyss_regime_stability_reform: -10      # 冥渊 政治稳定度
   # 批准保守派贷款
   effects_approve_conservative:
     abyss_stability: 0.40                  # 冥渊稳定度
     iron_supply_min: 0.60                  # 冥铁供应下限
     iron_supply_max: 1.00                  # 冥铁供应上限
     ending_tendency: "B"                    # 导向冥渊共治
+  # 政治影响（批准保守派）
+  political_effects_approve_conservative:
+    artificer_grievance: +20                # 冥渊·死灵·冥匠 怨气值
+    abyss_cohesion_conservative: -15        # 冥渊 凝聚力
+    abyss_regime_stability_conservative: -15  # 冥渊 政治稳定度
   # 共同效果
   effects:
     artificer_ratio: 0.02                  # 冥匠占死灵比例
@@ -357,6 +472,14 @@ B05_grey_market_riot:
     post_war_grey_floor: 0.25              # 战后灰市新常态占比
     grey_market_tipping_point: 0.40        # 灰市失控临界点
     ending_tendency: "E"                    # 导向灰市永续
+  # 政治影响
+  political_effects:
+    goblin_voice_riot: +25                  # 灰爪·哥布林·无脉 话语权
+    goblin_grievance_release: -15           # 灰爪·哥布林·无脉 怨气值（灰色经济释放）
+    greyfang_bargaining_riot: +20           # 灰爪联邦 议价权
+    asimar_voice_collapse: -15              # 晨辉·阿斯莫 话语权
+    hearth_social_stability_grey: -25       # 炉心王国 社会稳定度
+    global_regime_stability_grey: -10       # 全大陆 政治稳定度
   duration: 0
 
 # ============================================================
@@ -372,6 +495,14 @@ endings:
       dwarf_wage_post_war: 0.60            # 矮人工资（战前60%）
       gdp_loss_war: -0.40                   # GDP萎缩幅度
       post_war_grey_floor: 0.25           # 战后灰市新常态
+    # 政治影响
+    political_effects:
+      hearth_military_post: -15             # 炉心王国 军力
+      hearth_economy_post: -25              # 炉心王国 经济自给度
+      hearth_social_stability_post: -10     # 炉心王国 社会稳定度
+      dwarf_grievance_release_war: -5       # 炉心·矮人 怨气值（微弱释放）
+      dwarf_belligerence_fatigue: -20       # 炉心·矮人 好战度（战争疲劳）
+      global_regime_stability_war: -15      # 全大陆 政治稳定度
 
   B_co_governance:
     condition: "贷款选择平衡 或 B01法案通过 或 N04批工会 或 N05都不批"
@@ -385,6 +516,13 @@ endings:
       dwarf_wage_coexist: 0.75            # 矮人工资（战前75%）
       soul_futures_banned: true
       gdp_gain_coexist: 0.05              # GDP小幅增长
+    # 政治影响
+    political_effects:
+      abyss_cohesion_coexist: +10           # 冥渊 凝聚力
+      hearth_social_stability_coexist: +10  # 炉心王国 社会稳定度
+      global_regime_stability_coexist: +5   # 全大陆 政治稳定度
+      dwarf_grievance_coexist: -10          # 炉心·矮人 怨气值（释放）
+      asimar_voice_coexist: +5              # 晨辉·阿斯莫 话语权
 
   C_undead_dominion:
     condition: "N02批准 + N03批准 + N04批资方 + N05批冥渊 + B01未通过 + B04批冥匠改革"
@@ -395,6 +533,15 @@ endings:
       beast_unemployment_post: 0.50        # 兽族战后失业率
       gdp_gain_dominance: 0.25            # GDP增长
       artificer_council_ruling: true
+    # 政治影响
+    political_effects:
+      dwarf_grievance_dominion: +30          # 炉心·矮人 怨气值（累积到顶点）
+      dwarf_loyalty_dominion: -20            # 炉心·矮人 忠诚度
+      dwarf_belligerence_dominion: +15       # 炉心·矮人 好战度
+      artificer_voice_dominion: +30          # 冥渊·死灵·冥匠 话语权
+      abyss_regime_stability_dominion: +15   # 冥渊 政治稳定度
+      global_regime_stability_dominion: -20  # 全大陆 政治稳定度
+      global_social_stability_dominion: -15  # 全大陆 社会稳定度
 
   D_soul_crash:
     condition: "N03批准 + B02崩盘触发 + 泡沫达burst_threshold"
@@ -404,6 +551,14 @@ endings:
       infernal_bankruptcy: true
       ritual_market_frozen: true
       gdp_loss_crash: -0.55               # GDP暴跌
+    # 政治影响
+    political_effects:
+      global_grievance_crash_end: +35        # 全大陆 怨气值
+      global_loyalty_crash_end: -25          # 全大陆 忠诚度
+      global_social_stability_crash_end: -30 # 全大陆 社会稳定度
+      global_economy_crash_end: -30          # 全大陆 经济自给度
+      tiefling_voice_crash_end: -20          # 暗渊·提夫林 话语权
+      redsand_bargaining_crash_end: -25      # 赤沙商盟 议价权
 
   E_grey_perpetuity:
     condition: "累计拒绝正规贷款≥3次 或 N02拒绝+N03拒绝+N04都不批"
@@ -413,6 +568,14 @@ endings:
       formal_credit_share: 0.30            # 正规信贷占比
       regulation_collapse: true
       gdp_stagnation: 0.00                 # GDP零增长
+    # 政治影响
+    political_effects:
+      goblin_voice_grey_end: +30             # 灰爪·哥布林 话语权
+      greyfang_bargaining_grey_end: +25      # 灰爪联邦 议价权
+      asimar_voice_grey_end: -20             # 晨辉·阿斯莫 话语权
+      global_social_stability_grey_end: -20  # 全大陆 社会稳定度
+      global_regime_stability_grey_end: -15  # 全大陆 政治稳定度
+      goblin_grievance_grey_end: -10         # 灰爪·哥布林 怨气值
 
 # ============================================================
 # 全局参数

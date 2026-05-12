@@ -1,0 +1,633 @@
+# 政治参数初始配置 v3.1
+# 与 events/00_设定集/势力关系/政治参数体系——四层实体设计.md 对应
+#
+# v3.1 修订（参数计算闭环修复版）：
+#   1. policy_axis.economic_axis 字段 capital_dominance_weight → capital_voice_share_weight
+#      （议价权不分劳资是伪参数，改为基于群众层 voice 的资方话语权占比）
+#   2. company_params 新增 intermediate 段（怨气紧密度/劳资张力/产值规模归一化/公司产值权重/激进度方向修正/公司路线坐标）
+#   3. kingdom_params 新增 intermediate 段（资源自给率/军工链筛选/全国群众加权/全国公司加权）
+#   4. dynamics.per_turn 新增 external_inputs 段（economic_confidence/wage_pressure/survival_pressure，source=economic_simulation）
+#   5. dynamics.per_turn.grievance.formula 改为 "0.5 * (100 - loyalty) / 100 * survival_pressure" 与 md 对齐
+#
+# 命名约定（白话直觉）：
+#   群众层：loyalty(忠诚度) war_will(战争意愿) grievance(怨气) action(行动力) voice(话语权) radicalism(激进度)
+#   公司层：productivity(生产力) bargaining(议价权) corp_radicalism(激进度) labor_capital_conflict(劳资冲突程度)
+#   党派层：seats(席位) base(票仓) economic_axis(经济轴) authority_axis(威权轴) cohesion(派系凝聚)
+#   王国层：diplomacy(外交分量) order(国内秩序) military(武装力量) economy(经济命脉) regime(政权稳固)
+
+
+# ══════════════════════════════════════════
+# 一、聚合权重与产业系数
+# ══════════════════════════════════════════
+
+aggregation:
+  # 群众→公司：劳资双轨权重（α=劳方权重）
+  labor_capital_ratio:
+    labor_weight: 0.5
+    capital_weight: 0.5
+
+  # 公司→党派：公司权重 = 雇员数 × 产业链产值系数
+  company_to_party:
+    weight_formula: "employee_count * output_coefficient"
+    output_coefficients:
+      magitech: 1.5            # 魔导核心链（战略）
+      rune: 1.2                # 阵纹织物链
+      alchemy: 1.0             # 灵馐炼金链（民生基线）
+      infrastructure: 1.3      # 基建链
+      military: 1.8            # 军工链（最高）
+      recycling: 0.8           # 回收链（灰色）
+      ritual: 1.4              # 仪式链
+    # 产业链卡位系数（用于公司议价权计算）
+    industry_chain_position:
+      upstream_monopoly: 90    # 上游垄断料/独占技术
+      upstream_normal: 60
+      midstream: 40
+      downstream: 20
+
+  # 党派→王国：王国参数计算时的执政/反对党区分
+  party_to_kingdom:
+    ruling_party_selection: "max_seats"          # 席位最多的为执政党
+    coalition_threshold: 50                      # 单党席位<50时为联合执政
+
+
+# ══════════════════════════════════════════
+# 二、公司层 4 项参数计算系数
+# ══════════════════════════════════════════
+
+company_params:
+
+  # 公司参数一：生产力（0~100）
+  productivity:
+    formula:
+      labor_loyalty_weight: 0.40         # 劳方忠诚度权重
+      labor_calm_weight: 0.30            # (100-劳方怨气)权重
+      action_threat_weight: 0.20         # (100-劳方行动力*怨气紧密度)权重
+      tension_calm_weight: 0.10          # (100-劳资张力)权重
+    grievance_tightness:                 # 怨气紧密度=max(0,(怨气-40)/60)
+      threshold: 40
+      max_value: 100
+
+  # 公司参数二：议价权（0~100）
+  bargaining:
+    formula:
+      capital_voice_weight: 0.45         # 资方话语权权重
+      industry_position_weight: 0.30     # 产业链卡位系数权重
+      output_scale_weight: 0.25          # 产值规模归一化权重
+    output_scale_cap: 100                # 产值占比封顶100
+
+  # 公司参数三：激进度（-100~100）
+  corp_radicalism:
+    formula:
+      labor_radicalism_weight: 0.50
+      capital_radicalism_weight: 0.50
+    industry_war_modifier:               # 产业链战争修正
+      military: 0.15                     # 军工链：+0.15×资方战争意愿
+      alchemy: -0.10                     # 灵馐链：-0.10×资方战争意愿
+      infrastructure: -0.05
+      magitech: 0.05
+      rune: 0.0
+      recycling: 0.0
+      ritual: 0.0
+
+  # 公司参数四：劳资冲突程度（0~100）
+  labor_capital_conflict:
+    formula:
+      labor_grievance_weight: 0.35
+      labor_action_weight: 0.20
+      labor_disloyalty_weight: 0.15      # (100-劳方忠诚度)权重
+      tension_weight: 0.30               # 劳资张力权重
+    # 劳资张力（公司层衍生量）权重
+    tension_components:
+      loyalty_diff: 0.25                 # |劳方忠诚度-资方忠诚度|权重
+      grievance_diff: 0.30               # |劳方怨气-资方怨气|权重
+      war_will_diff: 0.20                # |劳方战争意愿-资方战争意愿|权重
+      radicalism_diff: 0.25              # |劳方激进度-资方激进度|权重
+
+  # 公司层中间量（v3.1 新增·集中声明，被多个公司/党派公式共用）
+  # 详见 md §3.1.1
+  intermediate:
+    # M1·怨气紧密度 = max(0, (劳方怨气-40)/60)，取值0~1
+    grievance_tightness:
+      threshold: 40
+      denominator: 60
+
+    # M2·劳资张力（已在 labor_capital_conflict.tension_components 定义，此处仅交叉引用）
+    labor_capital_tension_ref: "labor_capital_conflict.tension_components"
+
+    # M3·产值规模归一化 = clamp(公司产值/该国总产值*100, 0, 100)
+    output_scale_normalization:
+      formula: "clamp((company_output / kingdom_total_output) * 100, 0, 100)"
+      source: "economic_simulation"      # 公司产值与该国总产值由经济模拟系统提供
+
+    # M4·公司产值权重（被党派席位、公司加权聚合公式共用）
+    company_output_weight:
+      formula: "employee_count * output_coefficient"
+      ref: "aggregation.company_to_party"
+
+    # M5·公司激进度方向修正
+    radicalism_direction_modifier:
+      positive: {economic: 10, authority: 10}    # 旗下公司激进度均值>0
+      negative: {economic: -15, authority: -5}   # 旗下公司激进度均值<0
+      neutral: {economic: 0, authority: 0}       # =0
+
+    # M6·公司路线坐标（与党派 economic_axis/authority_axis 同构，去聚合）
+    company_route_coordinates:
+      economic_lean:
+        formula: |
+          100 * (capital_voice / (labor_voice + capital_voice + 1) - 0.5) * 2
+          + 0.30 * (-(labor_voice - capital_voice))
+          + single_company_radicalism_modifier_economic
+        single_company_radicalism_modifier:
+          positive: 10
+          negative: -15
+          neutral: 0
+        clamp: [-100, 100]
+      authority_lean:
+        formula: |
+          0.40 * capital_war_will
+          + 0.30 * industry_chain_position
+          - 0.30 * labor_capital_conflict
+          + single_company_radicalism_modifier_authority
+        single_company_radicalism_modifier:
+          positive: 10
+          negative: -5
+          neutral: 0
+        clamp: [-100, 100]
+
+
+# ══════════════════════════════════════════
+# 三、党派层 4 项参数计算系数（含二维路线立场）
+# ══════════════════════════════════════════
+
+party_params:
+
+  # 党派参数一：席位（0~100）
+  seats:
+    formula: "100 * Σ(party_company_bargaining * output_weight) / Σ(all_company_bargaining * output_weight)"
+
+  # 党派参数二：票仓（0~100）
+  base:
+    formula:
+      action_conflict_weight: 0.50        # 旗下公司加权(劳方行动力 × 公司劳资冲突归一化)
+      radicalism_intensity_weight: 0.30   # 旗下公司加权(|公司激进度|)
+      labor_grievance_weight: 0.20        # 旗下公司加权(劳方怨气)
+    weighting_basis: "company_employee_count"
+
+  # 党派参数三：路线立场（二维）
+  # 经济轴：-100=左（劳方/再分配）↔ +100=右（资方/自由市场）
+  # 威权轴：-100=自由 ↔ +100=威权
+  policy_axis:
+    economic_axis:
+      # v3.1 修订：原 capital_dominance_weight 引用"资方议价权占比"是伪参数
+      # 改为"资方话语权占劳资总话语权之比"，回到群众层 voice 参数
+      capital_voice_share_weight: 1.0    # 100*(旗下公司加权(资方话语权/(劳方话语权+资方话语权+1))-0.5)*2
+      voice_balance_weight: 0.30         # -0.30*(劳方话语权-资方话语权) → 劳方强则拉左
+      epsilon: 1                         # 防止劳资 voice 同时为 0 时除零
+      radicalism_modifier:
+        positive: {economic: 10, authority: 10}    # 公司激进度均值>0 → 经济+10、威权+10
+        negative: {economic: -15, authority: -5}   # 公司激进度均值<0 → 经济-15、威权-5
+      clamp: [-100, 100]
+    authority_axis:
+      capital_war_will_weight: 0.40      # 0.40*旗下公司加权(资方战争意愿)
+      monopoly_weight: 0.30              # 0.30*旗下公司加权(产业链卡位系数)（v3.1 化简，去掉冗余/100*100）
+      conflict_anti_weight: 0.30         # -0.30*旗下公司加权(劳资冲突程度) → 冲突高拉自由
+      radicalism_modifier:
+        positive: {economic: 10, authority: 10}
+        negative: {economic: -15, authority: -5}
+      clamp: [-100, 100]
+    weighting_basis: "company_output_weight"   # 加权基准=公司雇员数×产业链产值系数（M4）
+
+  # 党派参数四：派系凝聚（0~100）
+  cohesion:
+    # v3.1 修订：方差对象改为公司层中间量 M6「公司路线坐标」，解循环引用
+    # 原引用"company_economic_axis/company_authority_axis"是党派层量，公司层并不持有，构成循环
+    formula: "100 - clamp(sqrt(Var(company_economic_lean) + Var(company_authority_lean)), 0, 100)"
+    weighting_basis: "company_employee_count"
+    company_route_source: "company_params.intermediate.company_route_coordinates"
+
+
+# ══════════════════════════════════════════
+# 四、王国层 5 项参数计算系数
+# ══════════════════════════════════════════
+
+kingdom_params:
+
+  # 王国参数一：外交分量（0~100）
+  diplomacy:
+    formula:
+      military_weight: 0.35              # 武装力量权重
+      resource_self_weight: 0.30         # 资源自给率×100权重
+      ruling_seats_weight: 0.20          # 执政党席位权重
+      economy_weight: 0.15               # 经济命脉权重
+
+  # 王国参数二：国内秩序（0~100）
+  order:
+    formula:
+      ruling_seats_weight: 0.35
+      opposition_base_anti_weight: 0.25  # (100 - max(在野党票仓))权重
+      conflict_anti_weight: 0.25         # (100 - 全国公司加权平均(劳资冲突程度))权重
+      grievance_anti_weight: 0.15        # (100 - 全国群众加权平均怨气)权重
+
+  # 王国参数三：武装力量（0~100）
+  military:
+    formula:
+      military_industry_productivity_weight: 0.35  # 军工链公司加权平均生产力
+      party_base_weight: 0.30                      # 全国党派加权平均票仓 × 0.7（折算）
+      party_base_factor: 0.7
+      mass_war_will_weight: 0.25                   # clamp(群众战争意愿+50, 0, 100)
+      resource_self_weight: 0.10                   # 资源自给率×100
+
+  # 王国参数四：经济命脉（0~100）
+  economy:
+    formula:
+      resource_self_weight: 0.40         # 资源自给率×100权重
+      productivity_weight: 0.35          # 全国公司加权平均生产力
+      conflict_anti_weight: 0.25         # (100 - 全国公司加权平均劳资冲突程度)
+
+  # 王国参数五：政权稳固（0~100）
+  regime:
+    formula:
+      ruling_seats_weight: 0.35
+      ruling_cohesion_weight: 0.20       # 执政党派系凝聚
+      order_weight: 0.25                 # 国内秩序
+      opposition_distance_anti_weight: 0.20  # 100 - clamp(党派对立度/2, 0, 100)
+    party_distance_formula: "sqrt((A_economic-B_economic)^2 + (A_authority-B_authority)^2)"
+    party_distance_max: 283              # 约 2*100*sqrt(2)
+
+  # 王国层中间量（v3.1 新增·集中声明，详见 md §5.1.1）
+  intermediate:
+    # K1·资源自给率
+    resource_self_sufficiency:
+      formula: "domestic_critical_material_supply / total_critical_material_usage"
+      range: [0, 1]
+      source: "economic_simulation"      # 由经济模拟系统提供；mock 模式下取 0.3~0.9
+      mock_default: 0.6
+
+    # K2·军工链筛选规则
+    military_industry_filter:
+      rule: "company.industry_type == 'military'"
+      ref: "aggregation.company_to_party.output_coefficients.military"
+
+    # K3·全国群众加权基准（用于士气、怨气等群众类全国均值计算）
+    mass_national_weighting:
+      formula: "Σ(parameter * group_population) / Σ(group_population)"
+      group_dimension: "country × race × leyline_tier"
+
+    # K4·全国公司加权基准（用于劳资冲突、生产力等公司类全国均值计算）
+    company_national_weighting:
+      formula: "Σ(parameter * company_output_weight) / Σ(company_output_weight)"
+      ref: "company_params.intermediate.company_output_weight"
+
+
+# ══════════════════════════════════════════
+# 五、事件触发阈值
+# ══════════════════════════════════════════
+
+thresholds:
+
+  # ── 群众层 ──
+  loyalty:
+    armed_rebellion: 20
+    mass_defiance: 40
+    passive_resistance: 60
+    active_loyalty: 80
+
+  war_will:
+    fanatical_enlist: 70
+    hawkish_rise: 40
+    antiwar_movement: -40
+    mutiny: -70
+
+  grievance:
+    random_riot: 80
+    strike_threat: 60
+    underground_forming: 40
+    society_high_pressure: 50            # 全群体均值>50
+
+  action:
+    mass_strike: {action: 60, grievance: 60}
+    armed_uprising: {action: 80, grievance: 40}
+    silence: {action: 20}
+
+  voice:
+    direct_senate: 70
+    bill_power: 50
+    ignored: 20
+
+  radicalism:
+    labor_capital_clash: 50              # |劳方激进度-资方激进度|>50
+    extreme_movement: 80                 # |群体激进度|>80
+
+  # ── 公司层 ──
+  company:
+    productivity_collapse: 30            # 生产力<30 → 产能崩溃
+    productivity_intermittent: 50        # 50 → 间歇停工
+    productivity_full: 80                # >80 → 满产
+    bargaining_dominate: 70              # 议价权>70 → 游说成功
+    bargaining_veto: 85                  # >85 → 单独否决法案
+    bargaining_marginal: 20              # <20 → 政策边缘化
+    radicalism_anti_establishment: 60    # >60 → 公开支持反建制
+    radicalism_pro_repression: -60       # <-60 → 公开支持镇压
+    radicalism_extreme: 80               # |绝对值|>80 → 资助政变
+    conflict_strike: 60                  # 劳资冲突程度>60 → 罢工
+    conflict_violence: 80                # >80 → 暴力冲突/工厂占领
+    conflict_total_rupture: 95           # >95 → 全面决裂
+
+  # ── 党派层 ──
+  party:
+    seats_solo_rule: 50                  # 席位>50 → 单独执政
+    seats_coalition: 30                  # 30~50 → 联合执政
+    seats_marginal: 15                   # <15 → 边缘小党
+    base_national_movement: 70           # 票仓>70 → 全国性街头运动
+    base_regional_strike: 50             # >50 → 地区性罢工
+    base_silent: 20                      # <20 → 街头无人响应
+    cohesion_split: 30                   # 派系凝聚<30 → 党派分裂
+    cohesion_struggle: 50                # 30~50 → 路线斗争公开化
+    cohesion_dogma: 80                   # >80 → 易陷入教条
+    # 党派对立度（双方交互）
+    distance_street_clash:               # 对立度>100+双方票仓>50 → 街头对峙
+      distance: 100
+      both_base: 50
+    distance_deadlock:                   # 对立度>150+派系凝聚>70 → 议会僵局
+      distance: 150
+      both_cohesion: 70
+    distance_civil_war_edge: 200         # 对立度>200 → 内战边缘
+
+  # ── 王国层 ──
+  kingdom:
+    diplomacy_pressured: 30              # 外交分量<30 → 被外交施压
+    diplomacy_passive: 50                # <50 → 谈判被动
+    diplomacy_dominant: 70               # >70 → 主动施压
+    diplomacy_hegemon: 85                # >85 → 区域霸权
+    order_revolution: 30                 # 国内秩序<30 → 全国性暴动
+    order_riot: 50                       # <50 → 多地骚乱
+    order_stable: 70                     # >70 → 维稳有效
+    order_oppressive: 85                 # >85 → 高度顺从
+    military_invaded: 30                 # 武装力量<30 → 被入侵
+    military_weak: 50                    # <50 → 防御吃力
+    military_aggressive: 70              # >70 → 主动开战
+    military_hegemon: 85                 # >85 → 军事霸权
+    economy_collapse: 30                 # 经济命脉<30 → 制裁瘫痪
+    economy_choked: 50                   # <50 → 被卡脖子
+    economy_resilient: 70                # >70 → 可承受制裁
+    economy_dominant: 85                 # >85 → 可对外制裁
+    regime_collapse: 20                  # 政权稳固<20 → 政变倒台
+    regime_crisis: 40                    # <40 → 执政危机
+    regime_smooth: 70                    # >70 → 政策推行顺畅
+    regime_long_rule: 85                 # >85 → 长期执政
+
+
+# ══════════════════════════════════════════
+# 六、参数动态规则（运行时配置）
+# ══════════════════════════════════════════
+
+dynamics:
+  # v3.1 新增：外生变量接口（来自经济模拟/灾害/战争系统，不在政治参数体系内部生成）
+  # 详见 md §2.3
+  external_inputs:
+    economic_confidence:
+      range: [0, 100]
+      default: 50
+      source: "economic_simulation"
+      desc: "群体对当前经济形势的信心；繁荣高、萧条低"
+    wage_pressure:
+      range: [0, 100]
+      default: 30
+      source: "economic_simulation"
+      desc: "群体面临的工资下行压力；通缩/裁员高，加薪期低"
+    survival_pressure:
+      range: [0, 2]
+      default: 1.0
+      source: "economic_simulation"      # 灾害系统、战争系统也会写入
+      desc: "群体当前生存压力倍率；灾年/战争>1，丰年<1"
+
+  # 每回合自然变化（仅群众层有自然变化，上层完全由计算得出）
+  per_turn:
+    loyalty:
+      formula: "0.1 * (economic_confidence - 50) - 0.2 * wage_pressure"
+      clamp: [0, 100]
+    war_will:
+      formula: "decay_10pct"             # 每回合衰减10%绝对值，趋向0
+      clamp: [-100, 100]
+    grievance:
+      # v3.1 修订：与 md §2.2 怨气段对齐，引入 survival_pressure 外生倍率
+      formula: "0.5 * (100 - loyalty) / 100 * survival_pressure"
+      clamp: [0, 100]
+      monotonic: "increase_only"         # 只增不减，事件释放除外
+    action:
+      formula: "no_natural_change"
+      clamp: [0, 100]
+    voice:
+      formula: "no_natural_change"
+      clamp: [0, 100]
+    radicalism:
+      formula: "decay_5pct"              # 每回合衰减5%绝对值，趋向0
+      clamp: [-100, 100]
+
+  # 事件驱动参数变化幅度（作用于群众层）
+  event_effects:
+    wage_decrease:
+      loyalty: [-30, -10]
+      grievance: [10, 30]
+    undead_replacement:
+      loyalty: [-40, -15]
+      grievance: [20, 40]
+      war_will: [10, 20]                 # 内战指向
+    war_outbreak:
+      war_will: [20, 50]
+      loyalty: [-20, 20]                 # 视立场双向
+      grievance: [10, 30]
+    war_defeat:
+      war_will: [-60, -30]
+      loyalty: [-40, -20]
+      grievance: [20, 40]
+    strike_victory:
+      grievance: [-40, -20]
+      action: [5, 15]
+      loyalty: [5, 10]
+    legislation_passed:
+      radicalism: [10, 20]               # 视立场方向
+      loyalty: [5, 15]
+    economic_crisis:
+      loyalty: [-30, -10]
+      grievance: [15, 30]
+      voice: [-15, -5]
+    senate_intervention:
+      loyalty: [5, 15]
+      grievance: [-15, -5]
+      voice: "redistribute"
+    leader_assassinated:
+      loyalty: [-40, -20]
+      grievance: [10, 25]
+      action: [-20, -10]
+    leyline_fracture:
+      war_will: [20, 40]
+      loyalty: [-30, -15]
+      grievance: [20, 35]
+
+  # 怨气释放规则
+  grievance_release:
+    strike: [20, 40]
+    riot: [40, 60]
+    revolution: [60, 80]
+    institutional_reform: [10, 30]
+
+
+# ══════════════════════════════════════════
+# 七、群众分组初始参数矩阵
+# 按 国家→种族→脉络层 三维组织
+# 6项参数：loyalty(忠诚度) war_will(战争意愿) grievance(怨气) action(行动力) voice(话语权) radicalism(激进度)
+# ══════════════════════════════════════════
+
+mass_groups:
+
+  # ── 炉心王国（矮人主体） ──
+  炉心王国:
+    矮人:
+      无脉者: {loyalty: 55, war_will: 30, grievance: 45, action: 65, voice: 30, radicalism: -30}   # 矿工主力
+      微脉者: {loyalty: 65, war_will: 20, grievance: 30, action: 50, voice: 40, radicalism: 10}    # 技匠
+      强脉者: {loyalty: 75, war_will: 10, grievance: 15, action: 35, voice: 60, radicalism: 40}    # 氏族领袖
+    兽族:
+      无脉者: {loyalty: 40, war_will: 40, grievance: 50, action: 30, voice: 15, radicalism: -20}   # 被压迫搬运工
+      微脉者: {loyalty: 50, war_will: 25, grievance: 35, action: 25, voice: 20, radicalism: -5}
+    死灵:
+      无脉者: {loyalty: 30, war_will: 0, grievance: 20, action: 10, voice: 5, radicalism: 0}       # 回魂尸
+    狗头人:
+      无脉者: {loyalty: 50, war_will: 5, grievance: 25, action: 30, voice: 15, radicalism: -10}
+      微脉者: {loyalty: 55, war_will: 0, grievance: 20, action: 25, voice: 20, radicalism: 5}
+    人类:
+      微脉者: {loyalty: 60, war_will: 15, grievance: 20, action: 35, voice: 45, radicalism: 15}    # 贸易中间商
+      强脉者: {loyalty: 60, war_will: 15, grievance: 20, action: 40, voice: 55, radicalism: 20}
+
+  # ── 自由城邦（人类主体） ──
+  自由城邦:
+    人类:
+      无脉者: {loyalty: 50, war_will: 10, grievance: 35, action: 25, voice: 20, radicalism: -10}   # 城市底层
+      微脉者: {loyalty: 60, war_will: 5, grievance: 20, action: 40, voice: 50, radicalism: 10}     # 商人
+      强脉者: {loyalty: 70, war_will: 20, grievance: 10, action: 50, voice: 80, radicalism: 30}    # 金库掌钥人
+    哥布林:
+      无脉者: {loyalty: 35, war_will: -5, grievance: 50, action: 35, voice: 10, radicalism: -40}   # 城市灰工
+    侏儒:
+      微脉者: {loyalty: 55, war_will: 0, grievance: 25, action: 45, voice: 40, radicalism: -5}     # 技匠
+      强脉者: {loyalty: 65, war_will: 5, grievance: 15, action: 40, voice: 60, radicalism: 15}
+
+  # ── 灰爪联邦（哥布林主体） ──
+  灰爪联邦:
+    哥布林:
+      无脉者: {loyalty: 30, war_will: -10, grievance: 60, action: 45, voice: 10, radicalism: -50}  # 灰市核心
+      微脉者: {loyalty: 45, war_will: 0, grievance: 40, action: 40, voice: 25, radicalism: -30}
+      强脉者: {loyalty: 55, war_will: 10, grievance: 25, action: 35, voice: 45, radicalism: -10}   # 灰市寡头
+    侏儒:
+      无脉者: {loyalty: 40, war_will: -5, grievance: 45, action: 30, voice: 15, radicalism: -25}
+    人类:
+      微脉者: {loyalty: 50, war_will: 5, grievance: 30, action: 30, voice: 30, radicalism: 0}
+
+  # ── 原野部落（兽族主体） ──
+  原野部落:
+    兽族:
+      无脉者: {loyalty: 45, war_will: 50, grievance: 40, action: 55, voice: 25, radicalism: -15}   # 部落战士
+      微脉者: {loyalty: 55, war_will: 35, grievance: 25, action: 45, voice: 40, radicalism: 10}    # 氏族中坚
+      强脉者: {loyalty: 65, war_will: 20, grievance: 15, action: 50, voice: 65, radicalism: 30}    # 大酋长
+    人类:
+      无脉者: {loyalty: 40, war_will: 10, grievance: 45, action: 20, voice: 10, radicalism: -20}
+
+  # ── 螺牙共和国（侏儒主体） ──
+  螺牙共和国:
+    侏儒:
+      无脉者: {loyalty: 50, war_will: -5, grievance: 35, action: 35, voice: 25, radicalism: -15}
+      微脉者: {loyalty: 60, war_will: 0, grievance: 20, action: 45, voice: 50, radicalism: 5}
+      强脉者: {loyalty: 70, war_will: 5, grievance: 10, action: 40, voice: 70, radicalism: 20}     # 精密大匠
+    哥布林:
+      无脉者: {loyalty: 35, war_will: -10, grievance: 55, action: 40, voice: 10, radicalism: -45}
+
+  # ── 银叶诸领（精灵主体） ──
+  银叶诸领:
+    精灵:
+      微脉者: {loyalty: 60, war_will: 0, grievance: 25, action: 35, voice: 50, radicalism: 20}     # 林精灵传统派
+      强脉者: {loyalty: 85, war_will: -10, grievance: 5, action: 40, voice: 90, radicalism: 70}    # 专利贵族
+    暗精灵:
+      微脉者: {loyalty: 35, war_will: 25, grievance: 55, action: 55, voice: 25, radicalism: -55}   # 禁忌阵纹学徒
+      强脉者: {loyalty: 35, war_will: 30, grievance: 55, action: 60, voice: 30, radicalism: -60}   # 禁忌阵纹大师
+    人类:
+      微脉者: {loyalty: 55, war_will: 5, grievance: 25, action: 30, voice: 35, radicalism: 5}
+
+  # ── 冥渊自治区（死灵主体） ──
+  冥渊自治区:
+    死灵:
+      回魂尸: {loyalty: 10, war_will: 0, grievance: 0, action: 5, voice: 0, radicalism: 0}          # 无意识体
+      缚灵者: {loyalty: 25, war_will: 10, grievance: 30, action: 20, voice: 10, radicalism: 0}      # 半意识体
+      冥匠: {loyalty: 45, war_will: 50, grievance: 40, action: 55, voice: 25, radicalism: -40}      # 有意识精英
+    人类:
+      微脉者: {loyalty: 40, war_will: -10, grievance: 40, action: 25, voice: 20, radicalism: -20}
+
+  # ── 赤沙商盟（蜥蜴人主体） ──
+  赤沙商盟:
+    蜥蜴人:
+      无脉者: {loyalty: 55, war_will: -5, grievance: 30, action: 30, voice: 25, radicalism: -10}
+      微脉者: {loyalty: 65, war_will: 0, grievance: 15, action: 40, voice: 55, radicalism: 10}
+      强脉者: {loyalty: 65, war_will: 5, grievance: 15, action: 55, voice: 75, radicalism: 25}     # 量化精英
+    人类:
+      微脉者: {loyalty: 55, war_will: 5, grievance: 25, action: 30, voice: 35, radicalism: 5}
+
+  # ── 穴桥联合（狗头人主体） ──
+  穴桥联合:
+    狗头人:
+      无脉者: {loyalty: 50, war_will: 10, grievance: 35, action: 40, voice: 20, radicalism: -15}
+      微脉者: {loyalty: 60, war_will: 5, grievance: 20, action: 35, voice: 40, radicalism: 5}
+      强脉者: {loyalty: 70, war_will: 0, grievance: 10, action: 30, voice: 55, radicalism: 20}     # 桥务总管
+    矮人:
+      无脉者: {loyalty: 55, war_will: 15, grievance: 30, action: 45, voice: 25, radicalism: -5}
+
+  # ── 暗渊钱庄（提夫林主体） ──
+  暗渊钱庄:
+    提夫林:
+      无脉者: {loyalty: 20, war_will: 0, grievance: 55, action: 30, voice: 5, radicalism: -40}     # 被贷者
+      微脉者: {loyalty: 40, war_will: 10, grievance: 35, action: 50, voice: 40, radicalism: -25}   # 影子中产
+      强脉者: {loyalty: 40, war_will: 20, grievance: 25, action: 70, voice: 60, radicalism: -30}   # 影子银行家
+    人类:
+      微脉者: {loyalty: 35, war_will: -5, grievance: 45, action: 25, voice: 20, radicalism: -25}
+
+  # ── 晶辉帝国（龙裔主体） ──
+  晶辉帝国:
+    龙裔:
+      微脉者: {loyalty: 70, war_will: 25, grievance: 15, action: 40, voice: 50, radicalism: 35}    # 帝国中坚
+      强脉者: {loyalty: 80, war_will: 15, grievance: 10, action: 45, voice: 75, radicalism: 55}    # 龙族长老
+    矮人:
+      无脉者: {loyalty: 50, war_will: 20, grievance: 35, action: 35, voice: 15, radicalism: -10}
+    人类:
+      微脉者: {loyalty: 55, war_will: 10, grievance: 25, action: 30, voice: 30, radicalism: 10}
+
+  # ── 磐石集团（巨人主体） ──
+  磐石集团:
+    巨人:
+      无脉者: {loyalty: 60, war_will: 15, grievance: 25, action: 40, voice: 30, radicalism: 20}    # 重工劳力
+      微脉者: {loyalty: 70, war_will: 5, grievance: 15, action: 35, voice: 55, radicalism: 30}
+      强脉者: {loyalty: 75, war_will: 0, grievance: 10, action: 30, voice: 70, radicalism: 45}     # 集团董事
+    兽族:
+      无脉者: {loyalty: 45, war_will: 20, grievance: 40, action: 30, voice: 15, radicalism: -15}
+
+  # ── 晨辉圣庭（阿斯莫主体） ──
+  晨辉圣庭:
+    阿斯莫:
+      微脉者: {loyalty: 75, war_will: -15, grievance: 10, action: 45, voice: 65, radicalism: 45}   # 圣庭法官
+      强脉者: {loyalty: 80, war_will: -20, grievance: 10, action: 50, voice: 85, radicalism: 55}   # 监管者
+    人类:
+      微脉者: {loyalty: 60, war_will: 0, grievance: 20, action: 30, voice: 35, radicalism: 10}
+
+  # ── 夜须巷（斑猫人主体） ──
+  夜须巷:
+    斑猫人:
+      无脉者: {loyalty: 45, war_will: -5, grievance: 35, action: 55, voice: 40, radicalism: -20}   # 街头信使
+      微脉者: {loyalty: 45, war_will: 0, grievance: 30, action: 65, voice: 70, radicalism: -15}    # 信息掮客
+    人类:
+      无脉者: {loyalty: 40, war_will: 5, grievance: 40, action: 25, voice: 15, radicalism: -15}
+    哥布林:
+      无脉者: {loyalty: 30, war_will: -10, grievance: 55, action: 40, voice: 10, radicalism: -40}
+
+  # ── 醉歌草原（萨特羊人主体） ──
+  醉歌草原:
+    萨特羊人:
+      无脉者: {loyalty: 55, war_will: -15, grievance: 30, action: 50, voice: 20, radicalism: -25}  # 游牧吟游者
+      微脉者: {loyalty: 60, war_will: -10, grievance: 20, action: 45, voice: 35, radicalism: -10}
+    兽族:
+      无脉者: {loyalty: 45, war_will: 10, grievance: 40, action: 35, voice: 15, radicalism: -10}
