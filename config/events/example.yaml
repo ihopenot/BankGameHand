@@ -1,0 +1,56 @@
+# 示例事件定义
+# 此文件演示事件系统的YAML格式
+
+events: []
+# 事件定义格式示例（取消注释即可启用）：
+#
+#  - id: labor_strike_boost
+#    name: "劳资矛盾催产"
+#    expr:
+#      - If:
+#        - Any:
+#            all:
+#              GetField:
+#                - _G
+#                - all_countries
+#            condition:
+#              - And:
+#                - GetField:
+#                    - target_country
+#                    - stability
+#                  op: ">"
+#                  value: 10
+#                - Every:
+#                    all:
+#                      GetField:
+#                        - target_country
+#                        - companies
+#                    condition:
+#                      - And:
+#                        - GetField:
+#                            - target_company
+#                            - labor_capital_conflict
+#                          op: ">"
+#                          value: 50
+#                        - GetField:
+#                            - target_company
+#                            - max_history_sales
+#                          op: ">"
+#                          value: 500
+#                    var: target_companies
+#            var: target_country
+#        - Exprs:
+#          - ModifyAttr:
+#            - target_country
+#            - Modifiers:
+#              - Modifier:
+#                  type: add
+#                  field: stability
+#                  value: -10
+#          - ModifyAttr:
+#            - target_companies
+#            - Modifiers:
+#              - Modifier:
+#                  type: percent
+#                  field: production
+#                  value: 10

@@ -21,6 +21,7 @@ from system.map_service import MapService
 from system.market_service import MarketService
 from system.metric_service import MetricService
 from system.player_service import PlayerService
+from system.event.event_service import EventService
 from system.productor_service import ProductorService
 
 
@@ -56,6 +57,9 @@ class Game:
 
         # 地图服务
         self.map_service = MapService()
+
+        # 事件服务
+        self.event_service = EventService(self)
 
         # 业务逻辑初始化
         self.init_game()
@@ -132,6 +136,7 @@ class Game:
         self.decision_service.prepare_next_round(self.companies)
         while not self.game_end():
             self.update_phase()
+            self.event_phase()
             self.sell_phase()
             self.buy_phase()
             self.plan_phase()
@@ -155,6 +160,10 @@ class Game:
         self.productor_service.update_phase()
         self.market_service.update_phase()
         self.ledger_service.generate_bills()
+
+    def event_phase(self) -> None:
+        """事件阶段：扫描所有事件定义，执行满足条件的事件。"""
+        self.event_service.evaluate_events()
 
     def sell_phase(self) -> None:
         self.company_service.sell_phase(self.market_service)
