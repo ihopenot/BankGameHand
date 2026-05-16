@@ -226,6 +226,20 @@ class TestGetAction:
         action = ctrl.get_action("prompt: ")
         assert len(action.approvals) == 2
 
+    def test_rate_command(self):
+        ctrl = FakeInputController(["rate 银行A 100"])
+        action = ctrl.get_action("prompt: ")
+        assert action.action_type == "set_deposit_rate"
+        assert action.bank_name == "银行A"
+        assert action.deposit_rate == 100
+
+    def test_rate_command_different_values(self):
+        ctrl = FakeInputController(["rate 银行B 250"])
+        action = ctrl.get_action("prompt: ")
+        assert action.action_type == "set_deposit_rate"
+        assert action.bank_name == "银行B"
+        assert action.deposit_rate == 250
+
 
 # ── PlayerAction 审批处理测试 ──
 
@@ -315,3 +329,29 @@ class TestHandleLoanApproval:
         )
         svc.handle_loan_approval(action, bank_service)
         assert bank_service.get_offers() == []
+
+
+class TestHandleSetDepositRate:
+    def test_sets_deposit_rate(self):
+        svc = _make_player_service()
+        bank_service = BankService()
+        bank_service.create_bank("银行A", 500_000)
+        action = PlayerAction(
+            action_type="set_deposit_rate",
+            bank_name="银行A",
+            deposit_rate=150,
+        )
+        svc.handle_set_deposit_rate(action, bank_service)
+        assert bank_service.banks["银行A"].deposit_rate == 150
+
+    def test_invalid_bank_name(self):
+        svc = _make_player_service()
+        bank_service = BankService()
+        bank_service.create_bank("银行A", 500_000)
+        action = PlayerAction(
+            action_type="set_deposit_rate",
+            bank_name="不存在",
+            deposit_rate=100,
+        )
+        svc.handle_set_deposit_rate(action, bank_service)
+        assert bank_service.banks["银行A"].deposit_rate == 0

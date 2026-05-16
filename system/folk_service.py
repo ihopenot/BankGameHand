@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import math
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 from component.decision.folk.base import BaseFolkDecisionComponent
 from component.ledger_component import LedgerComponent
 from component.metric_component import MetricComponent
 from component.storage_component import StorageComponent
+from core.types import Loan, LoanType, RepaymentType
 from entity.folk import Folk
 from entity.goods import GoodsType
 from system.market_service import MarketService, SellOrder, TradeRecord
+
+if TYPE_CHECKING:
+    from entity.bank import Bank
 
 
 class FolkService:
@@ -364,3 +368,72 @@ class FolkService:
                 folk_mc = folk.get_component(MetricComponent)
                 if folk_mc is not None:
                     folk_mc.last_avg_buy_prices[goods_type] = weighted_price / total_qty
+
+    # ── 居民存取款 ──
+
+    def folk_deposit_phase(self, banks: Dict[str, "Bank"]) -> None:
+        """居民存取款阶段：超出储备目标的现金存入银行，不足则从存款取出。"""
+        for folk in self.folks:
+            if folk.last_spending <= 0:
+                continue
+
+            reserve_target = int(folk.last_spending * folk.demand_feedback.savings_target_ratio)
+            folk_ledger = folk.get_component(LedgerComponent)
+            excess = folk_ledger.cash - reserve_target
+
+            if excess > 0:
+                self._deposit_excess(folk, excess, banks)
+            elif excess < 0:
+                self._withdraw_shortfall(folk, -excess)
+
+    def _deposit_excess(self, folk: Folk, amount: int, banks: Dict[str, "Bank"]) -> None:
+        """将多余现金按利率吸引力分配存入各银行。"""
+        bank_list = list(banks.values())
+        rates = [bank.deposit_rate for bank in bank_list]
+        max_rate = max(rates)
+        if max_rate <= 0:
+            return
+
+        # 以 (max_rate - 200) 为零点，每 100 万分比（1%）增加 1 点吸引力
+        threshold = max_rate - 200
+        scores = [max(0, (bank.deposit_rate - threshold) / 100) for bank in bank_list]
+        total_score = sum(scores)
+        if total_score <= 0:
+            return
+
+        # 按得分比例分配（最大余数法）
+        raw_allocs = [amount * s / total_score for s in scores]
+        floor_allocs = [int(a) for a in raw_allocs]
+        remainders = [a - f for a, f in zip(raw_allocs, floor_allocs)]
+        deficit = amount - sum(floor_allocs)
+        indices = sorted(range(len(remainders)), key=lambda i: remainders[i], reverse=True)
+        for i in indices[:deficit]:
+            floor_allocs[i] += 1
+
+        folk_ledger = folk.get_component(LedgerComponent)
+        for bank, alloc in zip(bank_list, floor_allocs):
+            if alloc <= 0:
+                continue
+            deposit = Loan(
+                creditor=folk,
+                debtor=bank,
+                principal=alloc,
+                rate=bank.deposit_rate,
+                term=0,
+                loan_type=LoanType.DEPOSIT,
+                repayment_type=RepaymentType.BULLET,
+            )
+            folk_ledger.issue_loan(deposit)
+
+    def _withdraw_shortfall(self, folk: Folk, shortfall: int) -> None:
+        """从已有存款中取出不足的现金。"""
+        folk_ledger = folk.get_component(LedgerComponent)
+        deposits = [l for l in folk_ledger.receivables if l.loan_type == LoanType.DEPOSIT]
+
+        remaining_need = shortfall
+        for deposit in deposits:
+            if remaining_need <= 0:
+                break
+            bank_ledger: LedgerComponent = deposit.debtor.get_component(LedgerComponent)
+            withdrawn = bank_ledger.withdraw(deposit, remaining_need)
+            remaining_need -= withdrawn

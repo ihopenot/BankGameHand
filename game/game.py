@@ -207,6 +207,7 @@ class Game:
         self.bank_service.clear_offers()
 
     def settlement_phase(self) -> None:
+        self.folk_service.folk_deposit_phase(banks=self.bank_service.banks)
         self.ledger_service.settle_all()
         self.company_service.process_bankruptcies()
         self.company_service.replenish_market()

@@ -30,9 +30,11 @@ class PlayerInputController(ABC):
             approve <银行名> <序号>:<金额>:<利率>:<期限>:<还款方式> [...]
                                      → 批量审批贷款
                 还款方式: 1=等额本金, 2=先息后本, 3=到期一次性
+            rate <银行名> <利率万分比> → 设置存款利率
 
         示例：
             approve 银行A 1:50000:500:5:1 2:30000:800:3:2
+            rate 银行A 100
         """
         raw = self.get_input(prompt).strip()
         if not raw or raw.lower() == "skip":
@@ -46,6 +48,15 @@ class PlayerInputController(ABC):
                 action_type="approve_loans",
                 bank_name=bank_name,
                 approvals=approvals,
+            )
+
+        if parts[0].lower() == "rate" and len(parts) >= 3:
+            bank_name = parts[1]
+            deposit_rate = int(parts[2])
+            return PlayerAction(
+                action_type="set_deposit_rate",
+                bank_name=bank_name,
+                deposit_rate=deposit_rate,
             )
 
         return PlayerAction(action_type="skip")

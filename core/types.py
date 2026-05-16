@@ -184,8 +184,9 @@ class PlayerAction:
     """玩家操作指令。
 
     action_type:
-        "skip"          — 跳过回合
-        "approve_loans" — 批量审批贷款，approvals 列表包含各条审批参数
+        "skip"              — 跳过回合
+        "approve_loans"     — 批量审批贷款，approvals 列表包含各条审批参数
+        "set_deposit_rate"  — 设置银行存款利率
     """
 
     def __init__(
@@ -193,7 +194,9 @@ class PlayerAction:
         action_type: str = "skip",
         bank_name: str = "",
         approvals: list | None = None,
+        deposit_rate: int = 0,
     ) -> None:
         self.action_type = action_type
         self.bank_name = bank_name
         self.approvals: list[LoanApprovalParam] = approvals or []
+        self.deposit_rate = deposit_rate

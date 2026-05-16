@@ -11,7 +11,7 @@ from component.metric_component import MetricComponent
 from component.productor_component import ProductorComponent
 from component.storage_component import StorageComponent
 from core.input_controller import PlayerInputController, StdinInputController
-from core.types import RATE_SCALE, Loan, LoanApplication, PlayerAction
+from core.types import RATE_SCALE, Loan, LoanApplication, LoanType, PlayerAction
 from entity.bank import Bank
 from system.bank_service import BankService, LoanOffer
 from system.service import Service
@@ -128,6 +128,7 @@ class PlayerService(Service):
         table.add_column("群体", style="bold")
         table.add_column("人口", justify="right")
         table.add_column("现金", justify="right", style="green")
+        table.add_column("存款", justify="right", style="cyan")
         table.add_column("品质偏好", justify="right")
         table.add_column("品牌偏好", justify="right")
         table.add_column("价格偏好", justify="right")
@@ -136,6 +137,11 @@ class PlayerService(Service):
         for folk in self.game.folks:
             ledger = folk.get_component(LedgerComponent)
             storage = folk.get_component(StorageComponent)
+
+            total_deposits = sum(
+                loan.remaining for loan in ledger.receivables
+                if loan.loan_type == LoanType.DEPOSIT
+            )
 
             inv_parts: List[str] = []
             if storage:
@@ -148,6 +154,7 @@ class PlayerService(Service):
                 folk.name,
                 str(folk.population),
                 str(ledger.cash),
+                str(total_deposits),
                 f"{folk.w_quality:.2f}",
                 f"{folk.w_brand:.2f}",
                 f"{folk.w_price:.2f}",
@@ -160,6 +167,8 @@ class PlayerService(Service):
         table = Table(title="银行概览", show_lines=True)
         table.add_column("银行名", style="bold")
         table.add_column("现金", justify="right", style="green")
+        table.add_column("存款利率", justify="right", style="cyan")
+        table.add_column("存款总额", justify="right", style="yellow")
         table.add_column("贷款总额", justify="right", style="yellow")
         table.add_column("本回合利息收入", justify="right", style="cyan")
 
@@ -167,11 +176,18 @@ class PlayerService(Service):
             ledger = bank.get_component(LedgerComponent)
             cash = ledger.cash
             total_loans = ledger.total_receivables()
+            total_deposits = sum(
+                loan.remaining for loan in ledger.payables
+                if loan.loan_type == LoanType.DEPOSIT
+            )
             interest_income = sum(
                 min(bill.interest_due, bill.total_paid)
                 for bill in ledger.bills
             )
-            table.add_row(bank.name, str(cash), str(total_loans), str(interest_income))
+            table.add_row(
+                bank.name, str(cash), str(bank.deposit_rate),
+                str(total_deposits), str(total_loans), str(interest_income),
+            )
 
         return table
 
@@ -273,6 +289,11 @@ class PlayerService(Service):
             ledger = folk.get_component(LedgerComponent)
             storage = folk.get_component(StorageComponent)
 
+            total_deposits = sum(
+                loan.remaining for loan in ledger.receivables
+                if loan.loan_type == LoanType.DEPOSIT
+            )
+
             inv_parts: List[str] = []
             if storage:
                 for gt, batches in storage.inventory.items():
@@ -284,6 +305,7 @@ class PlayerService(Service):
                 "name": folk.name,
                 "population": folk.population,
                 "cash": ledger.cash,
+                "deposits": total_deposits,
                 "w_quality": round(folk.w_quality, 2),
                 "w_brand": round(folk.w_brand, 2),
                 "w_price": round(folk.w_price, 2),
@@ -296,6 +318,10 @@ class PlayerService(Service):
         result: List[dict] = []
         for name, bank in banks.items():
             ledger = bank.get_component(LedgerComponent)
+            total_deposits = sum(
+                loan.remaining for loan in ledger.payables
+                if loan.loan_type == LoanType.DEPOSIT
+            )
             interest_income = sum(
                 min(bill.interest_due, bill.total_paid)
                 for bill in ledger.bills
@@ -303,6 +329,8 @@ class PlayerService(Service):
             result.append({
                 "name": bank.name,
                 "cash": ledger.cash,
+                "deposit_rate": bank.deposit_rate,
+                "total_deposits": total_deposits,
                 "total_loans": ledger.total_receivables(),
                 "interest_income": interest_income,
             })
@@ -473,6 +501,15 @@ class PlayerService(Service):
                 f"金额={amount}, 利率={param.rate}, 期限={param.term}[/]"
             )
 
+    def handle_set_deposit_rate(self, action: PlayerAction, bank_service: BankService) -> None:
+        """设置银行存款利率。"""
+        bank = bank_service.banks.get(action.bank_name)
+        if bank is None:
+            console.print(f"[red]银行 '{action.bank_name}' 不存在[/]")
+            return
+        bank.deposit_rate = action.deposit_rate
+        console.print(f"[green]已设置 {action.bank_name} 存款利率为 {action.deposit_rate} 万分比[/]")
+
     def player_act_phase(self, bank_service: BankService) -> None:
         """执行玩家操作阶段：展示数据，获取一次 PlayerAction 并处理。"""
         console.print(self.render_economy_summary())
@@ -487,11 +524,13 @@ class PlayerService(Service):
         console.print()
 
         action = self.input_controller.get_action(
-            "输入操作 (skip=跳过, approve <银行名> <序号:金额:利率:期限:还款方式> ...): "
+            "输入操作 (skip=跳过, approve <银行名> <序号:金额:利率:期限:还款方式>, rate <银行名> <利率万分比>): "
         )
 
         if action.action_type == "approve_loans":
             self.handle_loan_approval(action, bank_service)
+        elif action.action_type == "set_deposit_rate":
+            self.handle_set_deposit_rate(action, bank_service)
 
     # ── Service 接口方法 ──
 

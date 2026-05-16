@@ -175,3 +175,14 @@ class TestAcceptLoans:
         assert loan.rate == 500
         assert loan.term == 5
         assert loan.loan_type == LoanType.CORPORATE_LOAN
+
+
+class TestBankDepositRate:
+    def test_bank_has_deposit_rate_default_zero(self):
+        bank = Bank("test_bank")
+        assert bank.deposit_rate == 0
+
+    def test_bank_deposit_rate_settable(self):
+        bank = Bank("test_bank")
+        bank.deposit_rate = 150
+        assert bank.deposit_rate == 150
