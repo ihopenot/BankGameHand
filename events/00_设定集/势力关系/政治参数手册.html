@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>政治参数手册 — BankGame v3.1</title>
+<title>政治参数手册 — BankGame v3.2</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", serif; color: #1a1a1a; background: #fff; display: flex; min-height: 100vh; }
@@ -64,7 +64,7 @@
 <!-- 左栏导航 -->
 <nav class="nav">
   <h2>政治参数手册</h2>
-  <div style="font-size:12px;color:#aaa;padding:0 24px 16px;">BankGame v3.1 · 19项原子参数</div>
+  <div style="font-size:12px;color:#aaa;padding:0 24px 16px;">BankGame v3.2 · 19项原子参数</div>
   
   <div class="layer">
     <div class="layer-title">群众层 <span class="badge">6</span></div>
@@ -97,7 +97,7 @@
     <a href="#k-diplomacy">外交实力</a>
     <a href="#k-order">社会稳定度</a>
     <a href="#k-military">军力</a>
-    <a href="#k-economy">经济自给度</a>
+    <a href="#k-economy">经济稳定度</a>
     <a href="#k-regime">政治稳定度</a>
   </div>
 
@@ -110,7 +110,7 @@
 <div class="main">
 
 <h1>政治参数手册</h1>
-<div class="subtitle">BankGame 宇宙基础文件 · 政治篇 v3.1 — 19项原子参数速查</div>
+<div class="subtitle">BankGame 宇宙基础文件 · 政治篇 v3.2 — 19项原子参数速查</div>
 
 <!-- ===== 群众层 ===== -->
 <h2 class="section-title" id="sec-people">一、群众层（6项）</h2>
@@ -167,7 +167,7 @@
       <li><strong>61~80</strong> 高怨 — 随时可能被点燃</li>
       <li><strong>81~100</strong> 临界 — 社会火药桶</li>
     </ul>
-    <p style="margin-top:8px;color:#8b0000;font-weight:600;">核心机制：只增不减，除非释放。每回合自然增量 = 0.5 × (100 - 忠诚度) / 100 × 生存压力系数</p>
+    <p style="margin-top:8px;color:#8b0000;font-weight:600;">核心机制：只增不减，除非释放。每回合自然增量 = 0.5 × (100 - 忠诚度) / 100</p>
   </div>
   <a class="calc-link" href="#calc-grievance">计算方式 ↓</a>
 </div>
@@ -425,7 +425,7 @@
 
 <div class="param-card" id="k-economy">
   <div class="param-header">
-    <span class="param-name">经济自给度</span>
+    <span class="param-name">经济稳定度</span>
     <span class="param-range">0 ~ 100</span>
   </div>
   <div class="param-def">王国经济的抗压能力。资源自主、产能稳定、内部不闹，经济就扛得住。</div>
@@ -480,63 +480,30 @@
 </div>
 
 <div class="mid-block">
-  <h4>M3. 产值规模归一化</h4>
-  <pre>产值规模归一化 = clamp((公司产值 / 该国总产值) × 100, 0, 100)</pre>
-  <div class="mid-note">来源：公司产值、该国总产值（外生·来自经济模拟系统）。</div>
+  <h4>M3. 公司路线坐标</h4>
+  <pre>公司经济倾向 = 200 × 0.7 × (资方话语权 / (劳方话语权 + 资方话语权) - 0.5)
+            + 0.3 × (资方话语权 - 劳方话语权)
+   分母为 0（劳资话语权均为 0）时，第一项约定为 0
+   值域 [-100, 100]，左右对称（第一项 [-70,70] + 第二项 [-30,30]）
+
+公司威权倾向 = clamp(资方好战度 - 劳资冲突程度, -100, 100)</pre>
+  <div class="mid-note">来源：群众·话语权/好战度（劳资双轨）+ 公司·劳资冲突程度。被党派经济轴、威权轴、凝聚力公式引用。</div>
 </div>
 
 <div class="mid-block">
-  <h4>M4. 公司产值权重</h4>
-  <pre>公司产值权重 = 公司雇员数 × 产业链产值系数</pre>
-  <div class="mid-note">来源：公司雇员数（外生）+ 产业链产值系数（配置常量·YAML）</div>
-</div>
-
-<div class="mid-block">
-  <h4>M5. 公司政治捆绑度方向修正</h4>
-  <pre>设 R = 旗下公司政治捆绑度均值（按 M4 加权）
-若 R > 0：经济轴 +10、威权轴 +10
-若 R < 0：经济轴 -15、威权轴 -5
-若 R = 0：均不变</pre>
-  <div class="mid-note">来源：公司·政治捆绑度。被党派经济轴、威权轴公式引用。</div>
-</div>
-
-<div class="mid-block">
-  <h4>M6. 公司路线坐标</h4>
-  <pre>公司经济倾向 = 100 × (资方话语权 / (劳方话语权 + 资方话语权 + 1) - 0.5) × 2
-            + 0.30 × (-(劳方话语权 - 资方话语权))
-            + 单公司政治捆绑度方向修正
-   公司政治捆绑度 > 0 → 经济倾向 +10
-   公司政治捆绑度 < 0 → 经济倾向 -15
-   clamp 到 -100~100
-
-公司威权倾向 = 0.40 × 资方好战度
-            + 0.30 × 产业链卡位系数
-            - 0.30 × 公司劳资冲突程度
-            + 单公司政治捆绑度方向修正（威权部分）
-   公司政治捆绑度 > 0 → +10；< 0 → -5
-   clamp 到 -100~100</pre>
-  <div class="mid-note">来源：群众·话语权/好战度（劳资双轨）+ 公司·政治捆绑度/劳资冲突程度 + 配置常量</div>
-</div>
-
-<div class="mid-block">
-  <h4>K1. 资源自给率</h4>
-  <pre>资源自给率 = 该国本期自产关键原料数量 / 该国本期使用关键原料总数   # 取值 0~1</pre>
-  <div class="mid-note">来源：经济模拟系统输出（外生中间量）</div>
-</div>
-
-<div class="mid-block">
-  <h4>K2. 军工链筛选规则</h4>
+  <h4>K1. 军工链筛选规则</h4>
   <pre>军工链公司 = 满足"产业链类型 = military"的全部公司</pre>
 </div>
 
 <div class="mid-block">
-  <h4>K3. 全国群众加权基准</h4>
+  <h4>K2. 全国群众加权基准</h4>
   <pre>群众参数全国加权 = Σ(参数值 × 群体人口) / Σ(群体人口)</pre>
 </div>
 
 <div class="mid-block">
-  <h4>K4. 全国公司加权基准</h4>
-  <pre>公司参数全国加权 = Σ(参数值 × 公司产值权重) / Σ(公司产值权重)</pre>
+  <h4>K3. 全国公司加权基准</h4>
+  <pre>公司参数全国加权 = Σ(参数值 × 公司劳方人数) / Σ(公司劳方人数)</pre>
+  <div class="mid-note">注：本版统一改用公司劳方人数加权（用于经济轴、威权轴、经济稳定度、社会稳定度等公司层聚合）。</div>
 </div>
 
 <!-- 群众层计算 -->
@@ -544,10 +511,13 @@
 
 <div class="calc-block" id="calc-loyalty">
   <h4>忠诚度 <a class="back-link" href="#p-loyalty">↑ 返回定义</a></h4>
-  <pre>忠诚度每回合自然变化 = 0.1 × (economic_confidence - 50) - 0.2 × wage_pressure</pre>
+  <pre>忠诚度每回合自然变化 = 0.1 × (经济周期参数 - 50)
+                  + 0.2 × (消费比值 - 1) × 100
+
+其中 消费比值 = 群体上回合消费 / 群体上上回合消费</pre>
   <ul class="var-source">
-    <li>economic_confidence（经济信心）→ 外生变量·经济模拟系统，默认50</li>
-    <li>wage_pressure（工资压力）→ 外生变量·经济模拟系统，默认30</li>
+    <li>经济周期参数 → 外生变量·经济模拟系统，默认 50</li>
+    <li>群体消费数据 → 外生变量·经济模拟系统（按群体逐回合记录）</li>
   </ul>
 </div>
 
@@ -559,11 +529,10 @@
 
 <div class="calc-block" id="calc-grievance">
   <h4>怨气值 <a class="back-link" href="#p-grievance">↑ 返回定义</a></h4>
-  <pre>怨气值每回合自然增量 = 0.5 × (100 - 忠诚度) / 100 × 生存压力系数
+  <pre>怨气值每回合自然增量 = 0.5 × (100 - 忠诚度) / 100
 释放方式：罢工(-20~-40)、暴动(-40~-60)、革命(-60~-80)、制度改良(-10~-30)</pre>
   <ul class="var-source">
     <li>忠诚度 → 群众层参数一</li>
-    <li>生存压力系数 → 外生变量·经济/灾害/战争系统，默认1.0</li>
   </ul>
 </div>
 
@@ -603,13 +572,13 @@
 
 <div class="calc-block" id="calc-bargaining">
   <h4>议价权 <a class="back-link" href="#c-bargaining">↑ 返回定义</a></h4>
-  <pre>议价权 = 0.45 × 资方话语权
-       + 0.30 × 产业链卡位系数      # 上游垄断90 / 上游普通60 / 中游40 / 下游20
-       + 0.25 × 产值规模归一化      # 该国GDP占比</pre>
+  <pre>议价权 = Σ(资方话语权_该种族 × 公司内资方该种族雇员数)
+       / Σ(公司内资方雇员数)
+
+即：按公司内部资方雇员的种族构成，对各种族资方话语权做加权平均</pre>
   <ul class="var-source">
-    <li>资方话语权 → 群众层参数五（资方双轨）</li>
-    <li>产业链卡位系数 → 配置常量·YAML</li>
-    <li>产值规模归一化 → 中间量 M3</li>
+    <li>资方话语权（按种族细分）→ 群众层参数五（资方双轨 × 种族维度）</li>
+    <li>公司内资方各种族雇员数 → 公司基础数据（外生）</li>
   </ul>
 </div>
 
@@ -642,55 +611,68 @@
 
 <div class="calc-block" id="calc-seats">
   <h4>席位 <a class="back-link" href="#f-seats">↑ 返回定义</a></h4>
-  <pre>席位 = 100 × Σ(旗下公司议价权 × 公司产值权重) / Σ(全国所有公司议价权 × 公司产值权重)</pre>
+  <pre>席位 = Σ(产业链产值系数_i × 公司议价权_i × 公司劳方人数_i)
+     / Σ(公司劳方人数_i)
+
+其中 i 遍历该党派旗下所有公司
+产业链产值系数按公司逐个乘入，跨产业链的党派天然得到混合估值</pre>
   <ul class="var-source">
     <li>公司议价权 → 公司层参数二</li>
-    <li>公司产值权重 → 中间量 M4</li>
+    <li>产业链产值系数 → 配置常量·YAML</li>
+    <li>公司劳方人数 → 公司基础数据（外生）</li>
   </ul>
 </div>
 
 <div class="calc-block" id="calc-base">
   <h4>票仓 <a class="back-link" href="#f-base">↑ 返回定义</a></h4>
-  <pre>票仓 = 0.50 × 旗下公司加权(劳方行动力 × 公司劳资冲突程度归一化)
-     + 0.30 × 旗下公司加权(|公司政治捆绑度|)
-     + 0.20 × 旗下公司加权(劳方怨气值)
+  <pre>原始票仓 = (5/9) × W(劳方行动力)
+        + (5/9) × W(|公司政治捆绑度|)
+        - (1/9) × W(劳方怨气值)
 
-加权基准 = 公司雇员数</pre>
+其中 W(x) = Σ(x_i × 公司劳方人数_i) / Σ(公司劳方人数_i)
+i 遍历该党派旗下所有公司
+
+票仓 = clamp(原始票仓, 0, 100)</pre>
   <ul class="var-source">
     <li>劳方行动力 / 劳方怨气值 → 群众层（劳方双轨）</li>
-    <li>公司劳资冲突程度 / 公司政治捆绑度 → 公司层参数三、四</li>
+    <li>公司政治捆绑度 → 公司层参数三（取绝对值，反建制立场不分左右）</li>
+    <li>系数说明：从用户原述 0.5 / 0.5 / -0.1 重缩放为 5/9、5/9、-1/9，使 |系数和| = 1</li>
   </ul>
 </div>
 
 <div class="calc-block" id="calc-line">
   <h4>路线（二维） <a class="back-link" href="#f-line">↑ 返回定义</a></h4>
-  <pre>经济轴 = 100 × (旗下公司加权(资方话语权 / (劳方话语权 + 资方话语权 + 1)) - 0.5) × 2
-      + 0.30 × (-旗下公司加权(劳方话语权 - 资方话语权))
-      + 公司政治捆绑度方向修正·经济部分
+  <pre>【公司经济倾向】（每家公司一个值，定义见 M3）
+经济倾向 = 200 × 0.7 × (资方话语权 / (劳方话语权 + 资方话语权) - 0.5)
+        + 0.3 × (资方话语权 - 劳方话语权)
+   分母为 0 时第一项约定为 0
+   值域 [-100, 100]，左右对称
 
-威权轴 = 0.40 × 旗下公司加权(资方好战度)
-      + 0.30 × 旗下公司加权(产业链卡位系数)
-      - 0.30 × 旗下公司加权(劳资冲突程度)
-      + 公司政治捆绑度方向修正·威权部分
+【公司威权倾向】（每家公司一个值，定义见 M3）
+威权倾向 = clamp(资方好战度 - 劳资冲突程度, -100, 100)
 
-加权基准 = 公司雇员数 × 产业链产值系数（M4）
-两轴均 clamp 到 -100~100</pre>
+【经济轴】（党派路线第一维度）
+经济轴 = Σ(公司经济倾向_i × 公司劳方人数_i) / Σ(公司劳方人数_i)
+
+【威权轴】（党派路线第二维度）
+威权轴 = Σ(公司威权倾向_i × 公司劳方人数_i) / Σ(公司劳方人数_i)
+
+i 遍历该党派旗下所有公司，加权基准为劳方人数</pre>
   <ul class="var-source">
     <li>资方/劳方话语权 → 群众层参数五</li>
     <li>资方好战度 → 群众层参数二</li>
-    <li>产业链卡位系数 → 配置常量</li>
     <li>公司劳资冲突程度 → 公司层参数四</li>
-    <li>公司政治捆绑度方向修正 → 中间量 M5</li>
+    <li>公司经济倾向 / 威权倾向 → 中间量 M3（公司路线坐标）</li>
   </ul>
 </div>
 
 <div class="calc-block" id="calc-cohesion">
   <h4>凝聚力 <a class="back-link" href="#f-cohesion">↑ 返回定义</a></h4>
-  <pre>路线方差 = sqrt(Var(公司经济倾向) + Var(公司威权倾向))    # 按公司雇员数加权
+  <pre>路线方差 = sqrt(Var(公司经济倾向) + Var(公司威权倾向))    # 按公司劳方人数加权
 凝聚力 = 100 - clamp(路线方差, 0, 100)</pre>
   <ul class="var-source">
-    <li>公司经济倾向 / 公司威权倾向 → 中间量 M6（公司路线坐标）</li>
-    <li>加权基准 → 公司雇员数</li>
+    <li>公司经济倾向 / 公司威权倾向 → 中间量 M3（公司路线坐标）</li>
+    <li>加权基准 → 公司劳方人数</li>
   </ul>
 </div>
 
@@ -700,12 +682,9 @@
 <div class="calc-block" id="calc-diplomacy">
   <h4>外交实力 <a class="back-link" href="#k-diplomacy">↑ 返回定义</a></h4>
   <pre>外交实力 = 0.35 × 军力
-        + 0.30 × 资源自给率 × 100
-        + 0.20 × 执政党席位
-        + 0.15 × 经济自给度</pre>
+        + 0.65 × 执政党席位</pre>
   <ul class="var-source">
-    <li>军力 / 经济自给度 → 王国层自身参数（内部互引）</li>
-    <li>资源自给率 → 中间量 K1</li>
+    <li>军力 → 王国层自身参数（内部互引）</li>
     <li>执政党席位 → 党派层参数一</li>
   </ul>
 </div>
@@ -718,33 +697,31 @@
            + 0.15 × (100 - 全国群众加权平均怨气值)</pre>
   <ul class="var-source">
     <li>执政党席位 / 在野党票仓 → 党派层参数一、二</li>
-    <li>全国公司加权平均(劳资冲突程度) → 公司层参数四 + K4 加权基准</li>
-    <li>全国群众加权平均怨气值 → 群众层参数三 + K3 加权基准</li>
+    <li>全国公司加权平均(劳资冲突程度) → 公司层参数四 + K3 加权基准（劳方人数）</li>
+    <li>全国群众加权平均怨气值 → 群众层参数三 + K2 加权基准（群体人口）</li>
   </ul>
 </div>
 
 <div class="calc-block" id="calc-military">
   <h4>军力 <a class="back-link" href="#k-military">↑ 返回定义</a></h4>
-  <pre>军力 = 0.35 × 军工链公司加权平均生产稳定度
-     + 0.30 × 全国党派加权平均票仓 × 0.7
-     + 0.25 × clamp(全国群众加权平均好战度 + 50, 0, 100)
-     + 0.10 × 资源自给率 × 100</pre>
+  <pre>军力 = 0.35 × 军工链公司加权(生产稳定度, 权重=公司劳方人数)
+     + 0.30 × 执政党票仓 × (执政党旗下劳方人数 / 全国劳方人数)
+     + 0.35 × 全国群众加权(好战度, 权重=种族人数)
+
+注：好战度按字面写，不做 +50/+100 偏移；其取值 -100~100 直接进入聚合</pre>
   <ul class="var-source">
-    <li>军工链公司 → K2 筛选规则；公司生产稳定度 → 公司层参数一；加权基准=K4</li>
-    <li>全国党派加权平均票仓 → 党派层参数二，加权基准=党派席位</li>
-    <li>全国群众加权平均好战度 → 群众层参数二 + K3 加权基准</li>
-    <li>资源自给率 → 中间量 K1</li>
+    <li>军工链公司 → 中间量 K1 筛选规则；公司生产稳定度 → 公司层参数一</li>
+    <li>执政党票仓 → 党派层参数二；劳方人数 → 公司基础数据</li>
+    <li>全国群众加权(好战度) → 群众层参数二 + K2 加权基准（按种族人数）</li>
   </ul>
 </div>
 
 <div class="calc-block" id="calc-economy">
-  <h4>经济自给度 <a class="back-link" href="#k-economy">↑ 返回定义</a></h4>
-  <pre>经济自给度 = 0.40 × 资源自给率 × 100
-          + 0.35 × 全国公司加权平均生产稳定度
-          + 0.25 × (100 - 全国公司加权平均劳资冲突程度)</pre>
+  <h4>经济稳定度 <a class="back-link" href="#k-economy">↑ 返回定义</a></h4>
+  <pre>经济稳定度 = 0.65 × 全国公司加权(生产稳定度, 权重=公司劳方人数)
+          + 0.35 × (100 - 全国公司加权(劳资冲突程度, 权重=公司劳方人数))</pre>
   <ul class="var-source">
-    <li>资源自给率 → 中间量 K1</li>
-    <li>全国公司加权平均(生产稳定度 / 劳资冲突程度) → 公司层参数一、四 + K4 加权基准</li>
+    <li>全国公司加权(生产稳定度 / 劳资冲突程度) → 公司层参数一、四 + K3 加权基准</li>
   </ul>
 </div>
 
@@ -764,7 +741,7 @@
 </div>
 
 <div style="margin-top:48px;padding-top:20px;border-top:1px solid #ddd;font-size:12px;color:#aaa;text-align:center;">
-  政治参数手册 v3.1 — BankGame 宇宙基础文件·政治篇<br>
+  政治参数手册 v3.2 — BankGame 宇宙基础文件·政治篇<br>
   配置模板见 events/politics.yaml
 </div>
 
